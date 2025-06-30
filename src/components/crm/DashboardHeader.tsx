@@ -12,7 +12,7 @@ export function DashboardHeader() {
   const navigate = useNavigate();
   const handleLogout = () => {
     localStorage.removeItem('auth');
-    window.location.href = '/login';
+    navigate('/login', { replace: true });
   };
   return (
     <header className="h-16 border-b bg-white dark:bg-zinc-900 flex items-center justify-between px-6 transition-colors">
