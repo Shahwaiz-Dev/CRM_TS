@@ -227,7 +227,7 @@ export function PipelineView() {
   };
 
   return (
-    <div className="p-3 sm:p-4 lg:p-6 bg-gray-50 min-h-screen">
+    <div className="p-6 md:p-10">
       {/* Header - Responsive */}
       <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 bg-white p-3 sm:p-4 rounded-lg shadow-sm mb-4">
         <h1 className="text-xl sm:text-2xl font-semibold text-gray-800">Pipeline</h1>

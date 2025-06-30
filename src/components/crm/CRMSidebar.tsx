@@ -1,6 +1,6 @@
 import React from 'react';
 import { NavLink, useLocation } from 'react-router-dom';
-import { Users, User, List, Calendar, Trophy } from 'lucide-react';
+import { Users, User, List, Calendar, Trophy, Briefcase, DollarSign, Clock } from 'lucide-react';
 import {
   Sidebar,
   SidebarContent,
@@ -32,19 +32,19 @@ export function CRMSidebar() {
   const isActive = (path: string) => currentPath === path;
 
   return (
-    <Sidebar className="border-r" collapsible="icon">
-      <SidebarTrigger className="m-2 self-end" />
+    <Sidebar className="border-r bg-white" collapsible="icon">
+      <SidebarTrigger className="m-2 self-end bg-white" />
       
-      <SidebarContent>
-        <div className="p-4">
-          <h2 className={`font-bold text-2xl text-white transition-opacity duration-200 ${collapsed ? 'opacity-0 hidden' : 'opacity-100'}`}>
+      <SidebarContent className="bg-white">
+        <div className="p-4 bg-white">
+          <h2 className={`font-bold text-2xl text-gray-800 transition-opacity duration-200 ${collapsed ? 'opacity-0 hidden' : 'opacity-100'}`}>
             CRM Pro
           </h2>
         </div>
-        
+
         <SidebarGroup>
-          <SidebarGroupLabel className="text-white text-lg font-semibold">Navigation</SidebarGroupLabel>
-          <SidebarGroupContent>
+          <SidebarGroupLabel className="text-gray-700 text-lg font-semibold pb-1">NAVIGATION</SidebarGroupLabel>
+          <SidebarGroupContent className="bg-white">
             <SidebarMenu>
               {navigationItems.map((item) => (
                 <SidebarMenuItem key={item.title}>
@@ -52,16 +52,54 @@ export function CRMSidebar() {
                     <NavLink 
                       to={item.url} 
                       end 
-                      className="flex items-center gap-3 w-full"
+                      className="flex items-center gap-3 w-full group"
                     >
-                      <item.icon className="h-7 w-7 flex-shrink-0 text-white" />
-                      <span className={`text-white text-lg font-semibold transition-opacity duration-200 ${collapsed ? 'opacity-0 hidden' : 'opacity-100'}`}>
+                      <item.icon className="h-7 w-7 flex-shrink-0 text-gray-500 transition-colors duration-150" />
+                      <span className={`text-gray-700 text-[17px] font-semibold transition-colors duration-150 ${collapsed ? 'opacity-0 hidden' : 'opacity-100'}`}>
                         {item.title}
                       </span>
                     </NavLink>
                   </SidebarMenuButton>
                 </SidebarMenuItem>
               ))}
+            </SidebarMenu>
+          </SidebarGroupContent>
+        </SidebarGroup>
+
+        <SidebarGroup>
+          <SidebarGroupLabel className="text-gray-700 text-lg font-semibold pb-1">HR MANAGEMENT</SidebarGroupLabel>
+          <SidebarGroupContent className="bg-white">
+            <SidebarMenu>
+              <SidebarMenuItem>
+                <SidebarMenuButton asChild isActive={isActive('/hr/employees')}>
+                  <NavLink to="/hr/employees" className="flex items-center gap-3 w-full group">
+                    <Briefcase className="h-7 w-7 flex-shrink-0 text-gray-500 transition-colors duration-150" />
+                    <span className={`text-gray-700  text-[17px] font-semibold transition-colors duration-150 ${collapsed ? 'opacity-0 hidden' : 'opacity-100'}`}>
+                      Employees
+                    </span>
+                  </NavLink>
+                </SidebarMenuButton>
+              </SidebarMenuItem>
+              <SidebarMenuItem>
+                <SidebarMenuButton asChild isActive={isActive('/hr/payroll')}>
+                  <NavLink to="/hr/payroll" className="flex items-center gap-3 w-full group">
+                    <DollarSign className="h-7 w-7 flex-shrink-0 text-gray-500 transition-colors duration-150" />
+                    <span className={`text-gray-700  text-[17px] font-semibold transition-colors duration-150 ${collapsed ? 'opacity-0 hidden' : 'opacity-100'}`}>
+                      Payroll
+                    </span>
+                  </NavLink>
+                </SidebarMenuButton>
+              </SidebarMenuItem>
+              <SidebarMenuItem>
+                <SidebarMenuButton asChild isActive={isActive('/hr/attendance')}>
+                  <NavLink to="/hr/attendance" className="flex items-center gap-3 w-full group">
+                    <Clock className="h-7 w-7 flex-shrink-0 text-gray-500 transition-colors duration-150" />
+                    <span className={`text-gray-700 text-[17px] font-semibold transition-colors duration-150 ${collapsed ? 'opacity-0 hidden' : 'opacity-100'}`}>
+                      Attendance
+                    </span>
+                  </NavLink>
+                </SidebarMenuButton>
+              </SidebarMenuItem>
             </SidebarMenu>
           </SidebarGroupContent>
         </SidebarGroup>

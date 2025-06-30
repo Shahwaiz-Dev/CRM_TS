@@ -244,206 +244,208 @@ export function TasksView() {
   );
 
   return (
-    <div className="space-y-6 p-4 lg:p-6">
-      <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
-        <h1 className="text-2xl lg:text-3xl font-bold text-gray-900">Task Management</h1>
-        <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
-          <DialogTrigger asChild>
-            <Button className="w-full sm:w-auto bg-blue-600 hover:bg-blue-700">
-              <Plus className="w-4 h-4 mr-2" />
-              Add Task
-            </Button>
-          </DialogTrigger>
-          <DialogContent className="max-w-md">
-            <DialogHeader>
-              <DialogTitle>Create New Task</DialogTitle>
-            </DialogHeader>
-            <div className="space-y-4">
-              <div>
-                <Label htmlFor="title">Title</Label>
-                <Input
-                  id="title"
-                  value={newTask.title}
-                  onChange={(e) => setNewTask({...newTask, title: e.target.value})}
-                  placeholder="Enter task title..."
-                />
+    <div className="p-6 md:p-10">
+      <div className="space-y-6">
+        <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
+          <h1 className="text-2xl lg:text-3xl font-bold text-gray-900">Task Management</h1>
+          <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
+            <DialogTrigger asChild>
+              <Button className="w-full sm:w-auto bg-blue-600 hover:bg-blue-700">
+                <Plus className="w-4 h-4 mr-2" />
+                Add Task
+              </Button>
+            </DialogTrigger>
+            <DialogContent className="max-w-md">
+              <DialogHeader>
+                <DialogTitle>Create New Task</DialogTitle>
+              </DialogHeader>
+              <div className="space-y-4">
+                <div>
+                  <Label htmlFor="title">Title</Label>
+                  <Input
+                    id="title"
+                    value={newTask.title}
+                    onChange={(e) => setNewTask({...newTask, title: e.target.value})}
+                    placeholder="Enter task title..."
+                  />
+                </div>
+                <div>
+                  <Label htmlFor="description">Description</Label>
+                  <Textarea
+                    id="description"
+                    value={newTask.description}
+                    onChange={(e) => setNewTask({...newTask, description: e.target.value})}
+                    placeholder="Enter task description..."
+                    className="min-h-20"
+                  />
+                </div>
+                <div>
+                  <Label htmlFor="assignee">Assignee</Label>
+                  <Input
+                    id="assignee"
+                    value={newTask.assignee}
+                    onChange={(e) => setNewTask({...newTask, assignee: e.target.value})}
+                    placeholder="Assign to..."
+                  />
+                </div>
+                <div>
+                  <Label htmlFor="account">Account</Label>
+                  <Input
+                    id="account"
+                    value={newTask.account}
+                    onChange={(e) => setNewTask({...newTask, account: e.target.value})}
+                    placeholder="Related account..."
+                  />
+                </div>
+                <div>
+                  <Label htmlFor="priority">Priority</Label>
+                  <Select value={newTask.priority} onValueChange={(value: 'High' | 'Medium' | 'Low') => setNewTask({...newTask, priority: value})}>
+                    <SelectTrigger>
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="High">High</SelectItem>
+                      <SelectItem value="Medium">Medium</SelectItem>
+                      <SelectItem value="Low">Low</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+                <div>
+                  <Label htmlFor="dueDate">Due Date</Label>
+                  <Input
+                    id="dueDate"
+                    type="date"
+                    value={newTask.dueDate}
+                    onChange={(e) => setNewTask({...newTask, dueDate: e.target.value})}
+                  />
+                </div>
+                <div className="flex gap-2 pt-4">
+                  <Button onClick={handleAddTask} className="flex-1 bg-blue-600 hover:bg-blue-700">
+                    Create Task
+                  </Button>
+                  <Button variant="outline" onClick={() => setIsDialogOpen(false)} className="flex-1">
+                    Cancel
+                  </Button>
+                </div>
               </div>
-              <div>
-                <Label htmlFor="description">Description</Label>
-                <Textarea
-                  id="description"
-                  value={newTask.description}
-                  onChange={(e) => setNewTask({...newTask, description: e.target.value})}
-                  placeholder="Enter task description..."
-                  className="min-h-20"
-                />
-              </div>
-              <div>
-                <Label htmlFor="assignee">Assignee</Label>
-                <Input
-                  id="assignee"
-                  value={newTask.assignee}
-                  onChange={(e) => setNewTask({...newTask, assignee: e.target.value})}
-                  placeholder="Assign to..."
-                />
-              </div>
-              <div>
-                <Label htmlFor="account">Account</Label>
-                <Input
-                  id="account"
-                  value={newTask.account}
-                  onChange={(e) => setNewTask({...newTask, account: e.target.value})}
-                  placeholder="Related account..."
-                />
-              </div>
-              <div>
-                <Label htmlFor="priority">Priority</Label>
-                <Select value={newTask.priority} onValueChange={(value: 'High' | 'Medium' | 'Low') => setNewTask({...newTask, priority: value})}>
-                  <SelectTrigger>
-                    <SelectValue />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="High">High</SelectItem>
-                    <SelectItem value="Medium">Medium</SelectItem>
-                    <SelectItem value="Low">Low</SelectItem>
-                  </SelectContent>
-                </Select>
-              </div>
-              <div>
-                <Label htmlFor="dueDate">Due Date</Label>
-                <Input
-                  id="dueDate"
-                  type="date"
-                  value={newTask.dueDate}
-                  onChange={(e) => setNewTask({...newTask, dueDate: e.target.value})}
-                />
-              </div>
-              <div className="flex gap-2 pt-4">
-                <Button onClick={handleAddTask} className="flex-1 bg-blue-600 hover:bg-blue-700">
-                  Create Task
-                </Button>
-                <Button variant="outline" onClick={() => setIsDialogOpen(false)} className="flex-1">
-                  Cancel
-                </Button>
-              </div>
-            </div>
-          </DialogContent>
-        </Dialog>
-      </div>
+            </DialogContent>
+          </Dialog>
+        </div>
 
-      <Card>
-        <CardHeader>
-          <CardTitle className="text-lg">Search & Filter</CardTitle>
-        </CardHeader>
-        <CardContent>
-          <Input
-            placeholder="Search tasks..."
-            value={searchTerm}
-            onChange={(e) => setSearchTerm(e.target.value)}
-            className="max-w-md"
-          />
-        </CardContent>
-      </Card>
-
-      <div className="flex flex-col lg:flex-row gap-4 lg:gap-6 min-h-96">
-        <StatusColumn status="Not Started" tasks={tasksByStatus['Not Started']} />
-        <StatusColumn status="In Progress" tasks={tasksByStatus['In Progress']} />
-        <StatusColumn status="Completed" tasks={tasksByStatus['Completed']} />
-      </div>
-
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-4 lg:gap-6">
-        <Card className="bg-white">
-          <CardHeader className="pb-3">
-            <CardTitle className="text-lg">Task Overview</CardTitle>
+        <Card>
+          <CardHeader>
+            <CardTitle className="text-lg">Search & Filter</CardTitle>
           </CardHeader>
           <CardContent>
-            <div className="space-y-3">
-              <div className="flex justify-between items-center">
-                <span className="text-sm">Not Started</span>
-                <Badge className="bg-gray-100 text-gray-800">
-                  {tasksByStatus['Not Started'].length}
-                </Badge>
-              </div>
-              <div className="flex justify-between items-center">
-                <span className="text-sm">In Progress</span>
-                <Badge className="bg-blue-100 text-blue-800">
-                  {tasksByStatus['In Progress'].length}
-                </Badge>
-              </div>
-              <div className="flex justify-between items-center">
-                <span className="text-sm">Completed</span>
-                <Badge className="bg-green-100 text-green-800">
-                  {tasksByStatus['Completed'].length}
-                </Badge>
-              </div>
-            </div>
+            <Input
+              placeholder="Search tasks..."
+              value={searchTerm}
+              onChange={(e) => setSearchTerm(e.target.value)}
+              className="max-w-md"
+            />
           </CardContent>
         </Card>
 
-        <Card className="bg-white">
-          <CardHeader className="pb-3">
-            <CardTitle className="text-lg">Priority Distribution</CardTitle>
-          </CardHeader>
-          <CardContent>
-            <div className="space-y-3">
-              <div className="flex justify-between items-center">
-                <span className="text-sm">High Priority</span>
-                <Badge className="bg-red-100 text-red-800">
-                  {tasks.filter(t => t.priority === 'High').length}
-                </Badge>
-              </div>
-              <div className="flex justify-between items-center">
-                <span className="text-sm">Medium Priority</span>
-                <Badge className="bg-yellow-100 text-yellow-800">
-                  {tasks.filter(t => t.priority === 'Medium').length}
-                </Badge>
-              </div>
-              <div className="flex justify-between items-center">
-                <span className="text-sm">Low Priority</span>
-                <Badge className="bg-green-100 text-green-800">
-                  {tasks.filter(t => t.priority === 'Low').length}
-                </Badge>
-              </div>
-            </div>
-          </CardContent>
-        </Card>
+        <div className="flex flex-col lg:flex-row gap-4 lg:gap-6 min-h-96">
+          <StatusColumn status="Not Started" tasks={tasksByStatus['Not Started']} />
+          <StatusColumn status="In Progress" tasks={tasksByStatus['In Progress']} />
+          <StatusColumn status="Completed" tasks={tasksByStatus['Completed']} />
+        </div>
 
-        <Card className="bg-white">
-          <CardHeader className="pb-3">
-            <CardTitle className="text-lg">Recent Activity</CardTitle>
-          </CardHeader>
-          <CardContent>
-            <div className="space-y-3">
-              <div className="border-l-4 border-green-500 pl-3">
-                <div className="flex justify-between items-start">
-                  <div>
-                    <h4 className="font-medium text-sm">Task Completed</h4>
-                    <p className="text-xs text-gray-600">Contract review - Mike Johnson</p>
-                  </div>
-                  <span className="text-xs text-gray-500">1h ago</span>
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-4 lg:gap-6">
+          <Card className="bg-white">
+            <CardHeader className="pb-3">
+              <CardTitle className="text-lg">Task Overview</CardTitle>
+            </CardHeader>
+            <CardContent>
+              <div className="space-y-3">
+                <div className="flex justify-between items-center">
+                  <span className="text-sm">Not Started</span>
+                  <Badge className="bg-gray-100 text-gray-800">
+                    {tasksByStatus['Not Started'].length}
+                  </Badge>
+                </div>
+                <div className="flex justify-between items-center">
+                  <span className="text-sm">In Progress</span>
+                  <Badge className="bg-blue-100 text-blue-800">
+                    {tasksByStatus['In Progress'].length}
+                  </Badge>
+                </div>
+                <div className="flex justify-between items-center">
+                  <span className="text-sm">Completed</span>
+                  <Badge className="bg-green-100 text-green-800">
+                    {tasksByStatus['Completed'].length}
+                  </Badge>
                 </div>
               </div>
-              <div className="border-l-4 border-blue-500 pl-3">
-                <div className="flex justify-between items-start">
-                  <div>
-                    <h4 className="font-medium text-sm">Task Created</h4>
-                    <p className="text-xs text-gray-600">Follow up on proposal - John Doe</p>
-                  </div>
-                  <span className="text-xs text-gray-500">2h ago</span>
+            </CardContent>
+          </Card>
+
+          <Card className="bg-white">
+            <CardHeader className="pb-3">
+              <CardTitle className="text-lg">Priority Distribution</CardTitle>
+            </CardHeader>
+            <CardContent>
+              <div className="space-y-3">
+                <div className="flex justify-between items-center">
+                  <span className="text-sm">High Priority</span>
+                  <Badge className="bg-red-100 text-red-800">
+                    {tasks.filter(t => t.priority === 'High').length}
+                  </Badge>
+                </div>
+                <div className="flex justify-between items-center">
+                  <span className="text-sm">Medium Priority</span>
+                  <Badge className="bg-yellow-100 text-yellow-800">
+                    {tasks.filter(t => t.priority === 'Medium').length}
+                  </Badge>
+                </div>
+                <div className="flex justify-between items-center">
+                  <span className="text-sm">Low Priority</span>
+                  <Badge className="bg-green-100 text-green-800">
+                    {tasks.filter(t => t.priority === 'Low').length}
+                  </Badge>
                 </div>
               </div>
-              <div className="border-l-4 border-orange-500 pl-3">
-                <div className="flex justify-between items-start">
-                  <div>
-                    <h4 className="font-medium text-sm">Task Updated</h4>
-                    <p className="text-xs text-gray-600">Prepare demo presentation - Jane Smith</p>
+            </CardContent>
+          </Card>
+
+          <Card className="bg-white">
+            <CardHeader className="pb-3">
+              <CardTitle className="text-lg">Recent Activity</CardTitle>
+            </CardHeader>
+            <CardContent>
+              <div className="space-y-3">
+                <div className="border-l-4 border-green-500 pl-3">
+                  <div className="flex justify-between items-start">
+                    <div>
+                      <h4 className="font-medium text-sm">Task Completed</h4>
+                      <p className="text-xs text-gray-600">Contract review - Mike Johnson</p>
+                    </div>
+                    <span className="text-xs text-gray-500">1h ago</span>
                   </div>
-                  <span className="text-xs text-gray-500">3h ago</span>
+                </div>
+                <div className="border-l-4 border-blue-500 pl-3">
+                  <div className="flex justify-between items-start">
+                    <div>
+                      <h4 className="font-medium text-sm">Task Created</h4>
+                      <p className="text-xs text-gray-600">Follow up on proposal - John Doe</p>
+                    </div>
+                    <span className="text-xs text-gray-500">2h ago</span>
+                  </div>
+                </div>
+                <div className="border-l-4 border-orange-500 pl-3">
+                  <div className="flex justify-between items-start">
+                    <div>
+                      <h4 className="font-medium text-sm">Task Updated</h4>
+                      <p className="text-xs text-gray-600">Prepare demo presentation - Jane Smith</p>
+                    </div>
+                    <span className="text-xs text-gray-500">3h ago</span>
+                  </div>
                 </div>
               </div>
-            </div>
-          </CardContent>
-        </Card>
+            </CardContent>
+          </Card>
+        </div>
       </div>
     </div>
   );

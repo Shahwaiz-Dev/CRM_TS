@@ -9,6 +9,9 @@ import { TasksView } from '@/components/crm/TasksView';
 import { UsersView } from '@/components/crm/UsersView';
 import { DashboardOverview } from '@/components/crm/DashboardOverview';
 import { OpportunitiesView } from '../components/crm/OpportunitiesView';
+import Employees from './Employees';
+import Payroll from './Payroll';
+import Attendance from './Attendance';
 import { AnimatePresence, motion } from 'framer-motion';
 
 const Dashboard = () => {
@@ -36,6 +39,9 @@ const Dashboard = () => {
                   <Route path="/accounts" element={<AccountsView />} />
                   <Route path="/tasks" element={<TasksView />} />
                   <Route path="/users" element={<UsersView />} />
+                  <Route path="/hr/employees" element={<Employees />} />
+                  <Route path="/hr/payroll" element={<Payroll />} />
+                  <Route path="/hr/attendance" element={<Attendance />} />
                 </Routes>
               </motion.div>
             </AnimatePresence>
