@@ -8,7 +8,6 @@ import NotFound from "./pages/NotFound";
 import Login from './pages/Login';
 import Signup from './pages/Signup';
 import Index from './pages/Index';
-import { ThemeProvider } from "@/components/ui/theme-provider";
 
 const queryClient = new QueryClient();
 
@@ -18,22 +17,20 @@ function PrivateRoute({ children }: { children: JSX.Element }) {
 }
 
 const App = () => (
-  <ThemeProvider>
-    <QueryClientProvider client={queryClient}>
-      <TooltipProvider>
-        <Toaster />
-        <Sonner />
-        <BrowserRouter>
-          <Routes>
-            <Route path="/login" element={<Login />} />
-            <Route path="/signup" element={<Signup />} />
-            <Route path="/*" element={<PrivateRoute><Dashboard /></PrivateRoute>} />
-            <Route path="*" element={<Index />} />
-          </Routes>
-        </BrowserRouter>
-      </TooltipProvider>
-    </QueryClientProvider>
-  </ThemeProvider>
+  <QueryClientProvider client={queryClient}>
+    <TooltipProvider>
+      <Toaster />
+      <Sonner />
+      <BrowserRouter>
+        <Routes>
+          <Route path="/login" element={<Login />} />
+          <Route path="/signup" element={<Signup />} />
+          <Route path="/*" element={<PrivateRoute><Dashboard /></PrivateRoute>} />
+          <Route path="*" element={<Index />} />
+        </Routes>
+      </BrowserRouter>
+    </TooltipProvider>
+  </QueryClientProvider>
 );
 
 export default App;
