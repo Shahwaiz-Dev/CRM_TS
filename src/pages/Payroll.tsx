@@ -1,4 +1,5 @@
-import React from 'react';
+import React, { useEffect, useState } from "react";
+import { getPayroll, addPayroll, updatePayroll, deletePayroll } from "@/lib/firebase";
 import { Search, Filter, Download, Edit, Check, DollarSign } from 'lucide-react';
 
 const payrollData = [
@@ -61,20 +62,87 @@ function downloadCSV(csv, filename) {
 }
 
 export default function Payroll() {
+  const [payroll, setPayroll] = useState([]);
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState("");
+  const [newPayroll, setNewPayroll] = useState({ employeeId: "", month: "", amount: 0, status: "Pending" });
+  const [editId, setEditId] = useState(null);
+  const [editPayroll, setEditPayroll] = useState({ employeeId: "", month: "", amount: 0, status: "Pending" });
+
+  const fetchPayroll = async () => {
+    setLoading(true);
+    setError("");
+    try {
+      setPayroll(await getPayroll());
+    } catch (e) {
+      setError("Failed to fetch payroll");
+    }
+    setLoading(false);
+  };
+
+  useEffect(() => { fetchPayroll(); }, []);
+
+  const handleAdd = async () => {
+    setLoading(true);
+    setError("");
+    try {
+      await addPayroll(newPayroll);
+      setNewPayroll({ employeeId: "", month: "", amount: 0, status: "Pending" });
+      fetchPayroll();
+    } catch (e) {
+      setError("Failed to add payroll");
+    }
+    setLoading(false);
+  };
+
+  const handleEdit = (p) => {
+    setEditId(p.id);
+    setEditPayroll(p);
+  };
+
+  const handleUpdate = async () => {
+    setLoading(true);
+    setError("");
+    try {
+      await updatePayroll(editId, editPayroll);
+      setEditId(null);
+      fetchPayroll();
+    } catch (e) {
+      setError("Failed to update payroll");
+    }
+    setLoading(false);
+  };
+
+  const handleDelete = async (id) => {
+    setLoading(true);
+    setError("");
+    try {
+      await deletePayroll(id);
+      fetchPayroll();
+    } catch (e) {
+      setError("Failed to delete payroll");
+    }
+    setLoading(false);
+  };
+
   const handleExport = () => {
     const csv = toCSV(payrollData);
     downloadCSV(csv, 'payroll_report.csv');
   };
+
   const handleProcess = () => {
     window.alert('Payroll processed successfully!');
   };
+
   const handleRowDownload = (row) => {
     const csv = toCSV([row]);
     downloadCSV(csv, `${row.name.replace(/\s+/g, '_').toLowerCase()}_payroll.csv`);
   };
+
   const handleRowCheck = (row) => {
     window.alert(`Payroll for ${row.name} is already marked as paid.`);
   };
+
   return (
     <div className="p-6 md:p-10">
       <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4 mb-6">
@@ -141,7 +209,7 @@ export default function Payroll() {
               </tr>
             </thead>
             <tbody>
-              {payrollData.map((emp, i) => (
+              {payroll.map((emp, i) => (
                 <tr key={i} className="border-b hover:bg-gray-50">
                   <td className="py-3 px-3 flex items-center gap-3 min-w-[200px]">
                     <div className="h-10 w-10 rounded-full bg-gray-200 flex items-center justify-center font-bold text-gray-700">{emp.initials}</div>
@@ -166,6 +234,67 @@ export default function Payroll() {
               ))}
             </tbody>
           </table>
+        </div>
+      </div>
+      <div className="p-4 max-w-2xl mx-auto">
+        <h2 className="text-2xl font-bold mb-4">Payroll</h2>
+        {error && <div className="text-red-500 mb-2">{error}</div>}
+        {loading && <div className="mb-2">Loading...</div>}
+        <table className="w-full border mb-4">
+          <thead>
+            <tr className="bg-gray-100">
+              <th className="p-2 border">Employee ID</th>
+              <th className="p-2 border">Month</th>
+              <th className="p-2 border">Amount</th>
+              <th className="p-2 border">Status</th>
+              <th className="p-2 border">Actions</th>
+            </tr>
+          </thead>
+          <tbody>
+            {payroll.map(p => (
+              <tr key={p.id}>
+                {editId === p.id ? (
+                  <>
+                    <td className="border p-1"><input value={editPayroll.employeeId} onChange={e => setEditPayroll({ ...editPayroll, employeeId: e.target.value })} /></td>
+                    <td className="border p-1"><input value={editPayroll.month} onChange={e => setEditPayroll({ ...editPayroll, month: e.target.value })} /></td>
+                    <td className="border p-1"><input type="number" value={editPayroll.amount} onChange={e => setEditPayroll({ ...editPayroll, amount: Number(e.target.value) })} /></td>
+                    <td className="border p-1">
+                      <select value={editPayroll.status} onChange={e => setEditPayroll({ ...editPayroll, status: e.target.value })}>
+                        <option value="Pending">Pending</option>
+                        <option value="Paid">Paid</option>
+                      </select>
+                    </td>
+                    <td className="border p-1">
+                      <button onClick={handleUpdate} className="text-blue-600 mr-2">Save</button>
+                      <button onClick={() => setEditId(null)} className="text-gray-600">Cancel</button>
+                    </td>
+                  </>
+                ) : (
+                  <>
+                    <td className="border p-1">{p.employeeId}</td>
+                    <td className="border p-1">{p.month}</td>
+                    <td className="border p-1">{p.amount}</td>
+                    <td className="border p-1">{p.status}</td>
+                    <td className="border p-1">
+                      <button onClick={() => handleEdit(p)} className="text-blue-600 mr-2">Edit</button>
+                      <button onClick={() => handleDelete(p.id)} className="text-red-600">Delete</button>
+                    </td>
+                  </>
+                )}
+              </tr>
+            ))}
+          </tbody>
+        </table>
+        <div className="mb-2 font-semibold">Add Payroll</div>
+        <div className="flex flex-wrap gap-2 mb-4">
+          <input placeholder="Employee ID" value={newPayroll.employeeId} onChange={e => setNewPayroll({ ...newPayroll, employeeId: e.target.value })} className="border p-1 rounded" />
+          <input placeholder="Month" value={newPayroll.month} onChange={e => setNewPayroll({ ...newPayroll, month: e.target.value })} className="border p-1 rounded" />
+          <input type="number" placeholder="Amount" value={newPayroll.amount} onChange={e => setNewPayroll({ ...newPayroll, amount: Number(e.target.value) })} className="border p-1 rounded" />
+          <select value={newPayroll.status} onChange={e => setNewPayroll({ ...newPayroll, status: e.target.value })} className="border p-1 rounded">
+            <option value="Pending">Pending</option>
+            <option value="Paid">Paid</option>
+          </select>
+          <button onClick={handleAdd} className="bg-blue-600 text-white px-3 py-1 rounded">Add</button>
         </div>
       </div>
     </div>

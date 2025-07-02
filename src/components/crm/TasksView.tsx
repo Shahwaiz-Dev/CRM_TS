@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -8,6 +8,8 @@ import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Plus, Calendar, User, AlertCircle } from 'lucide-react';
+import { collection, getDocs, addDoc, updateDoc, deleteDoc, doc } from 'firebase/firestore';
+import { db } from '../../lib/firebase';
 
 interface Task {
   id: string;
@@ -20,41 +22,8 @@ interface Task {
   account: string;
 }
 
-const sampleTasks: Task[] = [
-  {
-    id: '1',
-    title: 'Follow up on proposal',
-    description: 'Call client to discuss proposal details',
-    assignee: 'John Doe',
-    priority: 'High',
-    status: 'Not Started',
-    dueDate: '2024-01-20',
-    account: 'Acme Corporation'
-  },
-  {
-    id: '2',
-    title: 'Prepare demo presentation',
-    description: 'Create demo for TechStart Inc',
-    assignee: 'Jane Smith',
-    priority: 'Medium',
-    status: 'In Progress',
-    dueDate: '2024-01-18',
-    account: 'TechStart Inc'
-  },
-  {
-    id: '3',
-    title: 'Contract review',
-    description: 'Review and send contract to Global Solutions',
-    assignee: 'Mike Johnson',
-    priority: 'Low',
-    status: 'Completed',
-    dueDate: '2024-01-15',
-    account: 'Global Solutions Ltd'
-  }
-];
-
 export function TasksView() {
-  const [tasks, setTasks] = useState(sampleTasks);
+  const [tasks, setTasks] = useState<Task[]>([]);
   const [searchTerm, setSearchTerm] = useState('');
   const [isDialogOpen, setIsDialogOpen] = useState(false);
   const [newTask, setNewTask] = useState({
@@ -66,6 +35,68 @@ export function TasksView() {
     account: ''
   });
   const [dragOverStatus, setDragOverStatus] = useState<string | null>(null);
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+
+  // Fetch tasks from Firestore
+  const fetchTasks = async () => {
+    setLoading(true);
+    setError(null);
+    try {
+      const querySnapshot = await getDocs(collection(db, 'tasks'));
+      setTasks(querySnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as Task)));
+    } catch (e: any) {
+      setError(e.message || 'Failed to fetch tasks');
+    }
+    setLoading(false);
+  };
+
+  useEffect(() => {
+    fetchTasks();
+  }, []);
+
+  // Add task to Firestore
+  const handleAddTask = async () => {
+    if (newTask.title && newTask.assignee) {
+      setLoading(true);
+      setError(null);
+      try {
+        await addDoc(collection(db, 'tasks'), { ...newTask, status: 'Not Started' });
+        setNewTask({ title: '', description: '', assignee: '', priority: 'Medium', dueDate: '', account: '' });
+        setIsDialogOpen(false);
+        fetchTasks();
+      } catch (e: any) {
+        setError(e.message || 'Failed to add task');
+      }
+      setLoading(false);
+    }
+  };
+
+  // Update task status in Firestore
+  const moveTask = async (taskId: string, newStatus: 'Not Started' | 'In Progress' | 'Completed') => {
+    setLoading(true);
+    setError(null);
+    try {
+      await updateDoc(doc(db, 'tasks', taskId), { status: newStatus });
+      fetchTasks();
+    } catch (e: any) {
+      setError(e.message || 'Failed to update task');
+    }
+    setLoading(false);
+  };
+
+  // Delete task from Firestore
+  const handleDeleteTask = async (taskId: string) => {
+    setLoading(true);
+    setError(null);
+    try {
+      await deleteDoc(doc(db, 'tasks', taskId));
+      fetchTasks();
+    } catch (e: any) {
+      setError(e.message || 'Failed to delete task');
+    }
+    setLoading(false);
+  };
 
   const filteredTasks = tasks.filter(task => 
     task.title.toLowerCase().includes(searchTerm.toLowerCase()) ||
@@ -94,32 +125,6 @@ export function TasksView() {
       case 'Completed': return 'bg-green-50 border-green-200';
       default: return 'bg-gray-50 border-gray-200';
     }
-  };
-
-  const handleAddTask = () => {
-    if (newTask.title && newTask.assignee) {
-      const task: Task = {
-        id: Date.now().toString(),
-        ...newTask,
-        status: 'Not Started'
-      };
-      setTasks([...tasks, task]);
-      setNewTask({
-        title: '',
-        description: '',
-        assignee: '',
-        priority: 'Medium',
-        dueDate: '',
-        account: ''
-      });
-      setIsDialogOpen(false);
-    }
-  };
-
-  const moveTask = (taskId: string, newStatus: 'Not Started' | 'In Progress' | 'Completed') => {
-    setTasks(tasks.map(task => 
-      task.id === taskId ? { ...task, status: newStatus } : task
-    ));
   };
 
   const handleDragStart = (e: React.DragEvent, taskId: string) => {
@@ -201,9 +206,12 @@ export function TasksView() {
                 className="text-xs h-6 px-2"
                 onClick={() => moveTask(task.id, 'Completed')}
               >
-                Complete
+                Done
               </Button>
             )}
+            <Button size="sm" variant="destructive" className="text-xs h-6 px-2" onClick={() => handleDeleteTask(task.id)}>
+              Delete
+            </Button>
           </div>
         </div>
       </CardContent>
@@ -212,96 +220,39 @@ export function TasksView() {
 
   const StatusColumn = ({ status, tasks: columnTasks }: { status: string, tasks: Task[] }) => (
     <div
-      className={`flex-1 min-w-0 transition-colors ${dragOverStatus === status ? 'bg-blue-100' : ''}`}
+      className={`flex-1 min-w-[300px] bg-white rounded-lg border p-4 ${dragOverStatus === status ? 'ring-2 ring-blue-400' : ''}`}
       onDragOver={e => handleDragOver(e, status)}
       onDrop={e => handleDrop(e, status as any)}
       onDragLeave={handleDragLeave}
     >
-      <Card className={`h-full ${getStatusColor(status)}`}>
-        <CardHeader className="pb-3">
-          <div className="flex items-center justify-between">
-            <CardTitle className="text-sm font-semibold">{status}</CardTitle>
-            <Badge variant="secondary" className="text-xs">
-              {columnTasks.length}
-            </Badge>
-          </div>
-        </CardHeader>
-        <CardContent className="pt-0">
-          <div className="space-y-3 max-h-96 overflow-y-auto">
-            {columnTasks.map((task) => (
-              <TaskCard key={task.id} task={task} />
-            ))}
-            {columnTasks.length === 0 && (
-              <div className="text-center py-8 text-gray-400">
-                <AlertCircle className="w-8 h-8 mx-auto mb-2 opacity-50" />
-                <p className="text-sm">No tasks</p>
-              </div>
-            )}
-          </div>
-        </CardContent>
-      </Card>
+      <h3 className={`font-semibold mb-4 text-lg ${getStatusColor(status)}`}>{status}</h3>
+      {columnTasks.map(task => <TaskCard key={task.id} task={task} />)}
     </div>
   );
 
   return (
     <div className="p-6 md:p-10">
-      <div className="space-y-6">
-        <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
-          <h1 className="text-2xl lg:text-3xl font-bold text-gray-900">Task Management</h1>
+      <div className="flex justify-between items-center mb-6">
+        <h1 className="text-3xl font-bold">Tasks</h1>
           <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
             <DialogTrigger asChild>
-              <Button className="w-full sm:w-auto bg-blue-600 hover:bg-blue-700">
-                <Plus className="w-4 h-4 mr-2" />
-                Add Task
-              </Button>
+            <Button size="sm" className="gap-2"><Plus className="w-4 h-4" /> Add Task</Button>
             </DialogTrigger>
-            <DialogContent className="max-w-md">
+          <DialogContent>
               <DialogHeader>
-                <DialogTitle>Create New Task</DialogTitle>
+              <DialogTitle>Add New Task</DialogTitle>
               </DialogHeader>
               <div className="space-y-4">
-                <div>
-                  <Label htmlFor="title">Title</Label>
-                  <Input
-                    id="title"
-                    value={newTask.title}
-                    onChange={(e) => setNewTask({...newTask, title: e.target.value})}
-                    placeholder="Enter task title..."
-                  />
-                </div>
-                <div>
-                  <Label htmlFor="description">Description</Label>
-                  <Textarea
-                    id="description"
-                    value={newTask.description}
-                    onChange={(e) => setNewTask({...newTask, description: e.target.value})}
-                    placeholder="Enter task description..."
-                    className="min-h-20"
-                  />
-                </div>
-                <div>
-                  <Label htmlFor="assignee">Assignee</Label>
-                  <Input
-                    id="assignee"
-                    value={newTask.assignee}
-                    onChange={(e) => setNewTask({...newTask, assignee: e.target.value})}
-                    placeholder="Assign to..."
-                  />
-                </div>
-                <div>
-                  <Label htmlFor="account">Account</Label>
-                  <Input
-                    id="account"
-                    value={newTask.account}
-                    onChange={(e) => setNewTask({...newTask, account: e.target.value})}
-                    placeholder="Related account..."
-                  />
-                </div>
-                <div>
-                  <Label htmlFor="priority">Priority</Label>
-                  <Select value={newTask.priority} onValueChange={(value: 'High' | 'Medium' | 'Low') => setNewTask({...newTask, priority: value})}>
-                    <SelectTrigger>
-                      <SelectValue />
+              <Label>Title</Label>
+              <Input value={newTask.title} onChange={e => setNewTask({ ...newTask, title: e.target.value })} />
+              <Label>Description</Label>
+              <Textarea value={newTask.description} onChange={e => setNewTask({ ...newTask, description: e.target.value })} />
+              <Label>Assignee</Label>
+              <Input value={newTask.assignee} onChange={e => setNewTask({ ...newTask, assignee: e.target.value })} />
+              <Label>Priority</Label>
+              <Select value={newTask.priority} onValueChange={v => setNewTask({ ...newTask, priority: v as any })}>
+                <SelectTrigger className="w-full">
+                  <SelectValue placeholder="Select priority" />
                     </SelectTrigger>
                     <SelectContent>
                       <SelectItem value="High">High</SelectItem>
@@ -309,143 +260,21 @@ export function TasksView() {
                       <SelectItem value="Low">Low</SelectItem>
                     </SelectContent>
                   </Select>
-                </div>
-                <div>
-                  <Label htmlFor="dueDate">Due Date</Label>
-                  <Input
-                    id="dueDate"
-                    type="date"
-                    value={newTask.dueDate}
-                    onChange={(e) => setNewTask({...newTask, dueDate: e.target.value})}
-                  />
-                </div>
-                <div className="flex gap-2 pt-4">
-                  <Button onClick={handleAddTask} className="flex-1 bg-blue-600 hover:bg-blue-700">
-                    Create Task
-                  </Button>
-                  <Button variant="outline" onClick={() => setIsDialogOpen(false)} className="flex-1">
-                    Cancel
-                  </Button>
-                </div>
+              <Label>Due Date</Label>
+              <Input type="date" value={newTask.dueDate} onChange={e => setNewTask({ ...newTask, dueDate: e.target.value })} />
+              <Label>Account</Label>
+              <Input value={newTask.account} onChange={e => setNewTask({ ...newTask, account: e.target.value })} />
+              <Button onClick={handleAddTask} disabled={loading}>Add Task</Button>
               </div>
             </DialogContent>
           </Dialog>
         </div>
-
-        <Card>
-          <CardHeader>
-            <CardTitle className="text-lg">Search & Filter</CardTitle>
-          </CardHeader>
-          <CardContent>
-            <Input
-              placeholder="Search tasks..."
-              value={searchTerm}
-              onChange={(e) => setSearchTerm(e.target.value)}
-              className="max-w-md"
-            />
-          </CardContent>
-        </Card>
-
-        <div className="flex flex-col lg:flex-row gap-4 lg:gap-6 min-h-96">
+      {error && <div className="text-red-600 mb-4 flex items-center gap-2"><AlertCircle className="w-4 h-4" /> {error}</div>}
+      {loading && <div className="mb-4">Loading...</div>}
+      <div className="flex gap-4 overflow-x-auto">
           <StatusColumn status="Not Started" tasks={tasksByStatus['Not Started']} />
           <StatusColumn status="In Progress" tasks={tasksByStatus['In Progress']} />
           <StatusColumn status="Completed" tasks={tasksByStatus['Completed']} />
-        </div>
-
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-4 lg:gap-6">
-          <Card className="bg-white">
-            <CardHeader className="pb-3">
-              <CardTitle className="text-lg">Task Overview</CardTitle>
-            </CardHeader>
-            <CardContent>
-              <div className="space-y-3">
-                <div className="flex justify-between items-center">
-                  <span className="text-sm">Not Started</span>
-                  <Badge className="bg-gray-100 text-gray-800">
-                    {tasksByStatus['Not Started'].length}
-                  </Badge>
-                </div>
-                <div className="flex justify-between items-center">
-                  <span className="text-sm">In Progress</span>
-                  <Badge className="bg-blue-100 text-blue-800">
-                    {tasksByStatus['In Progress'].length}
-                  </Badge>
-                </div>
-                <div className="flex justify-between items-center">
-                  <span className="text-sm">Completed</span>
-                  <Badge className="bg-green-100 text-green-800">
-                    {tasksByStatus['Completed'].length}
-                  </Badge>
-                </div>
-              </div>
-            </CardContent>
-          </Card>
-
-          <Card className="bg-white">
-            <CardHeader className="pb-3">
-              <CardTitle className="text-lg">Priority Distribution</CardTitle>
-            </CardHeader>
-            <CardContent>
-              <div className="space-y-3">
-                <div className="flex justify-between items-center">
-                  <span className="text-sm">High Priority</span>
-                  <Badge className="bg-red-100 text-red-800">
-                    {tasks.filter(t => t.priority === 'High').length}
-                  </Badge>
-                </div>
-                <div className="flex justify-between items-center">
-                  <span className="text-sm">Medium Priority</span>
-                  <Badge className="bg-yellow-100 text-yellow-800">
-                    {tasks.filter(t => t.priority === 'Medium').length}
-                  </Badge>
-                </div>
-                <div className="flex justify-between items-center">
-                  <span className="text-sm">Low Priority</span>
-                  <Badge className="bg-green-100 text-green-800">
-                    {tasks.filter(t => t.priority === 'Low').length}
-                  </Badge>
-                </div>
-              </div>
-            </CardContent>
-          </Card>
-
-          <Card className="bg-white">
-            <CardHeader className="pb-3">
-              <CardTitle className="text-lg">Recent Activity</CardTitle>
-            </CardHeader>
-            <CardContent>
-              <div className="space-y-3">
-                <div className="border-l-4 border-green-500 pl-3">
-                  <div className="flex justify-between items-start">
-                    <div>
-                      <h4 className="font-medium text-sm">Task Completed</h4>
-                      <p className="text-xs text-gray-600">Contract review - Mike Johnson</p>
-                    </div>
-                    <span className="text-xs text-gray-500">1h ago</span>
-                  </div>
-                </div>
-                <div className="border-l-4 border-blue-500 pl-3">
-                  <div className="flex justify-between items-start">
-                    <div>
-                      <h4 className="font-medium text-sm">Task Created</h4>
-                      <p className="text-xs text-gray-600">Follow up on proposal - John Doe</p>
-                    </div>
-                    <span className="text-xs text-gray-500">2h ago</span>
-                  </div>
-                </div>
-                <div className="border-l-4 border-orange-500 pl-3">
-                  <div className="flex justify-between items-start">
-                    <div>
-                      <h4 className="font-medium text-sm">Task Updated</h4>
-                      <p className="text-xs text-gray-600">Prepare demo presentation - Jane Smith</p>
-                    </div>
-                    <span className="text-xs text-gray-500">3h ago</span>
-                  </div>
-                </div>
-              </div>
-            </CardContent>
-          </Card>
-        </div>
       </div>
     </div>
   );

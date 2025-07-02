@@ -1,4 +1,5 @@
-import React, { useState } from 'react';
+import React, { useEffect, useState } from "react";
+import { getAttendance, addAttendance, updateAttendance, deleteAttendance } from "@/lib/firebase";
 import { Search, Filter, Calendar as CalendarIcon, Plus } from 'lucide-react';
 import { Calendar } from '@/components/ui/calendar';
 
@@ -45,10 +46,72 @@ const initialLeaveRequests = [
 const today = new Date();
 
 export default function Attendance() {
+  const [attendance, setAttendance] = useState([]);
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState("");
+  const [newAttendance, setNewAttendance] = useState({ employeeId: "", date: "", status: "Present" });
+  const [editId, setEditId] = useState(null);
+  const [editAttendance, setEditAttendance] = useState({ employeeId: "", date: "", status: "Present" });
   const [selectedDate, setSelectedDate] = useState(today);
   const [leaveRequests, setLeaveRequests] = useState(initialLeaveRequests);
   const [search, setSearch] = useState('');
   const [filterOpen, setFilterOpen] = useState(false);
+
+  const fetchAttendance = async () => {
+    setLoading(true);
+    setError("");
+    try {
+      setAttendance(await getAttendance());
+    } catch (e) {
+      setError("Failed to fetch attendance");
+    }
+    setLoading(false);
+  };
+
+  useEffect(() => { fetchAttendance(); }, []);
+
+  const handleAdd = async () => {
+    setLoading(true);
+    setError("");
+    try {
+      await addAttendance(newAttendance);
+      setNewAttendance({ employeeId: "", date: "", status: "Present" });
+      fetchAttendance();
+    } catch (e) {
+      setError("Failed to add attendance");
+    }
+    setLoading(false);
+  };
+
+  const handleEdit = (a) => {
+    setEditId(a.id);
+    setEditAttendance(a);
+  };
+
+  const handleUpdate = async () => {
+    setLoading(true);
+    setError("");
+    try {
+      await updateAttendance(editId, editAttendance);
+      setEditId(null);
+      fetchAttendance();
+    } catch (e) {
+      setError("Failed to update attendance");
+    }
+    setLoading(false);
+  };
+
+  const handleDelete = async (id) => {
+    setLoading(true);
+    setError("");
+    try {
+      await deleteAttendance(id);
+      fetchAttendance();
+    } catch (e) {
+      setError("Failed to delete attendance");
+    }
+    setLoading(false);
+  };
 
   const handleApprove = (id) => {
     setLeaveRequests(reqs => reqs.map(r => r.id === id ? { ...r, status: 'Approved' } : r));
@@ -197,6 +260,66 @@ export default function Attendance() {
               </div>
             ))}
           </div>
+        </div>
+      </div>
+      {/* Attendance Table */}
+      <div className="mt-8">
+        <h2 className="text-2xl font-bold mb-4">Attendance</h2>
+        {error && <div className="text-red-500 mb-2">{error}</div>}
+        {loading && <div className="mb-2">Loading...</div>}
+        <table className="w-full border mb-4">
+          <thead>
+            <tr className="bg-gray-100">
+              <th className="p-2 border">Employee ID</th>
+              <th className="p-2 border">Date</th>
+              <th className="p-2 border">Status</th>
+              <th className="p-2 border">Actions</th>
+            </tr>
+          </thead>
+          <tbody>
+            {attendance.map(a => (
+              <tr key={a.id}>
+                {editId === a.id ? (
+                  <>
+                    <td className="border p-1"><input value={editAttendance.employeeId} onChange={e => setEditAttendance({ ...editAttendance, employeeId: e.target.value })} /></td>
+                    <td className="border p-1"><input type="date" value={editAttendance.date} onChange={e => setEditAttendance({ ...editAttendance, date: e.target.value })} /></td>
+                    <td className="border p-1">
+                      <select value={editAttendance.status} onChange={e => setEditAttendance({ ...editAttendance, status: e.target.value })}>
+                        <option value="Present">Present</option>
+                        <option value="Absent">Absent</option>
+                        <option value="Leave">Leave</option>
+                      </select>
+                    </td>
+                    <td className="border p-1">
+                      <button onClick={handleUpdate} className="text-blue-600 mr-2">Save</button>
+                      <button onClick={() => setEditId(null)} className="text-gray-600">Cancel</button>
+                    </td>
+                  </>
+                ) : (
+                  <>
+                    <td className="border p-1">{a.employeeId}</td>
+                    <td className="border p-1">{a.date}</td>
+                    <td className="border p-1">{a.status}</td>
+                    <td className="border p-1">
+                      <button onClick={() => handleEdit(a)} className="text-blue-600 mr-2">Edit</button>
+                      <button onClick={() => handleDelete(a.id)} className="text-red-600">Delete</button>
+                    </td>
+                  </>
+                )}
+              </tr>
+            ))}
+          </tbody>
+        </table>
+        <div className="mb-2 font-semibold">Add Attendance</div>
+        <div className="flex flex-wrap gap-2 mb-4">
+          <input placeholder="Employee ID" value={newAttendance.employeeId} onChange={e => setNewAttendance({ ...newAttendance, employeeId: e.target.value })} className="border p-1 rounded" />
+          <input type="date" placeholder="Date" value={newAttendance.date} onChange={e => setNewAttendance({ ...newAttendance, date: e.target.value })} className="border p-1 rounded" />
+          <select value={newAttendance.status} onChange={e => setNewAttendance({ ...newAttendance, status: e.target.value })} className="border p-1 rounded">
+            <option value="Present">Present</option>
+            <option value="Absent">Absent</option>
+            <option value="Leave">Leave</option>
+          </select>
+          <button onClick={handleAdd} className="bg-blue-600 text-white px-3 py-1 rounded">Add</button>
         </div>
       </div>
     </div>
