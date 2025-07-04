@@ -1,6 +1,6 @@
 import React from 'react';
 import { NavLink, useLocation } from 'react-router-dom';
-import { Users, User, List, Calendar, Trophy, Briefcase, DollarSign, Clock } from 'lucide-react';
+import { Users, User, List, Calendar, Trophy, Briefcase, DollarSign, Clock, AlertCircle } from 'lucide-react';
 import {
   Sidebar,
   SidebarContent,
@@ -17,6 +17,9 @@ import { useAuth } from '@/contexts/AuthContext';
 const navigationItems = [
   { title: 'Dashboard', url: '/', icon: Calendar, roles: ['admin', 'sales', 'new user'] },
   { title: 'Accounts', url: '/accounts', icon: Users, roles: ['admin', 'sales', 'new user'] },
+  { title: 'Contacts', url: '/contacts', icon: User, roles: ['admin', 'sales', 'new user'] },
+  { title: 'Cases', url: '/cases', icon: AlertCircle, roles: ['admin', 'sales', 'new user'] },
+  { title: 'Deals', url: '/deals', icon: DollarSign, roles: ['admin', 'sales', 'new user'] },
   { title: 'Opportunities', url: '/opportunities', icon: Trophy, roles: ['admin', 'sales', 'new user'] },
   { title: 'Sales Pipeline', url: '/pipeline', icon: List, roles: ['admin', 'sales', 'new user'] },
   { title: 'Tasks', url: '/tasks', icon: List, roles: ['admin', 'sales', 'new user'] },

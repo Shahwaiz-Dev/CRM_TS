@@ -2,7 +2,7 @@ import { initializeApp } from "firebase/app";
 import { getFirestore } from "firebase/firestore";
 import { getAuth } from "firebase/auth";
 import { getAnalytics } from "firebase/analytics";
-import { collection, getDocs, addDoc, updateDoc, deleteDoc, doc } from 'firebase/firestore';
+import { collection, getDocs, addDoc, updateDoc, deleteDoc, doc, query, where } from 'firebase/firestore';
 
 const firebaseConfig = {
   apiKey: "AIzaSyDy6Fqr8L-3PYEFeh0OWtux-xEFpDbj9XY",
@@ -109,4 +109,102 @@ export async function updateAccount(id, data) {
 }
 export async function deleteAccount(id) {
   return await deleteDoc(doc(db, 'accounts', id));
-} 
+}
+
+// Add contact to Firestore
+export const addContact = async (contactData) => {
+  try {
+    const docRef = await addDoc(collection(db, 'contacts'), {
+      ...contactData,
+      createdAt: new Date(),
+      updatedAt: new Date()
+    });
+    return docRef.id;
+  } catch (error) {
+    console.error('Error adding contact:', error);
+    throw error;
+  }
+};
+
+// Add case to Firestore
+export const addCase = async (caseData) => {
+  try {
+    const docRef = await addDoc(collection(db, 'cases'), {
+      ...caseData,
+      createdAt: new Date(),
+      updatedAt: new Date()
+    });
+    return docRef.id;
+  } catch (error) {
+    console.error('Error adding case:', error);
+    throw error;
+  }
+};
+
+// Get all contacts
+export const getContacts = async () => {
+  try {
+    const querySnapshot = await getDocs(collection(db, 'contacts'));
+    return querySnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+  } catch (error) {
+    console.error('Error getting contacts:', error);
+    throw error;
+  }
+};
+
+// Update contact in Firestore
+export const updateContact = async (id: string, contactData: any) => {
+  try {
+    await updateDoc(doc(db, 'contacts', id), {
+      ...contactData,
+      updatedAt: new Date()
+    });
+  } catch (error) {
+    console.error('Error updating contact:', error);
+    throw error;
+  }
+};
+
+// Delete contact from Firestore
+export const deleteContact = async (id: string) => {
+  try {
+    await deleteDoc(doc(db, 'contacts', id));
+  } catch (error) {
+    console.error('Error deleting contact:', error);
+    throw error;
+  }
+};
+
+// Get all cases
+export const getCases = async () => {
+  try {
+    const querySnapshot = await getDocs(collection(db, 'cases'));
+    return querySnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+  } catch (error) {
+    console.error('Error getting cases:', error);
+    throw error;
+  }
+};
+
+// Update case in Firestore
+export const updateCase = async (id: string, caseData: any) => {
+  try {
+    await updateDoc(doc(db, 'cases', id), {
+      ...caseData,
+      updatedAt: new Date()
+    });
+  } catch (error) {
+    console.error('Error updating case:', error);
+    throw error;
+  }
+};
+
+// Delete case from Firestore
+export const deleteCase = async (id: string) => {
+  try {
+    await deleteDoc(doc(db, 'cases', id));
+  } catch (error) {
+    console.error('Error deleting case:', error);
+    throw error;
+  }
+}; 

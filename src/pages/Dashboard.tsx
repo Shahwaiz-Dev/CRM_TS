@@ -9,6 +9,9 @@ import { TasksView } from '@/components/crm/TasksView';
 import { UsersView } from '@/components/crm/UsersView';
 import { DashboardOverview } from '@/components/crm/DashboardOverview';
 import { OpportunitiesView } from '../components/crm/OpportunitiesView';
+import { ContactsView } from '@/components/crm/ContactsView';
+import { CasesView } from '@/components/crm/CasesView';
+import { DealsView } from '@/components/crm/DealsView';
 import Employees from './Employees';
 import Payroll from './Payroll';
 import Attendance from './Attendance';
@@ -56,6 +59,21 @@ const Dashboard = () => {
                   <Route path="/accounts" element={
                     <RequireRole allowedRoles={['admin', 'sales']}>
                       <AccountsView />
+                    </RequireRole>
+                  } />
+                  <Route path="/contacts" element={
+                    <RequireRole allowedRoles={['admin', 'sales']}>
+                      <ContactsView />
+                    </RequireRole>
+                  } />
+                  <Route path="/cases" element={
+                    <RequireRole allowedRoles={['admin', 'sales']}>
+                      <CasesView />
+                    </RequireRole>
+                  } />
+                  <Route path="/deals" element={
+                    <RequireRole allowedRoles={['admin', 'sales']}>
+                      <DealsView />
                     </RequireRole>
                   } />
                   <Route path="/tasks" element={

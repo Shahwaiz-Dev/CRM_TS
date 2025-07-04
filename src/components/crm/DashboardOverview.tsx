@@ -6,9 +6,25 @@ import { collection, getDocs, query, where, orderBy, limit } from 'firebase/fire
 import { db } from '../../lib/firebase';
 import { Loader2 } from 'lucide-react';
 
+interface Deal {
+  id: string;
+  title?: string;
+  company?: string;
+  value?: number;
+  stage?: string;
+  priority?: number;
+  assignee?: string;
+  type?: string;
+  description?: string;
+  closeDate?: string;
+  closedAt?: Date;
+  createdAt?: Date;
+  updatedAt?: Date;
+}
+
 export function DashboardOverview() {
   const [leads, setLeads] = useState<any[]>([]);
-  const [deals, setDeals] = useState<any[]>([]);
+  const [deals, setDeals] = useState<Deal[]>([]);
   const [tasks, setTasks] = useState<any[]>([]);
   const [activities, setActivities] = useState<any[]>([]);
 
@@ -25,21 +41,68 @@ export function DashboardOverview() {
 
   useEffect(() => {
     const fetchData = async () => {
-      const leadsSnap = await getDocs(collection(db, 'leads'));
-      setLeads(leadsSnap.docs.map(doc => ({ id: doc.id, ...doc.data() })));
-      const dealsSnap = await getDocs(collection(db, 'deals'));
-      setDeals(dealsSnap.docs.map(doc => ({ id: doc.id, ...doc.data() })));
-      const tasksSnap = await getDocs(query(collection(db, 'tasks'), orderBy('dueDate', 'asc')));
-      setTasks(tasksSnap.docs.map(doc => ({ id: doc.id, ...doc.data() })));
-      // Recent activities: last 3 deals or leads added/updated
-      const recentDeals = dealsSnap.docs
-        .sort((a, b) => (b.data().updatedAt || 0) - (a.data().updatedAt || 0))
-        .slice(0, 3)
-        .map(doc => ({ id: doc.id, ...doc.data() }));
-      setActivities(recentDeals);
+      try {
+        const leadsSnap = await getDocs(collection(db, 'leads'));
+        setLeads(leadsSnap.docs.map(doc => ({ id: doc.id, ...doc.data() })));
+        
+        const dealsSnap = await getDocs(collection(db, 'deals'));
+        const dealsData = dealsSnap.docs.map(doc => ({ 
+          id: doc.id, 
+          ...doc.data(),
+          // Convert Firestore timestamps to Date objects
+          createdAt: doc.data().createdAt?.toDate?.() || doc.data().createdAt,
+          updatedAt: doc.data().updatedAt?.toDate?.() || doc.data().updatedAt,
+          closedAt: doc.data().closedAt?.toDate?.() || doc.data().closedAt
+        })) as Deal[];
+        setDeals(dealsData);
+        
+        const tasksSnap = await getDocs(query(collection(db, 'tasks'), orderBy('dueDate', 'asc')));
+        setTasks(tasksSnap.docs.map(doc => ({ id: doc.id, ...doc.data() })));
+        
+        // Recent activities: last 3 deals or leads added/updated
+        const recentDeals = dealsData
+          .sort((a, b) => {
+            const aTime = a.updatedAt ? new Date(a.updatedAt).getTime() : 0;
+            const bTime = b.updatedAt ? new Date(b.updatedAt).getTime() : 0;
+            return bTime - aTime;
+          })
+          .slice(0, 3);
+        setActivities(recentDeals);
+        
+        console.log('Dashboard data loaded:', {
+          dealsCount: dealsData.length,
+          wonDeals: dealsData.filter(d => d.stage === 'Won').length,
+          dealsWithValue: dealsData.filter(d => (d.value || 0) > 0).length
+        });
+      } catch (error) {
+        console.error('Error fetching dashboard data:', error);
+      }
     };
     fetchData();
   }, []);
+
+  // Helper function to safely convert to Date
+  const toDate = (dateValue: any): Date | null => {
+    if (!dateValue) return null;
+    if (dateValue.toDate) return dateValue.toDate(); // Firestore timestamp
+    if (dateValue instanceof Date) return dateValue;
+    return new Date(dateValue);
+  };
+
+  // Helper function to check if date is in current month
+  const isInCurrentMonth = (dateValue: any): boolean => {
+    const date = toDate(dateValue);
+    if (!date) return false;
+    const now = new Date();
+    return date.getMonth() === now.getMonth() && date.getFullYear() === now.getFullYear();
+  };
+
+  // Helper function to check if date is in specific month/year
+  const isInMonthYear = (dateValue: any, month: number, year: number): boolean => {
+    const date = toDate(dateValue);
+    if (!date) return false;
+    return date.getMonth() === month && date.getFullYear() === year;
+  };
 
   // Calculations
   const totalLeads = leads.length;
@@ -47,11 +110,14 @@ export function DashboardOverview() {
   const now = new Date();
   const thisMonth = now.getMonth();
   const thisYear = now.getFullYear();
+  
   const revenueThisMonth = deals
-    .filter(d => d.stage === 'Won' && d.closedAt && new Date(d.closedAt).getMonth() === thisMonth && new Date(d.closedAt).getFullYear() === thisYear)
+    .filter(d => d.stage === 'Won' && isInCurrentMonth(d.closedAt))
     .reduce((sum, d) => sum + (d.value || 0), 0);
+  
   const wonDeals = deals.filter(d => d.stage === 'Won').length;
   const conversionRate = totalLeads ? ((wonDeals / totalLeads) * 100).toFixed(1) : '0.0';
+  
   // Revenue over time (last 6 months)
   const months = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
   const revenueData = Array.from({ length: 6 }, (_, i) => {
@@ -59,15 +125,27 @@ export function DashboardOverview() {
     const month = date.getMonth();
     const year = date.getFullYear();
     const revenue = deals
-      .filter(d => d.stage === 'Won' && d.closedAt && new Date(d.closedAt).getMonth() === month && new Date(d.closedAt).getFullYear() === year)
+      .filter(d => d.stage === 'Won' && isInMonthYear(d.closedAt, month, year))
       .reduce((sum, d) => sum + (d.value || 0), 0);
     return { month: months[month], revenue };
   });
+  
   // Deals by stage
   const stageNames = ['New', 'Qualified', 'Proposition', 'Negotiation', 'Won'];
   const dealsData = stageNames.map(stage => ({ name: stage, value: deals.filter(d => d.stage === stage).length }));
+  
   // Upcoming tasks (next 3 by due date)
   const upcomingTasks = tasks.slice(0, 3);
+
+  // Debug logging
+  console.log('Revenue calculation:', {
+    totalDeals: deals.length,
+    wonDeals,
+    revenueThisMonth,
+    revenueData,
+    dealsWithClosedAt: deals.filter(d => d.closedAt).length,
+    dealsWithValue: deals.filter(d => (d.value || 0) > 0).length
+  });
 
   return (
     <div className="p-6 md:p-10">

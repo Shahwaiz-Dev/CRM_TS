@@ -26,7 +26,7 @@ interface Deal {
   avatar: string;
 }
 
-const stageNames = ['New', 'Qualified', 'Proposition', 'Negotiation', 'Won'];
+const stageNames = ['Qualify', 'Meet & Present', 'Propose', 'Negotiate', 'Closed Won', 'Closed Lost'];
 
 export function PipelineView() {
   const { user, loading } = useAuth();
@@ -39,7 +39,7 @@ export function PipelineView() {
     title: '',
     company: '',
     value: 0,
-    stage: 'New',
+    stage: 'Qualify',
     priority: 1,
     assignee: '',
     type: '',

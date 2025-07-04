@@ -23,6 +23,8 @@ const initialForm = {
   closeDate: '',
   stage: '',
   owner: '',
+  companyName: '',
+  companyBillingAddress: '',
 };
 
 export function OpportunitiesView() {
@@ -60,6 +62,8 @@ export function OpportunitiesView() {
       closeDate: opp.closeDate || '',
       stage: opp.stage || '',
       owner: opp.owner || '',
+      companyName: opp.companyName || '',
+      companyBillingAddress: opp.companyBillingAddress || '',
     });
     setEditId(opp.id);
     setModalOpen(true);
@@ -94,7 +98,8 @@ export function OpportunitiesView() {
   const filtered = opportunities.filter(o =>
     o.name?.toLowerCase().includes(search.toLowerCase()) ||
     o.account?.toLowerCase().includes(search.toLowerCase()) ||
-    o.owner?.toLowerCase().includes(search.toLowerCase())
+    o.owner?.toLowerCase().includes(search.toLowerCase()) ||
+    o.companyName?.toLowerCase().includes(search.toLowerCase())
   );
 
   return (
@@ -118,6 +123,8 @@ export function OpportunitiesView() {
               <th className="px-4 py-2 text-left font-semibold">#</th>
               <th className="px-4 py-2 text-left font-semibold">Opportunity Name</th>
               <th className="px-4 py-2 text-left font-semibold">Account Name</th>
+              <th className="px-4 py-2 text-left font-semibold">Company Name</th>
+              <th className="px-4 py-2 text-left font-semibold">Company Billing Address</th>
               <th className="px-4 py-2 text-left font-semibold">Amount</th>
               <th className="px-4 py-2 text-left font-semibold">Close Date</th>
               <th className="px-4 py-2 text-left font-semibold">Stage</th>
@@ -127,15 +134,17 @@ export function OpportunitiesView() {
           </thead>
           <tbody>
             {dataLoading ? (
-              <tr><td colSpan={8} className="text-center py-8">Loading...</td></tr>
+              <tr><td colSpan={10} className="text-center py-8">Loading...</td></tr>
             ) : filtered.length === 0 ? (
-              <tr><td colSpan={8} className="text-center py-8">No opportunities found.</td></tr>
+              <tr><td colSpan={10} className="text-center py-8">No opportunities found.</td></tr>
             ) : (
               filtered.map((o, i) => (
                 <tr key={o.id || o.name} className="border-b hover:bg-gray-50">
                   <td className="px-4 py-2">{i + 1}</td>
                   <td className="px-4 py-2 text-blue-700 font-medium cursor-pointer hover:underline">{o.name}</td>
                   <td className="px-4 py-2">{o.account}</td>
+                  <td className="px-4 py-2">{o.companyName}</td>
+                  <td className="px-4 py-2">{o.companyBillingAddress}</td>
                   <td className="px-4 py-2">${o.amount?.toLocaleString()}</td>
                   <td className="px-4 py-2">{o.closeDate}</td>
                   <td className="px-4 py-2">{o.stage}</td>
@@ -167,6 +176,18 @@ export function OpportunitiesView() {
               placeholder="Account Name"
               value={form.account}
               onChange={e => setForm(f => ({ ...f, account: e.target.value }))}
+              required
+            />
+            <Input
+              placeholder="Company Name"
+              value={form.companyName}
+              onChange={e => setForm(f => ({ ...f, companyName: e.target.value }))}
+              required
+            />
+            <Input
+              placeholder="Company Billing Address"
+              value={form.companyBillingAddress}
+              onChange={e => setForm(f => ({ ...f, companyBillingAddress: e.target.value }))}
               required
             />
             <Input

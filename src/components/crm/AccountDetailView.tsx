@@ -1,14 +1,30 @@
 import React, { useState, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger, DialogFooter, DialogClose } from '@/components/ui/dialog';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Badge } from '@/components/ui/badge';
 import { Avatar, AvatarFallback } from '@/components/ui/avatar';
-import { User, Phone, Globe, MapPin, Edit, MoreHorizontal, Plus, Mail, FileText, MessageSquare, Calendar, Users, ChevronDown, RefreshCw, CheckCircle, X } from 'lucide-react';
+import { User, Phone, Globe, MapPin, Edit, MoreHorizontal, Plus, Mail, FileText, MessageSquare, Calendar, Users, ChevronDown, RefreshCw, CheckCircle, X, Loader2, AlertCircle } from 'lucide-react';
 import { updateDoc, doc } from 'firebase/firestore';
 import { db } from '../../lib/firebase';
+import { Select, SelectTrigger, SelectValue, SelectContent, SelectItem } from '@/components/ui/select';
+import { Textarea } from '@/components/ui/textarea';
+import { addContact, addCase, getContacts, getCases } from '@/lib/firebase';
 
+const priorityColors = {
+  Low: 'bg-green-100 text-green-800',
+  Medium: 'bg-yellow-100 text-yellow-800',
+  High: 'bg-orange-100 text-orange-800',
+  Critical: 'bg-red-100 text-red-800'
+};
+
+const statusColors = {
+  New: 'bg-blue-100 text-blue-800',
+  Working: 'bg-yellow-100 text-yellow-800',
+  Escalated: 'bg-orange-100 text-orange-800',
+  Closed: 'bg-gray-100 text-gray-800'
+};
 
 const initialDetails = {
   owner: '',
@@ -39,6 +55,18 @@ export function AccountDetailView({ account, onUpdate }) {
   const [activityInput, setActivityInput] = useState('');
   const [modal, setModal] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
+  
+  // Modal form states
+  const [contactForm, setContactForm] = useState({ firstName: '', lastName: '', email: '', phone: '', title: '' });
+  const [caseForm, setCaseForm] = useState({ subject: '', description: '', priority: 'Medium', status: 'New' });
+  const [noteForm, setNoteForm] = useState({ title: '', content: '' });
+  const [opportunityForm, setOpportunityForm] = useState({ name: '', amount: '', closeDate: '', stage: 'Qualify' });
+  const [followStatus, setFollowStatus] = useState(false);
+
+  // Related data states
+  const [relatedContacts, setRelatedContacts] = useState([]);
+  const [relatedCases, setRelatedCases] = useState([]);
+  const [relatedLoading, setRelatedLoading] = useState(false);
 
   // Update details when account prop changes
   useEffect(() => {
@@ -46,6 +74,34 @@ export function AccountDetailView({ account, onUpdate }) {
       setDetails({ ...initialDetails, ...account });
     }
   }, [account]);
+
+  // Fetch related data when account changes
+  useEffect(() => {
+    if (account?.id) {
+      fetchRelatedData();
+    }
+  }, [account?.id]);
+
+  const fetchRelatedData = async () => {
+    setRelatedLoading(true);
+    try {
+      const [contactsData, casesData] = await Promise.all([
+        getContacts(),
+        getCases()
+      ]);
+      
+      // Filter contacts and cases for this account
+      const accountContacts = contactsData.filter(contact => contact.accountId === account.id);
+      const accountCases = casesData.filter(caseItem => caseItem.accountId === account.id);
+      
+      setRelatedContacts(accountContacts);
+      setRelatedCases(accountCases);
+    } catch (error) {
+      console.error('Failed to fetch related data:', error);
+    } finally {
+      setRelatedLoading(false);
+    }
+  };
 
   const handleEdit = (field: string, value: string) => {
     setEditField(field);
@@ -75,9 +131,119 @@ export function AccountDetailView({ account, onUpdate }) {
     }
   };
 
+  const handleFollow = () => {
+    setFollowStatus(!followStatus);
+    setModal(null);
+  };
+
+  const handleNewContact = async () => {
+    if (!contactForm.firstName || !contactForm.lastName) return;
+    
+    setLoading(true);
+    try {
+      const contactData = {
+        ...contactForm,
+        accountId: account.id,
+        accountName: account.accountName
+      };
+      
+      await addContact(contactData);
+      console.log('Contact created successfully');
+      
+      // Reset form and close modal
+      setContactForm({ firstName: '', lastName: '', email: '', phone: '', title: '' });
+      setModal(null);
+      
+      // Optionally refresh account data or show success message
+      if (onUpdate) onUpdate();
+    } catch (error) {
+      console.error('Failed to create contact:', error);
+      // You could add a toast notification here
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleNewCase = async () => {
+    if (!caseForm.subject || !caseForm.description) return;
+    
+    setLoading(true);
+    try {
+      const caseData = {
+        ...caseForm,
+        accountId: account.id,
+        accountName: account.accountName
+      };
+      
+      await addCase(caseData);
+      console.log('Case created successfully');
+      
+      // Reset form and close modal
+      setCaseForm({ subject: '', description: '', priority: 'Medium', status: 'New' });
+      setModal(null);
+      
+      // Optionally refresh account data or show success message
+      if (onUpdate) onUpdate();
+    } catch (error) {
+      console.error('Failed to create case:', error);
+      // You could add a toast notification here
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleNewNote = async () => {
+    if (!noteForm.title || !noteForm.content) return;
+    // Here you would typically save to Firebase
+    console.log('New note:', noteForm);
+    setNoteForm({ title: '', content: '' });
+    setModal(null);
+  };
+
+  const handleNewOpportunity = async () => {
+    if (!opportunityForm.name || !opportunityForm.amount) return;
+    // Here you would typically save to Firebase
+    console.log('New opportunity:', opportunityForm);
+    setOpportunityForm({ name: '', amount: '', closeDate: '', stage: 'Qualify' });
+    setModal(null);
+  };
+
+  const handleQuickAction = (action: string) => {
+    switch (action) {
+      case 'call':
+        window.open(`tel:${details.phone}`, '_self');
+        break;
+      case 'email':
+        window.open(`mailto:${details.owner}`, '_self');
+        break;
+      case 'schedule':
+        // Open calendar scheduling
+        console.log('Schedule meeting for:', details.accountName);
+        break;
+      case 'quote':
+        // Create quote functionality
+        console.log('Create quote for:', details.accountName);
+        break;
+    }
+  };
+
   if (!account) {
     return <div className="p-8 text-center text-gray-500">No account selected</div>;
   }
+
+  const priorityColors = {
+    Low: 'bg-green-100 text-green-800',
+    Medium: 'bg-yellow-100 text-yellow-800',
+    High: 'bg-orange-100 text-orange-800',
+    Critical: 'bg-red-100 text-red-800',
+  };
+
+  const statusColors = {
+    New: 'bg-blue-100 text-blue-800',
+    Working: 'bg-purple-100 text-purple-800',
+    Escalated: 'bg-red-100 text-red-800',
+    Closed: 'bg-gray-100 text-gray-800',
+  };
 
   return (
     <div className="bg-white rounded-lg shadow p-4 sm:p-6 md:p-8">
@@ -98,7 +264,9 @@ export function AccountDetailView({ account, onUpdate }) {
           </div>
         </div>
         <div className="flex flex-wrap gap-2 justify-start md:justify-end">
-          <Button size="sm" onClick={() => setModal('follow')}>+ Follow</Button>
+          <Button size="sm" onClick={() => setModal('follow')} variant={followStatus ? "default" : "outline"}>
+            {followStatus ? "✓ Following" : "+ Follow"}
+          </Button>
           <Button size="sm" onClick={() => setModal('newcontact')}>New Contact</Button>
           <Button size="sm" onClick={() => setModal('newcase')}>New Case</Button>
           <Button size="sm" onClick={() => setModal('newnote')}>New Note</Button>
@@ -163,7 +331,106 @@ export function AccountDetailView({ account, onUpdate }) {
           </div>
         </TabsContent>
         <TabsContent value="related">
-          <div className="text-gray-500 p-8 text-center">Related info coming soon...</div>
+          <div className="space-y-6">
+            {/* Contacts Section */}
+            <div>
+              <div className="flex items-center justify-between mb-4">
+                <h3 className="text-lg font-semibold">Contacts ({relatedContacts.length})</h3>
+                <Button size="sm" onClick={() => setModal('newcontact')}>
+                  <Plus className="w-4 h-4 mr-2" />
+                  Add Contact
+                </Button>
+              </div>
+              {relatedLoading ? (
+                <div className="flex items-center justify-center py-8">
+                  <Loader2 className="w-6 h-6 animate-spin" />
+                </div>
+              ) : relatedContacts.length === 0 ? (
+                <div className="text-center py-8 text-gray-500">
+                  <User className="w-8 h-8 mx-auto mb-2 text-gray-400" />
+                  <p>No contacts found for this account</p>
+                </div>
+              ) : (
+                <div className="grid gap-3">
+                  {relatedContacts.slice(0, 5).map((contact) => (
+                    <div key={contact.id} className="flex items-center justify-between p-3 bg-gray-50 rounded-lg">
+                      <div className="flex items-center gap-3">
+                        <Avatar className="h-8 w-8">
+                          <AvatarFallback className="bg-blue-100 text-blue-600 text-sm">
+                            {contact.firstName?.charAt(0)}{contact.lastName?.charAt(0)}
+                          </AvatarFallback>
+                        </Avatar>
+                        <div>
+                          <p className="font-medium text-sm">
+                            {contact.firstName} {contact.lastName}
+                          </p>
+                          <p className="text-xs text-gray-500">{contact.title}</p>
+                        </div>
+                      </div>
+                      <div className="flex items-center gap-2 text-xs text-gray-500">
+                        {contact.email && <Mail className="w-3 h-3" />}
+                        {contact.phone && <Phone className="w-3 h-3" />}
+                      </div>
+                    </div>
+                  ))}
+                  {relatedContacts.length > 5 && (
+                    <div className="text-center">
+                      <Button variant="outline" size="sm" onClick={() => window.location.href = '/contacts'}>
+                        View All Contacts ({relatedContacts.length})
+                      </Button>
+                    </div>
+                  )}
+                </div>
+              )}
+            </div>
+
+            {/* Cases Section */}
+            <div>
+              <div className="flex items-center justify-between mb-4">
+                <h3 className="text-lg font-semibold">Cases ({relatedCases.length})</h3>
+                <Button size="sm" onClick={() => setModal('newcase')}>
+                  <Plus className="w-4 h-4 mr-2" />
+                  Add Case
+                </Button>
+              </div>
+              {relatedLoading ? (
+                <div className="flex items-center justify-center py-8">
+                  <Loader2 className="w-6 h-6 animate-spin" />
+                </div>
+              ) : relatedCases.length === 0 ? (
+                <div className="text-center py-8 text-gray-500">
+                  <AlertCircle className="w-8 h-8 mx-auto mb-2 text-gray-400" />
+                  <p>No cases found for this account</p>
+                </div>
+              ) : (
+                <div className="grid gap-3">
+                  {relatedCases.slice(0, 5).map((caseItem) => (
+                    <div key={caseItem.id} className="p-3 bg-gray-50 rounded-lg">
+                      <div className="flex items-start justify-between mb-2">
+                        <h4 className="font-medium text-sm">{caseItem.subject}</h4>
+                        <div className="flex gap-1">
+                          <Badge className={`text-xs ${priorityColors[caseItem.priority]}`}>
+                            {caseItem.priority}
+                          </Badge>
+                          <Badge className={`text-xs ${statusColors[caseItem.status]}`}>
+                            {caseItem.status}
+                          </Badge>
+                        </div>
+                      </div>
+                      <p className="text-xs text-gray-600 line-clamp-2">{caseItem.description}</p>
+                    </div>
+                  ))}
+                  {relatedCases.length > 5 && (
+                    <div className="text-center">
+                      <Button variant="outline" size="sm" onClick={() => window.location.href = '/cases'}>
+                        View All Cases ({relatedCases.length})
+                      </Button>
+                    </div>
+                  )}
+                </div>
+              )}
+            </div>
+          </div>
         </TabsContent>
         <TabsContent value="news">
           <div className="text-gray-500 p-8 text-center">News coming soon...</div>
@@ -208,25 +475,242 @@ export function AccountDetailView({ account, onUpdate }) {
         <div>
           <h3 className="font-semibold mb-3">Quick Actions</h3>
           <div className="space-y-2">
-            <Button variant="outline" size="sm" className="w-full justify-start">
+            <Button variant="outline" size="sm" className="w-full justify-start" onClick={() => handleQuickAction('call')}>
               <Phone className="w-4 h-4 mr-2" />
               Call
             </Button>
-            <Button variant="outline" size="sm" className="w-full justify-start">
+            <Button variant="outline" size="sm" className="w-full justify-start" onClick={() => handleQuickAction('email')}>
               <Mail className="w-4 h-4 mr-2" />
               Email
             </Button>
-            <Button variant="outline" size="sm" className="w-full justify-start">
+            <Button variant="outline" size="sm" className="w-full justify-start" onClick={() => handleQuickAction('schedule')}>
               <Calendar className="w-4 h-4 mr-2" />
               Schedule Meeting
             </Button>
-            <Button variant="outline" size="sm" className="w-full justify-start">
+            <Button variant="outline" size="sm" className="w-full justify-start" onClick={() => handleQuickAction('quote')}>
               <FileText className="w-4 h-4 mr-2" />
               Create Quote
             </Button>
           </div>
         </div>
       </div>
+
+      {/* Modals */}
+      {/* Follow Modal */}
+      <Dialog open={modal === 'follow'} onOpenChange={() => setModal(null)}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Follow Account</DialogTitle>
+          </DialogHeader>
+          <div className="space-y-4">
+            <p>Would you like to follow updates for {details.accountName}?</p>
+            <DialogFooter>
+              <Button onClick={handleFollow}>
+                {followStatus ? 'Unfollow' : 'Follow'}
+              </Button>
+              <DialogClose asChild>
+                <Button variant="outline">Cancel</Button>
+              </DialogClose>
+            </DialogFooter>
+          </div>
+        </DialogContent>
+      </Dialog>
+
+      {/* New Contact Modal */}
+      <Dialog open={modal === 'newcontact'} onOpenChange={() => setModal(null)}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>New Contact</DialogTitle>
+          </DialogHeader>
+          <form onSubmit={(e) => { e.preventDefault(); handleNewContact(); }} className="space-y-4">
+            <div className="grid grid-cols-2 gap-4">
+              <Input
+                placeholder="First Name"
+                value={contactForm.firstName}
+                onChange={e => setContactForm(f => ({ ...f, firstName: e.target.value }))}
+                required
+              />
+              <Input
+                placeholder="Last Name"
+                value={contactForm.lastName}
+                onChange={e => setContactForm(f => ({ ...f, lastName: e.target.value }))}
+                required
+              />
+            </div>
+            <Input
+              placeholder="Email"
+              type="email"
+              value={contactForm.email}
+              onChange={e => setContactForm(f => ({ ...f, email: e.target.value }))}
+            />
+            <Input
+              placeholder="Phone"
+              value={contactForm.phone}
+              onChange={e => setContactForm(f => ({ ...f, phone: e.target.value }))}
+            />
+            <Input
+              placeholder="Title"
+              value={contactForm.title}
+              onChange={e => setContactForm(f => ({ ...f, title: e.target.value }))}
+            />
+            <DialogFooter>
+              <Button type="submit">Create Contact</Button>
+              <DialogClose asChild>
+                <Button variant="outline">Cancel</Button>
+              </DialogClose>
+            </DialogFooter>
+          </form>
+        </DialogContent>
+      </Dialog>
+
+      {/* New Case Modal */}
+      <Dialog open={modal === 'newcase'} onOpenChange={() => setModal(null)}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>New Case</DialogTitle>
+          </DialogHeader>
+          <form onSubmit={(e) => { e.preventDefault(); handleNewCase(); }} className="space-y-4">
+            <Input
+              placeholder="Subject"
+              value={caseForm.subject}
+              onChange={e => setCaseForm(f => ({ ...f, subject: e.target.value }))}
+              required
+            />
+            <Textarea
+              placeholder="Description"
+              value={caseForm.description}
+              onChange={e => setCaseForm(f => ({ ...f, description: e.target.value }))}
+              required
+            />
+            <div className="grid grid-cols-2 gap-4">
+              <Select value={caseForm.priority} onValueChange={val => setCaseForm(f => ({ ...f, priority: val }))}>
+                <SelectTrigger>
+                  <SelectValue placeholder="Priority" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="Low">Low</SelectItem>
+                  <SelectItem value="Medium">Medium</SelectItem>
+                  <SelectItem value="High">High</SelectItem>
+                  <SelectItem value="Critical">Critical</SelectItem>
+                </SelectContent>
+              </Select>
+              <Select value={caseForm.status} onValueChange={val => setCaseForm(f => ({ ...f, status: val }))}>
+                <SelectTrigger>
+                  <SelectValue placeholder="Status" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="New">New</SelectItem>
+                  <SelectItem value="Working">Working</SelectItem>
+                  <SelectItem value="Escalated">Escalated</SelectItem>
+                  <SelectItem value="Closed">Closed</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+            <DialogFooter>
+              <Button type="submit">Create Case</Button>
+              <DialogClose asChild>
+                <Button variant="outline">Cancel</Button>
+              </DialogClose>
+            </DialogFooter>
+          </form>
+        </DialogContent>
+      </Dialog>
+
+      {/* New Note Modal */}
+      <Dialog open={modal === 'newnote'} onOpenChange={() => setModal(null)}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>New Note</DialogTitle>
+          </DialogHeader>
+          <form onSubmit={(e) => { e.preventDefault(); handleNewNote(); }} className="space-y-4">
+            <Input
+              placeholder="Note Title"
+              value={noteForm.title}
+              onChange={e => setNoteForm(f => ({ ...f, title: e.target.value }))}
+              required
+            />
+            <Textarea
+              placeholder="Note Content"
+              value={noteForm.content}
+              onChange={e => setNoteForm(f => ({ ...f, content: e.target.value }))}
+              required
+            />
+            <DialogFooter>
+              <Button type="submit">Create Note</Button>
+              <DialogClose asChild>
+                <Button variant="outline">Cancel</Button>
+              </DialogClose>
+            </DialogFooter>
+          </form>
+        </DialogContent>
+      </Dialog>
+
+      {/* New Opportunity Modal */}
+      <Dialog open={modal === 'newopportunity'} onOpenChange={() => setModal(null)}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>New Opportunity</DialogTitle>
+          </DialogHeader>
+          <form onSubmit={(e) => { e.preventDefault(); handleNewOpportunity(); }} className="space-y-4">
+            <Input
+              placeholder="Opportunity Name"
+              value={opportunityForm.name}
+              onChange={e => setOpportunityForm(f => ({ ...f, name: e.target.value }))}
+              required
+            />
+            <Input
+              placeholder="Amount"
+              type="number"
+              value={opportunityForm.amount}
+              onChange={e => setOpportunityForm(f => ({ ...f, amount: e.target.value }))}
+              required
+            />
+            <Input
+              placeholder="Close Date"
+              type="date"
+              value={opportunityForm.closeDate}
+              onChange={e => setOpportunityForm(f => ({ ...f, closeDate: e.target.value }))}
+            />
+            <Select value={opportunityForm.stage} onValueChange={val => setOpportunityForm(f => ({ ...f, stage: val }))}>
+              <SelectTrigger>
+                <SelectValue placeholder="Stage" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="Qualify">Qualify</SelectItem>
+                <SelectItem value="Meet & Present">Meet & Present</SelectItem>
+                <SelectItem value="Propose">Propose</SelectItem>
+                <SelectItem value="Negotiate">Negotiate</SelectItem>
+                <SelectItem value="Closed Won">Closed Won</SelectItem>
+                <SelectItem value="Closed Lost">Closed Lost</SelectItem>
+              </SelectContent>
+            </Select>
+            <DialogFooter>
+              <Button type="submit">Create Opportunity</Button>
+              <DialogClose asChild>
+                <Button variant="outline">Cancel</Button>
+              </DialogClose>
+            </DialogFooter>
+          </form>
+        </DialogContent>
+      </Dialog>
+
+      {/* Edit Account Modal */}
+      <Dialog open={modal === 'edit'} onOpenChange={() => setModal(null)}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Edit Account</DialogTitle>
+          </DialogHeader>
+          <div className="space-y-4">
+            <p>Account editing is available inline. Click the edit icon next to any field to modify it.</p>
+            <DialogFooter>
+              <DialogClose asChild>
+                <Button variant="outline">Close</Button>
+              </DialogClose>
+            </DialogFooter>
+          </div>
+        </DialogContent>
+      </Dialog>
+
     </div>
   );
 }
