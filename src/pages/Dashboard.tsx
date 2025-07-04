@@ -15,9 +15,12 @@ import Attendance from './Attendance';
 import { AnimatePresence, motion } from 'framer-motion';
 import { collection, addDoc, getDocs, updateDoc, deleteDoc, doc } from "firebase/firestore";
 import { db } from "../lib/firebase";
+import { useLoading } from "@/components/ui/PageLoader";
+import { RequireRole } from '@/components/crm/RequireRole';
 
 const Dashboard = () => {
   const location = useLocation();
+  const { setLoading } = useLoading();
   return (
     <SidebarProvider>
       <div className="min-h-screen flex flex-col md:flex-row w-full bg-white">
@@ -35,15 +38,51 @@ const Dashboard = () => {
                 className="h-full"
               >
                 <Routes location={location}>
-                  <Route path="/" element={<DashboardOverview />} />
-                  <Route path="/opportunities" element={<OpportunitiesView />} />
-                  <Route path="/pipeline" element={<PipelineView />} />
-                  <Route path="/accounts" element={<AccountsView />} />
-                  <Route path="/tasks" element={<TasksView />} />
-                  <Route path="/users" element={<UsersView />} />
-                  <Route path="/hr/employees" element={<Employees />} />
-                  <Route path="/hr/payroll" element={<Payroll />} />
-                  <Route path="/hr/attendance" element={<Attendance />} />
+                  <Route path="/" element={
+                    <RequireRole allowedRoles={['admin', 'sales']}>
+                      <DashboardOverview />
+                    </RequireRole>
+                  } />
+                  <Route path="/opportunities" element={
+                    <RequireRole allowedRoles={['admin', 'sales']}>
+                      <OpportunitiesView />
+                    </RequireRole>
+                  } />
+                  <Route path="/pipeline" element={
+                    <RequireRole allowedRoles={['admin', 'sales']}>
+                      <PipelineView />
+                    </RequireRole>
+                  } />
+                  <Route path="/accounts" element={
+                    <RequireRole allowedRoles={['admin', 'sales']}>
+                      <AccountsView />
+                    </RequireRole>
+                  } />
+                  <Route path="/tasks" element={
+                    <RequireRole allowedRoles={['admin', 'sales']}>
+                      <TasksView />
+                    </RequireRole>
+                  } />
+                  <Route path="/users" element={
+                    <RequireRole allowedRoles={['admin']}>
+                      <UsersView />
+                    </RequireRole>
+                  } />
+                  <Route path="/hr/employees" element={
+                    <RequireRole allowedRoles={['admin', 'hr']}>
+                      <Employees />
+                    </RequireRole>
+                  } />
+                  <Route path="/hr/payroll" element={
+                    <RequireRole allowedRoles={['admin', 'hr']}>
+                      <Payroll />
+                    </RequireRole>
+                  } />
+                  <Route path="/hr/attendance" element={
+                    <RequireRole allowedRoles={['admin', 'hr']}>
+                      <Attendance />
+                    </RequireRole>
+                  } />
                 </Routes>
               </motion.div>
             </AnimatePresence>

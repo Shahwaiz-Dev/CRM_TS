@@ -2,10 +2,12 @@ import React, { useEffect, useState } from "react";
 import { getEmployees, addEmployee, updateEmployee, deleteEmployee } from "@/lib/firebase";
 import { Search, Filter, Edit, Trash2, Calendar, Loader2 } from 'lucide-react';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
+import { useAuth } from '@/contexts/AuthContext';
+import { Navigate } from 'react-router-dom';
 
 export default function Employees() {
+  const { user, loading } = useAuth();
   const [employees, setEmployees] = useState([]);
-  const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
   const [newEmployee, setNewEmployee] = useState({ name: "", email: "", position: "", department: "", hireDate: "", status: "Active", phone: "", salary: "" });
   const [editId, setEditId] = useState(null);
@@ -13,20 +15,16 @@ export default function Employees() {
   const [showAdd, setShowAdd] = useState(false);
 
   const fetchEmployees = async () => {
-    setLoading(true);
-    setError("");
     try {
       setEmployees(await getEmployees());
     } catch (e) {
       setError("Failed to fetch employees");
     }
-    setLoading(false);
   };
 
   useEffect(() => { fetchEmployees(); }, []);
 
   const handleAdd = async () => {
-    setLoading(true);
     setError("");
     try {
       await addEmployee(newEmployee);
@@ -35,7 +33,6 @@ export default function Employees() {
     } catch (e) {
       setError("Failed to add employee");
     }
-    setLoading(false);
   };
 
   const handleEdit = (emp) => {
@@ -44,8 +41,6 @@ export default function Employees() {
   };
 
   const handleUpdate = async () => {
-    setLoading(true);
-    setError("");
     try {
       await updateEmployee(editId, editEmployee);
       setEditId(null);
@@ -53,11 +48,9 @@ export default function Employees() {
     } catch (e) {
       setError("Failed to update employee");
     }
-    setLoading(false);
   };
 
   const handleDelete = async (id) => {
-    setLoading(true);
     setError("");
     try {
       await deleteEmployee(id);
@@ -65,7 +58,6 @@ export default function Employees() {
     } catch (e) {
       setError("Failed to delete employee");
     }
-    setLoading(false);
   };
 
   // Helper to get initials from name
@@ -91,7 +83,6 @@ export default function Employees() {
               <DialogTitle>Add Employee</DialogTitle>
             </DialogHeader>
             {error && <div className="text-red-500 mb-2">{error}</div>}
-            {loading && <div className="mb-2">Loading...</div>}
             <div className="flex flex-wrap gap-2 mb-4">
               <input placeholder="Name" value={newEmployee.name} onChange={e => setNewEmployee({ ...newEmployee, name: e.target.value })} className="border p-1 rounded" />
               <input placeholder="Email" value={newEmployee.email} onChange={e => setNewEmployee({ ...newEmployee, email: e.target.value })} className="border p-1 rounded" />
@@ -104,8 +95,7 @@ export default function Employees() {
                 <option value="Active">Active</option>
                 <option value="Inactive">Inactive</option>
               </select>
-              <button onClick={async () => { await handleAdd(); setShowAdd(false); }} className="bg-blue-600 text-white px-3 py-1 rounded" disabled={loading}>
-                {loading ? <Loader2 className="w-4 h-4 animate-spin mr-2 inline" /> : null}
+              <button onClick={async () => { await handleAdd(); setShowAdd(false); }} className="bg-blue-600 text-white px-3 py-1 rounded">
                 Add
               </button>
             </div>
@@ -190,8 +180,8 @@ export default function Employees() {
                     ) : (
                       <>
                         <button className="text-gray-500 hover:text-blue-600" onClick={() => handleEdit(emp)}><Edit className="h-4 w-4" /></button>
-                        <button className="text-gray-500 hover:text-red-600" onClick={() => handleDelete(emp.id)} disabled={loading}>
-                          {loading && editId === null ? <Loader2 className="w-4 h-4 animate-spin inline" /> : <Trash2 className="h-4 w-4" />}
+                        <button className="text-gray-500 hover:text-red-600" onClick={() => handleDelete(emp.id)}>
+                          <Trash2 className="h-4 w-4" />
                         </button>
                       </>
                     )}

@@ -64,4 +64,49 @@ export async function updatePayroll(id, data) {
 }
 export async function deletePayroll(id) {
   return await deleteDoc(doc(db, 'payroll', id));
+}
+
+// User CRUD
+export async function addUser(user) {
+  return await addDoc(collection(db, 'users'), user);
+}
+export async function getUsers() {
+  const snapshot = await getDocs(collection(db, 'users'));
+  return snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+}
+export async function updateUser(id, data) {
+  return await updateDoc(doc(db, 'users', id), data);
+}
+export async function deleteUser(id) {
+  return await deleteDoc(doc(db, 'users', id));
+}
+
+// Opportunities CRUD
+export async function addOpportunity(opportunity) {
+  return await addDoc(collection(db, 'opportunities'), opportunity);
+}
+export async function getOpportunities() {
+  const snapshot = await getDocs(collection(db, 'opportunities'));
+  return snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+}
+export async function updateOpportunity(id, data) {
+  return await updateDoc(doc(db, 'opportunities', id), data);
+}
+export async function deleteOpportunity(id) {
+  return await deleteDoc(doc(db, 'opportunities', id));
+}
+
+// Accounts CRUD
+export async function addAccount(account) {
+  return await addDoc(collection(db, 'accounts'), account);
+}
+export async function getAccounts() {
+  const snapshot = await getDocs(collection(db, 'accounts'));
+  return snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+}
+export async function updateAccount(id, data) {
+  return await updateDoc(doc(db, 'accounts', id), data);
+}
+export async function deleteAccount(id) {
+  return await deleteDoc(doc(db, 'accounts', id));
 } 

@@ -1,27 +1,74 @@
-import React from 'react';
+import React, { useEffect, useState } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { ChartContainer } from '@/components/ui/chart';
 import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, PieChart, Pie, Cell, Legend, ResponsiveContainer } from 'recharts';
-
-const revenueData = [
-  { month: 'Jan', revenue: 20000 },
-  { month: 'Feb', revenue: 25000 },
-  { month: 'Mar', revenue: 22000 },
-  { month: 'Apr', revenue: 27000 },
-  { month: 'May', revenue: 30000 },
-  { month: 'Jun', revenue: 35000 },
-];
-
-const dealsData = [
-  { name: 'Closed Won', value: 12 },
-  { name: 'Negotiation', value: 8 },
-  { name: 'Proposal', value: 5 },
-  { name: 'Prospecting', value: 4 },
-];
-
-const pieColors = ['#22c55e', '#3b82f6', '#f59e42', '#eab308'];
+import { collection, getDocs, query, where, orderBy, limit } from 'firebase/firestore';
+import { db } from '../../lib/firebase';
+import { Loader2 } from 'lucide-react';
 
 export function DashboardOverview() {
+  const [leads, setLeads] = useState<any[]>([]);
+  const [deals, setDeals] = useState<any[]>([]);
+  const [tasks, setTasks] = useState<any[]>([]);
+  const [activities, setActivities] = useState<any[]>([]);
+
+  const pieColors = ['#22c55e', '#3b82f6', '#f59e42', '#eab308', '#a78bfa'];
+  const activityColors: Record<string, string> = {
+    new: 'bg-blue-500',
+    qualified: 'bg-yellow-500',
+    proposition: 'bg-orange-500',
+    negotiation: 'bg-purple-500',
+    won: 'bg-green-500',
+    lost: 'bg-red-500',
+    default: 'bg-gray-400',
+  };
+
+  useEffect(() => {
+    const fetchData = async () => {
+      const leadsSnap = await getDocs(collection(db, 'leads'));
+      setLeads(leadsSnap.docs.map(doc => ({ id: doc.id, ...doc.data() })));
+      const dealsSnap = await getDocs(collection(db, 'deals'));
+      setDeals(dealsSnap.docs.map(doc => ({ id: doc.id, ...doc.data() })));
+      const tasksSnap = await getDocs(query(collection(db, 'tasks'), orderBy('dueDate', 'asc')));
+      setTasks(tasksSnap.docs.map(doc => ({ id: doc.id, ...doc.data() })));
+      // Recent activities: last 3 deals or leads added/updated
+      const recentDeals = dealsSnap.docs
+        .sort((a, b) => (b.data().updatedAt || 0) - (a.data().updatedAt || 0))
+        .slice(0, 3)
+        .map(doc => ({ id: doc.id, ...doc.data() }));
+      setActivities(recentDeals);
+    };
+    fetchData();
+  }, []);
+
+  // Calculations
+  const totalLeads = leads.length;
+  const activeDeals = deals.filter(d => d.stage !== 'Won' && d.stage !== 'Lost').length;
+  const now = new Date();
+  const thisMonth = now.getMonth();
+  const thisYear = now.getFullYear();
+  const revenueThisMonth = deals
+    .filter(d => d.stage === 'Won' && d.closedAt && new Date(d.closedAt).getMonth() === thisMonth && new Date(d.closedAt).getFullYear() === thisYear)
+    .reduce((sum, d) => sum + (d.value || 0), 0);
+  const wonDeals = deals.filter(d => d.stage === 'Won').length;
+  const conversionRate = totalLeads ? ((wonDeals / totalLeads) * 100).toFixed(1) : '0.0';
+  // Revenue over time (last 6 months)
+  const months = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
+  const revenueData = Array.from({ length: 6 }, (_, i) => {
+    const date = new Date(now.getFullYear(), now.getMonth() - 5 + i, 1);
+    const month = date.getMonth();
+    const year = date.getFullYear();
+    const revenue = deals
+      .filter(d => d.stage === 'Won' && d.closedAt && new Date(d.closedAt).getMonth() === month && new Date(d.closedAt).getFullYear() === year)
+      .reduce((sum, d) => sum + (d.value || 0), 0);
+    return { month: months[month], revenue };
+  });
+  // Deals by stage
+  const stageNames = ['New', 'Qualified', 'Proposition', 'Negotiation', 'Won'];
+  const dealsData = stageNames.map(stage => ({ name: stage, value: deals.filter(d => d.stage === stage).length }));
+  // Upcoming tasks (next 3 by due date)
+  const upcomingTasks = tasks.slice(0, 3);
+
   return (
     <div className="p-6 md:p-10">
       <div className="space-y-6">
@@ -33,7 +80,7 @@ export function DashboardOverview() {
               <CardTitle className="text-sm font-medium text-gray-600">Total Leads</CardTitle>
             </CardHeader>
             <CardContent>
-              <div className="text-2xl font-bold">1,234</div>
+              <div className="text-2xl font-bold">{totalLeads}</div>
               <p className="text-xs text-green-600">+12% from last month</p>
             </CardContent>
           </Card>
@@ -43,7 +90,7 @@ export function DashboardOverview() {
               <CardTitle className="text-sm font-medium text-gray-600">Active Deals</CardTitle>
             </CardHeader>
             <CardContent>
-              <div className="text-2xl font-bold">89</div>
+              <div className="text-2xl font-bold">{activeDeals}</div>
               <p className="text-xs text-green-600">+8% from last month</p>
             </CardContent>
           </Card>
@@ -53,7 +100,7 @@ export function DashboardOverview() {
               <CardTitle className="text-sm font-medium text-gray-600">Revenue This Month</CardTitle>
             </CardHeader>
             <CardContent>
-              <div className="text-2xl font-bold">$125,430</div>
+              <div className="text-2xl font-bold">${revenueThisMonth.toLocaleString()}</div>
               <p className="text-xs text-green-600">+15% from last month</p>
             </CardContent>
           </Card>
@@ -63,7 +110,7 @@ export function DashboardOverview() {
               <CardTitle className="text-sm font-medium text-gray-600">Conversion Rate</CardTitle>
             </CardHeader>
             <CardContent>
-              <div className="text-2xl font-bold">23.5%</div>
+              <div className="text-2xl font-bold">{conversionRate}%</div>
               <p className="text-xs text-red-600">-2% from last month</p>
             </CardContent>
           </Card>
@@ -112,27 +159,27 @@ export function DashboardOverview() {
             </CardHeader>
             <CardContent>
               <div className="space-y-4">
-                <div className="flex items-start space-x-3">
-                  <div className="w-2 h-2 bg-blue-500 rounded-full mt-2"></div>
-                  <div>
-                    <p className="text-sm">New lead: Acme Corp contacted</p>
-                    <p className="text-xs text-gray-500">2 hours ago</p>
-                  </div>
-                </div>
-                <div className="flex items-start space-x-3">
-                  <div className="w-2 h-2 bg-green-500 rounded-full mt-2"></div>
-                  <div>
-                    <p className="text-sm">Deal closed: TechStart Inc - $15,000</p>
-                    <p className="text-xs text-gray-500">5 hours ago</p>
-                  </div>
-                </div>
-                <div className="flex items-start space-x-3">
-                  <div className="w-2 h-2 bg-yellow-500 rounded-full mt-2"></div>
-                  <div>
-                    <p className="text-sm">Meeting scheduled with Global Solutions</p>
-                    <p className="text-xs text-gray-500">1 day ago</p>
-                  </div>
-                </div>
+                {activities.map((activity, idx) => {
+                  const stageKey = (activity.stage || '').toLowerCase();
+                  const color = activityColors[stageKey] || activityColors.default;
+                  let timeAgo = '';
+                  if (activity.updatedAt) {
+                    const diff = Date.now() - new Date(activity.updatedAt).getTime();
+                    if (diff < 60000) timeAgo = 'Just now';
+                    else if (diff < 3600000) timeAgo = `${Math.floor(diff / 60000)} minutes ago`;
+                    else if (diff < 86400000) timeAgo = `${Math.floor(diff / 3600000)} hours ago`;
+                    else timeAgo = `${Math.floor(diff / 86400000)} days ago`;
+                  }
+                  return (
+                    <div key={idx} className="flex items-start space-x-3">
+                      <div className={`w-2 h-2 ${color} rounded-full mt-2`}></div>
+                      <div>
+                        <p className="text-sm">{activity.description || activity.title || 'Activity'}</p>
+                        <p className="text-xs text-gray-500">{timeAgo}</p>
+                      </div>
+                    </div>
+                  );
+                })}
               </div>
             </CardContent>
           </Card>
@@ -142,27 +189,15 @@ export function DashboardOverview() {
             </CardHeader>
             <CardContent>
               <div className="space-y-4">
-                <div className="flex items-center justify-between">
-                  <div>
-                    <p className="text-sm font-medium">Follow up with ABC Corp</p>
-                    <p className="text-xs text-gray-500">Due today at 3:00 PM</p>
+                {upcomingTasks.map((task, idx) => (
+                  <div key={idx} className="flex items-center justify-between">
+                    <div>
+                      <p className="text-sm font-medium">{task.title}</p>
+                      <p className="text-xs text-gray-500">Due {task.dueDate ? new Date(task.dueDate).toLocaleDateString() : ''}</p>
+                    </div>
+                    <div className="w-3 h-3 bg-red-500 rounded-full"></div>
                   </div>
-                  <div className="w-3 h-3 bg-red-500 rounded-full"></div>
-                </div>
-                <div className="flex items-center justify-between">
-                  <div>
-                    <p className="text-sm font-medium">Prepare proposal for StartupXYZ</p>
-                    <p className="text-xs text-gray-500">Due tomorrow</p>
-                  </div>
-                  <div className="w-3 h-3 bg-yellow-500 rounded-full"></div>
-                </div>
-                <div className="flex items-center justify-between">
-                  <div>
-                    <p className="text-sm font-medium">Client onboarding call</p>
-                    <p className="text-xs text-gray-500">Due in 3 days</p>
-                  </div>
-                  <div className="w-3 h-3 bg-green-500 rounded-full"></div>
-                </div>
+                ))}
               </div>
             </CardContent>
           </Card>

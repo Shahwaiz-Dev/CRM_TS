@@ -4,6 +4,7 @@ import { Link, useNavigate } from 'react-router-dom';
 import { signInWithEmailAndPassword, GoogleAuthProvider, signInWithPopup } from "firebase/auth";
 import { doc, getDoc, setDoc } from "firebase/firestore";
 import { auth, db } from "@/lib/firebase";
+import { useAuth } from '@/contexts/AuthContext';
 
 export default function Login() {
   const [email, setEmail] = useState('');
@@ -12,6 +13,7 @@ export default function Login() {
   const [remember, setRemember] = useState(false);
   const [error, setError] = useState('');
   const navigate = useNavigate();
+  const { setUser } = useAuth();
 
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -22,10 +24,13 @@ export default function Login() {
       const userDoc = await getDoc(doc(db, "users", userCredential.user.uid));
       if (userDoc.exists()) {
         const userData = userDoc.data();
-        localStorage.setItem('role', userData.role);
-        localStorage.setItem('auth', 'true');
-        localStorage.setItem('email', email);
-        localStorage.setItem('name', userData.name || '');
+        const normalizedRole = (userData.role || 'new user').toLowerCase();
+        setUser({
+          id: userCredential.user.uid,
+          email: email,
+          role: normalizedRole,
+          name: userData.name || ''
+        });
         navigate('/');
       } else {
         setError("User profile not found.");
@@ -49,28 +54,25 @@ export default function Login() {
         await setDoc(userDocRef, {
           name: user.displayName || "",
           email: user.email,
-          role: "user"
+          role: "new user"
         });
-        localStorage.setItem('name', user.displayName || '');
       } else {
         // If user doc exists but has no name, update it
         const userData = userDoc.data();
         if (!userData.name && user.displayName) {
           await setDoc(userDocRef, { ...userData, name: user.displayName }, { merge: true });
-          localStorage.setItem('name', user.displayName);
-        } else {
-          localStorage.setItem('name', userData.name || user.displayName || '');
         }
       }
-      // Save other info
-      localStorage.setItem('role', (userDoc.data() && userDoc.data().role) || 'user');
-      localStorage.setItem('auth', 'true');
-      localStorage.setItem('email', user.email || '');
       // Always fetch the latest user doc for name/role
       userDoc = await getDoc(userDocRef);
       const userProfile = userDoc.data();
-      localStorage.setItem('name', userProfile?.name || user.displayName || '');
-      localStorage.setItem('role', userProfile?.role || 'user');
+      const normalizedRole = (userProfile?.role || 'new user').toLowerCase();
+      setUser({
+        id: user.uid,
+        email: user.email || '',
+        role: normalizedRole,
+        name: userProfile?.name || user.displayName || ''
+      });
       navigate('/');
     } catch (err: any) {
       setError(err.message);

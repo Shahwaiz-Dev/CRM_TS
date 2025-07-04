@@ -1,13 +1,17 @@
+// Fixed PipelineView component with smooth drag and drop
+
 import React, { useState, useEffect } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
 import { Input } from '@/components/ui/input';
-import { Search, Filter, MoreHorizontal, Grid3X3, List, BarChart3, Calendar, Plus, Pencil, Loader2 } from 'lucide-react';
-import { DragDropContext, Droppable, Draggable, DropResult } from 'react-beautiful-dnd';
-import { collection, getDocs, addDoc, updateDoc, doc } from 'firebase/firestore';
+import { Plus, Pencil, Trash2, Loader2 } from 'lucide-react';
+import { DragDropContext, Droppable, Draggable, DropResult } from '@hello-pangea/dnd';
+import { collection, getDocs, addDoc, updateDoc, deleteDoc, doc } from 'firebase/firestore';
 import { db } from '../../lib/firebase';
+import { useAuth } from '@/contexts/AuthContext';
+import { Navigate } from 'react-router-dom';
 
 interface Deal {
   id: string;
@@ -23,17 +27,13 @@ interface Deal {
 }
 
 const stageNames = ['New', 'Qualified', 'Proposition', 'Negotiation', 'Won'];
-const stageColors = {
-  'New': 'bg-green-500',
-  'Qualified': 'bg-red-500',
-  'Proposition': 'bg-blue-500',
-  'Negotiation': 'bg-purple-500',
-  'Won': 'bg-orange-500'
-};
 
 export function PipelineView() {
+  const { user, loading } = useAuth();
+  // Remove useAuth and Navigate imports and any role-checking logic at the top of the component.
+
   const [deals, setDeals] = useState<Deal[]>([]);
-  const [loading, setLoading] = useState(false);
+  const [dataLoading, setDataLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [newDeal, setNewDeal] = useState({
     title: '',
@@ -48,23 +48,13 @@ export function PipelineView() {
   });
   const [showAdd, setShowAdd] = useState(false);
   const [editDeal, setEditDeal] = useState<Deal | null>(null);
-  const [editDealData, setEditDealData] = useState({
-    title: '',
-    company: '',
-    value: 0,
-    stage: 'New',
-    priority: 1,
-    assignee: '',
-    type: '',
-    avatar: '👤',
-    description: ''
-  });
+  const [editDealData, setEditDealData] = useState(newDeal);
   const [showEdit, setShowEdit] = useState(false);
   const [loadingDealId, setLoadingDealId] = useState<string | null>(null);
+  const [deleteDealId, setDeleteDealId] = useState<string | null>(null);
 
-  // Fetch deals from Firestore
   const fetchDeals = async () => {
-    setLoading(true);
+    setDataLoading(true);
     setError(null);
     try {
       const querySnapshot = await getDocs(collection(db, 'deals'));
@@ -72,79 +62,113 @@ export function PipelineView() {
     } catch (e: any) {
       setError(e.message || 'Failed to fetch deals');
     }
-    setLoading(false);
+    setDataLoading(false);
   };
 
   useEffect(() => {
     fetchDeals();
   }, []);
 
-  // Add a new deal
   const handleAddDeal = async () => {
     if (!newDeal.title || !newDeal.company) return;
-    setLoading(true);
+    setDataLoading(true);
     setError(null);
     try {
       await addDoc(collection(db, 'deals'), newDeal);
-      setNewDeal({ title: '', company: '', value: 0, stage: 'New', priority: 1, assignee: '', type: '', avatar: '👤', description: '' });
+      setNewDeal({ ...newDeal, title: '', company: '', value: 0, assignee: '', type: '', description: '' });
       setShowAdd(false);
       fetchDeals();
     } catch (e: any) {
       setError(e.message || 'Failed to add deal');
     }
-    setLoading(false);
+    setDataLoading(false);
   };
 
-  // Update deal stage on drag
-  const onDragEnd = async (result: DropResult) => {
-    const { destination, source, draggableId } = result;
-    if (!destination || destination.droppableId === source.droppableId) return;
-    const deal = deals.find(d => d.id === draggableId);
-    if (!deal) return;
-    setLoadingDealId(deal.id);
-    setLoading(true);
+  const handleDeleteDeal = async (dealId: string) => {
+    setDataLoading(true);
     setError(null);
     try {
-      await updateDoc(doc(db, 'deals', deal.id), { stage: destination.droppableId });
+      await deleteDoc(doc(db, 'deals', dealId));
+      setDeleteDealId(null);
       fetchDeals();
     } catch (e: any) {
-      setError(e.message || 'Failed to update deal');
+      setError(e.message || 'Failed to delete deal');
     }
-    setLoading(false);
-    setLoadingDealId(null);
+    setDataLoading(false);
+  };
+
+  const getTotalValue = () => deals.reduce((sum, d) => sum + (d.value || 0), 0);
+
+  const reorder = (list: Deal[], startIndex: number, endIndex: number) => {
+    const result = Array.from(list);
+    const [removed] = result.splice(startIndex, 1);
+    result.splice(endIndex, 0, removed);
+    return result;
+  };
+
+  const onDragEnd = async (result: DropResult) => {
+    const { destination, source, draggableId } = result;
+    
+    // If dropped outside or no destination, do nothing
+    if (!destination) {
+      return;
+    }
+    
+    // Same column reorder
+    if (destination.droppableId === source.droppableId && destination.index !== source.index) {
+      const stageDeals = getStageDeals(source.droppableId);
+      const reordered = reorder(stageDeals, source.index, destination.index);
+      setDeals(prev => {
+        const others = prev.filter(d => d.stage !== source.droppableId);
+        return [...others, ...reordered];
+      });
+      return;
+    }
+    
+    // Different column move
+    if (destination.droppableId !== source.droppableId) {
+      const deal = deals.find(d => d.id === draggableId);
+      if (!deal) return;
+      
+      // Optimistic update
+      setDeals(prev => prev.map(d => 
+        d.id === draggableId ? { ...d, stage: destination.droppableId } : d
+      ));
+      
+      setLoadingDealId(deal.id);
+      try {
+        await updateDoc(doc(db, 'deals', deal.id), { stage: destination.droppableId });
+      } catch (e: any) {
+        setError(e.message || 'Failed to update deal');
+        // Revert on error
+        fetchDeals();
+      } finally {
+        setLoadingDealId(null);
+      }
+    }
   };
 
   const getPriorityStars = (priority: number) => {
     return Array.from({ length: 3 }, (_, i) => (
-      <span key={i} className={`text-sm ${i < priority ? 'text-yellow-400' : 'text-gray-300'}`}>
-        ★
-      </span>
+      <span key={i} className={`text-sm ${i < priority ? 'text-yellow-400' : 'text-gray-300'}`}>★</span>
     ));
   };
 
   const getStageDeals = (stageName: string) => deals.filter(d => d.stage === stageName);
+  const getStageTotal = (stageName: string) => getStageDeals(stageName).reduce((sum, d) => sum + (d.value || 0), 0);
+  const getMaxStageTotal = () => Math.max(...stageNames.map(getStageTotal), 1);
+  const getAssigneeAvatar = (assignee: string) => assignee?.trim()?.charAt(0)?.toUpperCase() || 'A';
 
-  // Open edit dialog with deal data
   const handleEditClick = (deal: Deal) => {
     setEditDeal(deal);
-    setEditDealData({
-      title: deal.title,
-      company: deal.company,
-      value: deal.value,
-      stage: deal.stage,
-      priority: deal.priority,
-      assignee: deal.assignee,
-      type: deal.type,
-      avatar: deal.avatar,
-      description: deal.description || ''
-    });
+    const { id, description = '', ...rest } = deal;
+    setEditDealData({ ...rest, description });
     setShowEdit(true);
   };
 
-  // Update deal in Firestore
   const handleEditDeal = async () => {
     if (!editDeal) return;
-    setLoading(true);
+    setDataLoading(true);
     setError(null);
     try {
       await updateDoc(doc(db, 'deals', editDeal.id), editDealData);
@@ -154,16 +178,22 @@ export function PipelineView() {
     } catch (e: any) {
       setError(e.message || 'Failed to update deal');
     }
-    setLoading(false);
+    setDataLoading(false);
   };
 
   return (
-    <div className="p-6 md:p-10">
-      <div className="flex justify-between items-center mb-6">
+    <div className="p-6 md:p-10 h-screen flex flex-col">
+      <div className="flex items-center justify-between mb-4">
         <h1 className="text-3xl font-bold">Sales Pipeline</h1>
+        <div className="text-xl font-bold text-green-600">Total: ${getTotalValue().toLocaleString()}</div>
+      </div>
+      
+      <div className="flex items-center mb-6">
         <Dialog open={showAdd} onOpenChange={setShowAdd}>
           <DialogTrigger asChild>
-            <Button size="sm" className="gap-2"><Plus className="w-4 h-4" /> Add Deal</Button>
+            <Button size="lg" className="gap-2 bg-blue-600 hover:bg-blue-700 text-white font-semibold rounded px-6 py-2 text-lg shadow mr-4">
+              <Plus className="w-5 h-5" /> Add Deal
+            </Button>
           </DialogTrigger>
           <DialogContent>
             <DialogHeader>
@@ -177,8 +207,8 @@ export function PipelineView() {
               <Input placeholder="Assignee" value={newDeal.assignee} onChange={e => setNewDeal(d => ({ ...d, assignee: e.target.value }))} />
               <Input placeholder="Description" value={newDeal.description} onChange={e => setNewDeal(d => ({ ...d, description: e.target.value }))} />
               <div className="flex gap-2 mt-2">
-                <Button size="sm" onClick={async () => { await handleAddDeal(); setShowAdd(false); }} disabled={loading}>
-                  {loading ? <Loader2 className="w-4 h-4 animate-spin mr-2" /> : null}
+                <Button size="sm" onClick={async () => { await handleAddDeal(); setShowAdd(false); }} disabled={dataLoading}>
+                  {dataLoading ? <Loader2 className="w-4 h-4 animate-spin mr-2" /> : null}
                   Save
                 </Button>
                 <Button size="sm" variant="outline" onClick={() => setShowAdd(false)}>Cancel</Button>
@@ -187,8 +217,9 @@ export function PipelineView() {
           </DialogContent>
         </Dialog>
       </div>
+
       {error && <div className="text-red-600 mb-4">{error}</div>}
-      {loading && <div className="mb-4">Loading...</div>}
+
       <Dialog open={showEdit} onOpenChange={setShowEdit}>
         <DialogContent>
           <DialogHeader>
@@ -208,8 +239,8 @@ export function PipelineView() {
               ))}
             </select>
             <div className="flex gap-2 mt-2">
-              <Button size="sm" onClick={async () => { await handleEditDeal(); setShowEdit(false); }} disabled={loading}>
-                {loading ? <Loader2 className="w-4 h-4 animate-spin mr-2" /> : null}
+              <Button size="sm" onClick={async () => { await handleEditDeal(); setShowEdit(false); }} disabled={dataLoading}>
+                {dataLoading ? <Loader2 className="w-4 h-4 animate-spin mr-2" /> : null}
                 Save
               </Button>
               <Button size="sm" variant="outline" onClick={() => setShowEdit(false)}>Cancel</Button>
@@ -217,64 +248,130 @@ export function PipelineView() {
           </div>
         </DialogContent>
       </Dialog>
+
+      {/* Delete Confirmation Dialog */}
+      <Dialog open={!!deleteDealId} onOpenChange={(open) => !open && setDeleteDealId(null)}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Delete Deal</DialogTitle>
+          </DialogHeader>
+          <div className="py-4">
+            <p>Are you sure you want to delete this deal? This action cannot be undone.</p>
+          </div>
+          <div className="flex gap-2 justify-end">
+            <Button 
+              variant="destructive" 
+              onClick={() => deleteDealId && handleDeleteDeal(deleteDealId)}
+              disabled={dataLoading}
+            >
+              {dataLoading ? <Loader2 className="w-4 h-4 animate-spin mr-2" /> : null}
+              Delete
+            </Button>
+            <Button variant="outline" onClick={() => setDeleteDealId(null)}>Cancel</Button>
+          </div>
+        </DialogContent>
+      </Dialog>
+
       <DragDropContext onDragEnd={onDragEnd}>
-        <div className="flex gap-4 overflow-x-auto">
-          {stageNames.map(stage => (
-            <Droppable droppableId={stage} key={stage}>
-              {(provided, snapshot) => (
-                <div
-                  ref={provided.innerRef}
-                  {...provided.droppableProps}
-                  className={`w-80 flex-shrink-0 bg-white rounded-lg border p-4 transition-colors duration-200 min-h-[400px] ${snapshot.isDraggingOver ? 'bg-blue-50 ring-2 ring-blue-400' : ''}`}
-                >
-                  <h3 className={`font-semibold mb-4 text-lg ${stageColors[stage]} text-center`}>{stage}</h3>
-                  <div className="flex flex-col gap-2 max-h-[600px] overflow-y-auto min-h-[60px]">
-                    {getStageDeals(stage).map((deal, idx) => (
-                      <Draggable draggableId={deal.id} index={idx} key={deal.id}>
-                        {(provided, snapshot) => (
-                          <Card
-                            ref={provided.innerRef}
-                            {...provided.draggableProps}
-                            {...provided.dragHandleProps}
-                            className={`mb-3 hover:shadow-md transition-shadow cursor-pointer bg-white relative ${snapshot.isDragging ? 'opacity-70' : ''}`}
-                          >
-                            <CardContent className="p-4">
-                              <div className="space-y-2">
-                                <div className="flex items-center justify-between">
-                                  <span className="font-semibold text-sm leading-tight">{deal.title}</span>
-                                  <Badge className="text-xs">{deal.type}</Badge>
-                                </div>
-                                <div className="text-xs text-gray-600">{deal.company}</div>
-                                <div className="text-xs text-gray-600">${deal.value.toLocaleString()}</div>
-                                <div className="flex items-center gap-2 text-xs text-gray-500">
-                                  <span>{deal.assignee}</span>
-                                </div>
-                                <div className="flex items-center gap-2 text-xs text-gray-500">
-                                  {getPriorityStars(deal.priority)}
-                                </div>
-                                <div className="text-xs text-gray-500">{deal.description}</div>
-                                {!snapshot.isDragging && (
-                                  <Button size="icon" variant="ghost" className="absolute bottom-2 right-2" onClick={e => { e.stopPropagation(); handleEditClick(deal); }}>
-                                    <Pencil className="w-4 h-4" />
-                                  </Button>
-                                )}
-                                {loadingDealId === deal.id && (
-                                  <div className="absolute inset-0 flex items-center justify-center bg-white/70 rounded-lg z-10">
-                                    <Loader2 className="w-6 h-6 animate-spin text-blue-500" />
+        <div className="flex gap-4 overflow-x-auto flex-1 pb-4">
+          {stageNames.map(stage => {
+            const stageTotal = getStageTotal(stage);
+            const maxTotal = getMaxStageTotal();
+            return (
+              <Droppable droppableId={stage} key={stage}>
+                {(provided, snapshot) => (
+                  <div className="w-80 flex-shrink-0 flex flex-col h-full">
+                    <div className="px-4 pt-4 pb-2 border-b bg-gray-50 rounded-t-lg border border-b-0">
+                      <div className="flex items-center justify-between mb-1">
+                        <span className="font-semibold text-lg text-gray-900">{stage}</span>
+                        <span className="text-gray-500 text-sm font-semibold">${stageTotal.toLocaleString()}</span>
+                      </div>
+                      <div className="w-full h-2 bg-gray-200 rounded-full">
+                        <div className="h-2 rounded-full bg-green-500" style={{ width: `${Math.round((stageTotal / maxTotal) * 100)}%` }}></div>
+                      </div>
+                    </div>
+
+                    <div
+                      ref={provided.innerRef}
+                      {...provided.droppableProps}
+                      className={`flex-1 bg-white rounded-b-lg border border-t-0 transition-colors duration-200 ${snapshot.isDraggingOver ? 'bg-blue-50 ring-2 ring-blue-400' : ''}`}
+                    >
+                      <div className="p-2 h-full overflow-y-auto">
+                        <div className="flex flex-col gap-3 min-h-full">
+                          {getStageDeals(stage).map((deal, idx) => (
+                            <Draggable draggableId={deal.id} index={idx} key={deal.id}>
+                              {(provided, snapshot) => (
+                                <div
+                                  ref={provided.innerRef}
+                                  {...provided.draggableProps}
+                                  {...provided.dragHandleProps}
+                                  className={`relative bg-white rounded-lg border p-4 shadow-sm hover:shadow-md transition-all duration-200 cursor-grab active:cursor-grabbing group ${
+                                    snapshot.isDragging ? 'shadow-lg transform rotate-2 z-50' : ''
+                                  }`}
+                                  style={{
+                                    ...provided.draggableProps.style,
+                                    minHeight: 120,
+                                    transform: snapshot.isDragging 
+                                      ? `${provided.draggableProps.style?.transform} rotate(5deg)` 
+                                      : provided.draggableProps.style?.transform
+                                  }}
+                                >
+                                  <div className="flex items-center justify-between mb-1">
+                                    <span className="font-semibold text-base text-gray-900 truncate pr-2 flex-1">{deal.title}</span>
+                                    <span className="w-8 h-8 rounded-full bg-gray-100 border flex items-center justify-center font-bold text-gray-700 flex-shrink-0">{getAssigneeAvatar(deal.assignee)}</span>
                                   </div>
-                                )}
-                              </div>
-                            </CardContent>
-                          </Card>
-                        )}
-                      </Draggable>
-                    ))}
-                    {provided.placeholder}
+                                  <div className="text-xs text-gray-500 mb-1">{deal.type} • {deal.company}</div>
+                                  <div className="text-green-600 font-bold text-lg mb-1">${deal.value.toLocaleString()}</div>
+                                  <div className="flex items-center gap-1 text-xs mb-1">{getPriorityStars(deal.priority)}</div>
+                                  
+                                  {/* Action Buttons */}
+                                  <div className="absolute bottom-2 right-2 flex gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
+                                    <Button 
+                                      size="icon" 
+                                      variant="ghost" 
+                                      className="h-8 w-8" 
+                                      onClick={(e) => { 
+                                        e.stopPropagation(); 
+                                        e.preventDefault(); 
+                                        handleEditClick(deal); 
+                                      }}
+                                      onMouseDown={(e) => e.stopPropagation()}
+                                    >
+                                      <Pencil className="w-4 h-4" />
+                                    </Button>
+                                    <Button 
+                                      size="icon" 
+                                      variant="ghost" 
+                                      className="h-8 w-8 text-red-500 hover:text-red-700" 
+                                      onClick={(e) => { 
+                                        e.stopPropagation(); 
+                                        e.preventDefault(); 
+                                        setDeleteDealId(deal.id); 
+                                      }}
+                                      onMouseDown={(e) => e.stopPropagation()}
+                                    >
+                                      <Trash2 className="w-4 h-4" />
+                                    </Button>
+                                  </div>
+                                  
+                                  {loadingDealId === deal.id && (
+                                    <div className="absolute inset-0 flex items-center justify-center bg-white/70 rounded-lg z-10">
+                                      <Loader2 className="w-6 h-6 animate-spin text-blue-500" />
+                                    </div>
+                                  )}
+                                </div>
+                              )}
+                            </Draggable>
+                          ))}
+                          {provided.placeholder}
+                        </div>
+                      </div>
+                    </div>
                   </div>
-                </div>
-              )}
-            </Droppable>
-          ))}
+                )}
+              </Droppable>
+            );
+          })}
         </div>
       </DragDropContext>
     </div>

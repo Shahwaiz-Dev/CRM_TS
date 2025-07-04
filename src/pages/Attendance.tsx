@@ -2,77 +2,59 @@ import React, { useEffect, useState } from "react";
 import { getAttendance, addAttendance, updateAttendance, deleteAttendance } from "@/lib/firebase";
 import { Search, Filter, Calendar as CalendarIcon, Plus } from 'lucide-react';
 import { Calendar } from '@/components/ui/calendar';
-
-const attendanceData = [
-  {
-    initials: 'AJ',
-    name: 'Alice Johnson',
-    department: 'Engineering',
-    checkIn: '09:00 AM',
-    checkOut: '06:15 PM',
-    totalHours: '9h 15m',
-    status: 'Present',
-  },
-  {
-    initials: 'BW',
-    name: 'Bob Wilson',
-    department: 'Product',
-    checkIn: '08:45 AM',
-    checkOut: '05:30 PM',
-    totalHours: '8h 45m',
-    status: 'Present',
-  },
-];
-
-const initialLeaveRequests = [
-  {
-    id: 1,
-    name: 'Sarah Johnson',
-    type: 'Vacation - 5 days',
-    dateRange: '2024-02-05 to 2024-02-09',
-    reason: 'Family vacation',
-    status: 'Pending',
-  },
-  {
-    id: 2,
-    name: 'Mike Thompson',
-    type: 'Sick Leave - 2 days',
-    dateRange: '2024-01-25 to 2024-01-26',
-    reason: 'Medical appointment',
-    status: 'Approved',
-  },
-];
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger, DialogDescription } from '@/components/ui/dialog';
+import { Button } from '@/components/ui/button';
+import { collection, getDocs, addDoc, updateDoc, deleteDoc, doc } from 'firebase/firestore';
+import { db } from '../lib/firebase';
+import { useLoading } from "@/components/ui/PageLoader";
+import { useAuth } from '@/contexts/AuthContext';
+import { Navigate } from 'react-router-dom';
 
 const today = new Date();
 
 export default function Attendance() {
+  const { user, loading } = useAuth();
   const [attendance, setAttendance] = useState([]);
-  const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
   const [newAttendance, setNewAttendance] = useState({ employeeId: "", date: "", status: "Present" });
   const [editId, setEditId] = useState(null);
   const [editAttendance, setEditAttendance] = useState({ employeeId: "", date: "", status: "Present" });
   const [selectedDate, setSelectedDate] = useState(today);
-  const [leaveRequests, setLeaveRequests] = useState(initialLeaveRequests);
+  const [leaveRequests, setLeaveRequests] = useState([]);
   const [search, setSearch] = useState('');
   const [filterOpen, setFilterOpen] = useState(false);
+  const [filterModal, setFilterModal] = useState(false);
+  const [filter, setFilter] = useState({ employee: '', date: '', status: '' });
+  const [modalOpen, setModalOpen] = useState(false);
+  const [modalMode, setModalMode] = useState<'add'|'edit'>('add');
+  const [employees, setEmployees] = useState([]);
+  const [leaveModalOpen, setLeaveModalOpen] = useState(false);
+  const [newLeave, setNewLeave] = useState({ employeeId: '', type: '', dateRange: '', reason: '', status: 'Pending' });
+
+  const fetchEmployees = async () => {
+    try {
+      const snap = await getDocs(collection(db, 'employees'));
+      setEmployees(snap.docs.map(doc => ({ id: doc.id, ...doc.data() })));
+    } catch (e) {
+      setError('Failed to fetch employees');
+    }
+  };
 
   const fetchAttendance = async () => {
-    setLoading(true);
-    setError("");
     try {
       setAttendance(await getAttendance());
     } catch (e) {
       setError("Failed to fetch attendance");
     }
-    setLoading(false);
   };
 
-  useEffect(() => { fetchAttendance(); }, []);
+  useEffect(() => {
+    fetchEmployees();
+    fetchAttendance();
+    fetchLeaveRequests();
+  }, []);
 
   const handleAdd = async () => {
-    setLoading(true);
-    setError("");
     try {
       await addAttendance(newAttendance);
       setNewAttendance({ employeeId: "", date: "", status: "Present" });
@@ -80,7 +62,6 @@ export default function Attendance() {
     } catch (e) {
       setError("Failed to add attendance");
     }
-    setLoading(false);
   };
 
   const handleEdit = (a) => {
@@ -89,8 +70,6 @@ export default function Attendance() {
   };
 
   const handleUpdate = async () => {
-    setLoading(true);
-    setError("");
     try {
       await updateAttendance(editId, editAttendance);
       setEditId(null);
@@ -98,40 +77,84 @@ export default function Attendance() {
     } catch (e) {
       setError("Failed to update attendance");
     }
-    setLoading(false);
   };
 
   const handleDelete = async (id) => {
-    setLoading(true);
-    setError("");
     try {
       await deleteAttendance(id);
       fetchAttendance();
     } catch (e) {
       setError("Failed to delete attendance");
     }
-    setLoading(false);
   };
 
-  const handleApprove = (id) => {
-    setLeaveRequests(reqs => reqs.map(r => r.id === id ? { ...r, status: 'Approved' } : r));
+  const fetchLeaveRequests = async () => {
+    try {
+      const snap = await getDocs(collection(db, 'leaveRequests'));
+      setLeaveRequests(snap.docs.map(doc => ({ id: doc.id, ...doc.data() })));
+    } catch (e) {
+      setError('Failed to fetch leave requests');
+    }
   };
-  const handleReject = (id) => {
-    setLeaveRequests(reqs => reqs.map(r => r.id === id ? { ...r, status: 'Rejected' } : r));
+
+  const handleAddLeave = async () => {
+    if (!newLeave.employeeId || !newLeave.type || !newLeave.dateRange) {
+      setError('Please fill all leave request fields');
+      return;
+    }
+    try {
+      await addDoc(collection(db, 'leaveRequests'), newLeave);
+      setNewLeave({ employeeId: '', type: '', dateRange: '', reason: '', status: 'Pending' });
+      setLeaveModalOpen(false);
+      fetchLeaveRequests();
+    } catch (e) {
+      setError('Failed to add leave request');
+    }
   };
-  const handleAddLeave = () => {
-    window.alert('Leave request form/modal would open here.');
+
+  const handleApprove = async (id) => {
+    try {
+      await updateDoc(doc(db, 'leaveRequests', id), { status: 'Approved' });
+      fetchLeaveRequests();
+    } catch (e) {
+      setError('Failed to approve leave');
+    }
   };
+
+  const handleReject = async (id) => {
+    try {
+      await updateDoc(doc(db, 'leaveRequests', id), { status: 'Rejected' });
+      fetchLeaveRequests();
+    } catch (e) {
+      setError('Failed to reject leave');
+    }
+  };
+
+  const handleDeleteLeave = async (id) => {
+    try {
+      await deleteDoc(doc(db, 'leaveRequests', id));
+      fetchLeaveRequests();
+    } catch (e) {
+      setError('Failed to delete leave request');
+    }
+  };
+
   const handleFilter = () => {
     setFilterOpen(true);
     window.alert('Filter options/modal would open here.');
   };
 
-  // Filter attendance by search
-  const filteredAttendance = attendanceData.filter(emp =>
-    emp.name.toLowerCase().includes(search.toLowerCase()) ||
-    emp.department.toLowerCase().includes(search.toLowerCase())
+  // Filter attendance by search (from backend data)
+  const filteredAttendance = attendance.filter(emp =>
+    (emp.name || '').toLowerCase().includes(search.toLowerCase()) ||
+    (emp.department || '').toLowerCase().includes(search.toLowerCase())
   );
+
+  // Calculate stats from backend data
+  const presentToday = attendance.filter(a => a.status === 'Present').length;
+  const absentToday = attendance.filter(a => a.status === 'Absent').length;
+  const lateToday = attendance.filter(a => a.status === 'Late').length;
+  const attendanceRate = attendance.length ? ((presentToday / attendance.length) * 100).toFixed(1) : '0.0';
 
   return (
     <div className="p-6 md:p-10">
@@ -140,29 +163,29 @@ export default function Attendance() {
           <h1 className="text-3xl md:text-4xl font-extrabold">Attendance Management</h1>
           <p className="text-gray-500 mt-1">Track employee attendance and manage leave requests</p>
         </div>
-        <button onClick={handleAddLeave} className="bg-blue-600 hover:bg-blue-700 text-white font-semibold px-5 py-2 rounded-lg text-base flex items-center gap-2 self-start md:self-auto"><Plus className="h-5 w-5" /> Add Leave Request</button>
+        <button onClick={() => { setLeaveModalOpen(true); setModalMode('add'); setModalOpen(true); }} className="bg-blue-600 hover:bg-blue-700 text-white font-semibold px-5 py-2 rounded-lg text-base flex items-center gap-2 self-start md:self-auto"><Plus className="h-5 w-5" /> Add Leave Request</button>
       </div>
       {/* Stats Cards */}
       <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-4 mb-8">
         <div className="bg-white rounded-lg border p-5 flex flex-col">
           <span className="text-gray-500 text-sm">Present Today</span>
-          <span className="text-3xl font-bold">2</span>
-          <span className="text-gray-500 text-xs mt-1">50.0% of workforce</span>
+          <span className="text-3xl font-bold">{presentToday}</span>
+          <span className="text-gray-500 text-xs mt-1">{attendance.length ? ((presentToday / attendance.length) * 100).toFixed(1) : '0.0'}% of workforce</span>
         </div>
         <div className="bg-white rounded-lg border p-5 flex flex-col">
           <span className="text-gray-500 text-sm">Late Arrivals</span>
-          <span className="text-3xl font-bold">1</span>
+          <span className="text-3xl font-bold">{lateToday}</span>
           <span className="text-gray-500 text-xs mt-1">Arrived after 9:00 AM</span>
         </div>
         <div className="bg-white rounded-lg border p-5 flex flex-col">
           <span className="text-gray-500 text-sm">Absent Today</span>
-          <span className="text-3xl font-bold">1</span>
+          <span className="text-3xl font-bold">{absentToday}</span>
           <span className="text-gray-500 text-xs mt-1">Without prior notice</span>
         </div>
         <div className="bg-white rounded-lg border p-5 flex flex-col">
           <span className="text-gray-500 text-sm">Attendance Rate</span>
-          <span className="text-3xl font-bold">75.0%</span>
-          <span className="text-green-600 text-xs mt-1">+2.1% from yesterday</span>
+          <span className="text-3xl font-bold">{attendanceRate}%</span>
+          <span className="text-green-600 text-xs mt-1">&nbsp;</span>
         </div>
       </div>
       <div className="flex flex-col lg:flex-row gap-6">
@@ -199,21 +222,28 @@ export default function Attendance() {
                 </tr>
               </thead>
               <tbody>
-                {filteredAttendance.map((emp, i) => (
-                  <tr key={i} className="border-b hover:bg-gray-50">
-                    <td className="py-3 px-3 flex items-center gap-3 min-w-[200px]">
-                      <div className="h-10 w-10 rounded-full bg-gray-200 flex items-center justify-center font-bold text-gray-700">{emp.initials}</div>
-                      <div>
-                        <div className="font-semibold">{emp.name}</div>
-                        <div className="text-xs text-gray-500">{emp.department}</div>
-                      </div>
-                    </td>
-                    <td className="py-3 px-3 font-mono">{emp.checkIn}</td>
-                    <td className="py-3 px-3 font-mono">{emp.checkOut}</td>
-                    <td className="py-3 px-3 font-semibold">{emp.totalHours}</td>
-                    <td className="py-3 px-3"><span className="bg-green-100 text-green-700 rounded-full px-3 py-1 text-xs font-semibold">{emp.status}</span></td>
-                  </tr>
-                ))}
+                {filteredAttendance.map((emp, i) => {
+                  const employee = employees.find(e => e.id === emp.employeeId);
+                  return (
+                    <tr key={i} className="border-b hover:bg-gray-50">
+                      <td className="py-3 px-3 flex items-center gap-3 min-w-[200px]">
+                        <div className="h-10 w-10 rounded-full bg-gray-200 flex items-center justify-center font-bold text-gray-700">{employee ? (employee.name?.split(' ').map(n => n[0]).join('').toUpperCase()) : '?'}</div>
+                        <div>
+                          <div className="font-semibold">{employee ? employee.name : 'Unknown'}</div>
+                          <div className="text-xs text-gray-500">{employee ? employee.department : ''}</div>
+                        </div>
+                      </td>
+                      <td className="py-3 px-3 font-mono">{emp.checkIn || '-'}</td>
+                      <td className="py-3 px-3 font-mono">{emp.checkOut || '-'}</td>
+                      <td className="py-3 px-3 font-semibold">{emp.totalHours || '-'}</td>
+                      <td className="py-3 px-3"><span className="bg-green-100 text-green-700 rounded-full px-3 py-1 text-xs font-semibold">{emp.status}</span></td>
+                      <td className="py-3 px-3 flex gap-2">
+                        <button onClick={() => { handleEdit(emp); setModalMode('edit'); setModalOpen(true); }} className="text-gray-500 hover:text-blue-600" title="Edit">✏️</button>
+                        <button onClick={() => handleDelete(emp.id)} className="text-gray-500 hover:text-red-600" title="Delete">🗑️</button>
+                      </td>
+                    </tr>
+                  );
+                })}
               </tbody>
             </table>
           </div>
@@ -241,7 +271,7 @@ export default function Attendance() {
             {leaveRequests.map(req => (
               <div key={req.id} className="flex flex-col md:flex-row md:items-center md:justify-between gap-2 border rounded-lg p-4">
                 <div>
-                  <div className="font-semibold text-lg">{req.name}</div>
+                  <div className="font-semibold text-lg">{employees.find(e => e.id === req.employeeId)?.name || 'Unknown'}</div>
                   <div className="text-gray-500 text-sm">{req.type}</div>
                 </div>
                 <div className="flex flex-col md:items-end md:flex-row md:gap-4 gap-1">
@@ -255,6 +285,7 @@ export default function Attendance() {
                   <div className="flex gap-2 mt-2 md:mt-0">
                     <button onClick={() => handleApprove(req.id)} className="border rounded px-3 py-1 text-sm font-medium hover:bg-blue-50 hover:border-blue-600">Approve</button>
                     <button onClick={() => handleReject(req.id)} className="border rounded px-3 py-1 text-sm font-medium hover:bg-red-50 hover:border-red-600">Reject</button>
+                    <button onClick={() => handleDeleteLeave(req.id)} className="border rounded px-3 py-1 text-sm font-medium hover:bg-gray-50 hover:border-gray-600 text-gray-500">Delete</button>
                   </div>
                 </div>
               </div>
@@ -262,66 +293,57 @@ export default function Attendance() {
           </div>
         </div>
       </div>
-      {/* Attendance Table */}
-      <div className="mt-8">
-        <h2 className="text-2xl font-bold mb-4">Attendance</h2>
-        {error && <div className="text-red-500 mb-2">{error}</div>}
-        {loading && <div className="mb-2">Loading...</div>}
-        <table className="w-full border mb-4">
-          <thead>
-            <tr className="bg-gray-100">
-              <th className="p-2 border">Employee ID</th>
-              <th className="p-2 border">Date</th>
-              <th className="p-2 border">Status</th>
-              <th className="p-2 border">Actions</th>
-            </tr>
-          </thead>
-          <tbody>
-            {attendance.map(a => (
-              <tr key={a.id}>
-                {editId === a.id ? (
-                  <>
-                    <td className="border p-1"><input value={editAttendance.employeeId} onChange={e => setEditAttendance({ ...editAttendance, employeeId: e.target.value })} /></td>
-                    <td className="border p-1"><input type="date" value={editAttendance.date} onChange={e => setEditAttendance({ ...editAttendance, date: e.target.value })} /></td>
-                    <td className="border p-1">
-                      <select value={editAttendance.status} onChange={e => setEditAttendance({ ...editAttendance, status: e.target.value })}>
-                        <option value="Present">Present</option>
-                        <option value="Absent">Absent</option>
-                        <option value="Leave">Leave</option>
-                      </select>
-                    </td>
-                    <td className="border p-1">
-                      <button onClick={handleUpdate} className="text-blue-600 mr-2">Save</button>
-                      <button onClick={() => setEditId(null)} className="text-gray-600">Cancel</button>
-                    </td>
-                  </>
-                ) : (
-                  <>
-                    <td className="border p-1">{a.employeeId}</td>
-                    <td className="border p-1">{a.date}</td>
-                    <td className="border p-1">{a.status}</td>
-                    <td className="border p-1">
-                      <button onClick={() => handleEdit(a)} className="text-blue-600 mr-2">Edit</button>
-                      <button onClick={() => handleDelete(a.id)} className="text-red-600">Delete</button>
-                    </td>
-                  </>
-                )}
-              </tr>
-            ))}
-          </tbody>
-        </table>
-        <div className="mb-2 font-semibold">Add Attendance</div>
-        <div className="flex flex-wrap gap-2 mb-4">
-          <input placeholder="Employee ID" value={newAttendance.employeeId} onChange={e => setNewAttendance({ ...newAttendance, employeeId: e.target.value })} className="border p-1 rounded" />
-          <input type="date" placeholder="Date" value={newAttendance.date} onChange={e => setNewAttendance({ ...newAttendance, date: e.target.value })} className="border p-1 rounded" />
-          <select value={newAttendance.status} onChange={e => setNewAttendance({ ...newAttendance, status: e.target.value })} className="border p-1 rounded">
-            <option value="Present">Present</option>
-            <option value="Absent">Absent</option>
-            <option value="Leave">Leave</option>
-          </select>
-          <button onClick={handleAdd} className="bg-blue-600 text-white px-3 py-1 rounded">Add</button>
-        </div>
-      </div>
+      {/* Add/Edit Attendance Modal */}
+      <Dialog open={modalOpen} onOpenChange={setModalOpen}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>{modalMode === 'add' ? 'Add Attendance' : 'Edit Attendance'}</DialogTitle>
+            <DialogDescription>{modalMode === 'add' ? 'Fill out the form to add a new attendance record.' : 'Edit the attendance record.'}</DialogDescription>
+          </DialogHeader>
+          <div className="flex flex-col gap-2">
+            <select value={modalMode === 'add' ? newAttendance.employeeId : editAttendance.employeeId} onChange={e => modalMode === 'add' ? setNewAttendance({ ...newAttendance, employeeId: e.target.value }) : setEditAttendance({ ...editAttendance, employeeId: e.target.value })} className="border p-1 rounded">
+              <option value="">Select Employee</option>
+              {employees.map((e) => (
+                <option key={e.id} value={e.id}>{e.name}</option>
+              ))}
+            </select>
+            <input type="date" value={modalMode === 'add' ? newAttendance.date : editAttendance.date} onChange={e => modalMode === 'add' ? setNewAttendance({ ...newAttendance, date: e.target.value }) : setEditAttendance({ ...editAttendance, date: e.target.value })} className="border p-1 rounded" />
+            <select value={modalMode === 'add' ? newAttendance.status : editAttendance.status} onChange={e => modalMode === 'add' ? setNewAttendance({ ...newAttendance, status: e.target.value }) : setEditAttendance({ ...editAttendance, status: e.target.value })} className="border p-1 rounded">
+              <option value="Present">Present</option>
+              <option value="Absent">Absent</option>
+              <option value="Late">Late</option>
+            </select>
+            <div className="flex gap-2 mt-2">
+              <Button onClick={modalMode === 'add' ? handleAdd : handleUpdate}>{modalMode === 'add' ? 'Add' : 'Save'}</Button>
+              <Button variant="outline" onClick={() => setModalOpen(false)}>Cancel</Button>
+            </div>
+          </div>
+        </DialogContent>
+      </Dialog>
+      {/* Add Leave Request Modal */}
+      <Dialog open={leaveModalOpen} onOpenChange={setLeaveModalOpen}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Add Leave Request</DialogTitle>
+            <DialogDescription>Fill out the form to request leave.</DialogDescription>
+          </DialogHeader>
+          <div className="flex flex-col gap-2">
+            <select value={newLeave.employeeId} onChange={e => setNewLeave({ ...newLeave, employeeId: e.target.value })} className="border p-1 rounded">
+              <option value="">Select Employee</option>
+              {employees.map((e) => (
+                <option key={e.id} value={e.id}>{e.name}</option>
+              ))}
+            </select>
+            <input placeholder="Type (e.g. Sick, Vacation)" value={newLeave.type} onChange={e => setNewLeave({ ...newLeave, type: e.target.value })} className="border p-1 rounded" />
+            <input placeholder="Date Range" value={newLeave.dateRange} onChange={e => setNewLeave({ ...newLeave, dateRange: e.target.value })} className="border p-1 rounded" />
+            <input placeholder="Reason" value={newLeave.reason} onChange={e => setNewLeave({ ...newLeave, reason: e.target.value })} className="border p-1 rounded" />
+            <div className="flex gap-2 mt-2">
+              <Button onClick={handleAddLeave}>Submit</Button>
+              <Button variant="outline" onClick={() => setLeaveModalOpen(false)}>Cancel</Button>
+            </div>
+          </div>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 } 

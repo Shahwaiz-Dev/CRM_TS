@@ -26,7 +26,7 @@ export default function Signup() {
       await setDoc(doc(db, "users", userCredential.user.uid), {
         name,
         email,
-        role: "user"
+        role: "new user"
       });
       localStorage.setItem('name', name);
       navigate('/login');

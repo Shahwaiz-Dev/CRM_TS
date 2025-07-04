@@ -35,20 +35,16 @@ export function TasksView() {
     account: ''
   });
   const [dragOverStatus, setDragOverStatus] = useState<string | null>(null);
-  const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
   // Fetch tasks from Firestore
   const fetchTasks = async () => {
-    setLoading(true);
-    setError(null);
     try {
       const querySnapshot = await getDocs(collection(db, 'tasks'));
       setTasks(querySnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as Task)));
     } catch (e: any) {
       setError(e.message || 'Failed to fetch tasks');
     }
-    setLoading(false);
   };
 
   useEffect(() => {
@@ -58,8 +54,6 @@ export function TasksView() {
   // Add task to Firestore
   const handleAddTask = async () => {
     if (newTask.title && newTask.assignee) {
-      setLoading(true);
-      setError(null);
       try {
         await addDoc(collection(db, 'tasks'), { ...newTask, status: 'Not Started' });
         setNewTask({ title: '', description: '', assignee: '', priority: 'Medium', dueDate: '', account: '' });
@@ -68,26 +62,21 @@ export function TasksView() {
       } catch (e: any) {
         setError(e.message || 'Failed to add task');
       }
-      setLoading(false);
     }
   };
 
   // Update task status in Firestore
   const moveTask = async (taskId: string, newStatus: 'Not Started' | 'In Progress' | 'Completed') => {
-    setLoading(true);
-    setError(null);
     try {
       await updateDoc(doc(db, 'tasks', taskId), { status: newStatus });
       fetchTasks();
     } catch (e: any) {
       setError(e.message || 'Failed to update task');
     }
-    setLoading(false);
   };
 
   // Delete task from Firestore
   const handleDeleteTask = async (taskId: string) => {
-    setLoading(true);
     setError(null);
     try {
       await deleteDoc(doc(db, 'tasks', taskId));
@@ -95,7 +84,6 @@ export function TasksView() {
     } catch (e: any) {
       setError(e.message || 'Failed to delete task');
     }
-    setLoading(false);
   };
 
   const filteredTasks = tasks.filter(task => 
@@ -264,13 +252,12 @@ export function TasksView() {
               <Input type="date" value={newTask.dueDate} onChange={e => setNewTask({ ...newTask, dueDate: e.target.value })} />
               <Label>Account</Label>
               <Input value={newTask.account} onChange={e => setNewTask({ ...newTask, account: e.target.value })} />
-              <Button onClick={handleAddTask} disabled={loading}>Add Task</Button>
+              <Button onClick={handleAddTask}>Add Task</Button>
               </div>
             </DialogContent>
           </Dialog>
         </div>
       {error && <div className="text-red-600 mb-4 flex items-center gap-2"><AlertCircle className="w-4 h-4" /> {error}</div>}
-      {loading && <div className="mb-4">Loading...</div>}
       <div className="flex gap-4 overflow-x-auto">
           <StatusColumn status="Not Started" tasks={tasksByStatus['Not Started']} />
           <StatusColumn status="In Progress" tasks={tasksByStatus['In Progress']} />
