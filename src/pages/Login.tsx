@@ -5,6 +5,7 @@ import { signInWithEmailAndPassword, GoogleAuthProvider, signInWithPopup } from 
 import { doc, getDoc, setDoc } from "firebase/firestore";
 import { auth, db } from "@/lib/firebase";
 import { useAuth } from '@/contexts/AuthContext';
+import { Loader2 } from 'lucide-react';
 
 export default function Login() {
   const [email, setEmail] = useState('');
@@ -12,12 +13,15 @@ export default function Login() {
   const [showPassword, setShowPassword] = useState(false);
   const [remember, setRemember] = useState(false);
   const [error, setError] = useState('');
+  const [isEmailLoading, setIsEmailLoading] = useState(false);
+  const [isGoogleLoading, setIsGoogleLoading] = useState(false);
   const navigate = useNavigate();
   const { setUser } = useAuth();
 
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
     setError('');
+    setIsEmailLoading(true);
     try {
       const userCredential = await signInWithEmailAndPassword(auth, email, password);
       // Fetch user profile from Firestore
@@ -37,11 +41,14 @@ export default function Login() {
       }
     } catch (err: any) {
       setError(err.message);
+    } finally {
+      setIsEmailLoading(false);
     }
   };
 
   const handleGoogleSignIn = async () => {
     setError('');
+    setIsGoogleLoading(true);
     const provider = new GoogleAuthProvider();
     try {
       const result = await signInWithPopup(auth, provider);
@@ -76,6 +83,8 @@ export default function Login() {
       navigate('/');
     } catch (err: any) {
       setError(err.message);
+    } finally {
+      setIsGoogleLoading(false);
     }
   };
 
@@ -95,21 +104,31 @@ export default function Login() {
           type="button"
           className="w-full bg-black hover:bg-black-600 text-white font-semibold py-2 rounded text-base mb-2 flex items-center justify-center gap-2"
           onClick={handleGoogleSignIn}
+          disabled={isGoogleLoading || isEmailLoading}
         >
-          <svg className="w-5 h-5 mr-2" viewBox="0 0 48 48" fill="none" xmlns="http://www.w3.org/2000/svg">
-            <g clipPath="url(#clip0_17_40)">
-              <path d="M47.5 24.5C47.5 22.6 47.3 21 47 19.4H24V28.7H37.6C37.1 31.2 35.5 33.3 33.1 34.8V40.1H41C45.1 36.3 47.5 30.9 47.5 24.5Z" fill="#4285F4"/>
-              <path d="M24 48C30.5 48 35.9 45.9 41 40.1L33.1 34.8C30.5 36.5 27.5 37.5 24 37.5C17.7 37.5 12.2 33.4 10.3 27.9H2.1V33.3C7.2 41.1 15.1 48 24 48Z" fill="#34A853"/>
-              <path d="M10.3 27.9C9.8 26.2 9.5 24.5 9.5 22.7C9.5 20.9 9.8 19.2 10.3 17.5V12.1H2.1C0.7 15 0 18.2 0 22.7C0 27.2 0.7 30.4 2.1 33.3L10.3 27.9Z" fill="#FBBC05"/>
-              <path d="M24 9.5C27.2 9.5 29.9 10.6 31.9 12.5L39.1 5.3C35.9 2.3 30.5 0 24 0C15.1 0 7.2 6.9 2.1 12.1L10.3 17.5C12.2 12.1 17.7 9.5 24 9.5Z" fill="#EA4335"/>
-            </g>
-            <defs>
-              <clipPath id="clip0_17_40">
-                <rect width="48" height="48" fill="white"/>
-              </clipPath>
-            </defs>
-          </svg>
-          Sign in with Google
+          {isGoogleLoading ? (
+            <>
+              <Loader2 className="w-5 h-5 animate-spin" />
+              Signing in...
+            </>
+          ) : (
+            <>
+              <svg className="w-5 h-5 mr-2" viewBox="0 0 48 48" fill="none" xmlns="http://www.w3.org/2000/svg">
+                <g clipPath="url(#clip0_17_40)">
+                  <path d="M47.5 24.5C47.5 22.6 47.3 21 47 19.4H24V28.7H37.6C37.1 31.2 35.5 33.3 33.1 34.8V40.1H41C45.1 36.3 47.5 30.9 47.5 24.5Z" fill="#4285F4"/>
+                  <path d="M24 48C30.5 48 35.9 45.9 41 40.1L33.1 34.8C30.5 36.5 27.5 37.5 24 37.5C17.7 37.5 12.2 33.4 10.3 27.9H2.1V33.3C7.2 41.1 15.1 48 24 48Z" fill="#34A853"/>
+                  <path d="M10.3 27.9C9.8 26.2 9.5 24.5 9.5 22.7C9.5 20.9 9.8 19.2 10.3 17.5V12.1H2.1C0.7 15 0 18.2 0 22.7C0 27.2 0.7 30.4 2.1 33.3L10.3 27.9Z" fill="#FBBC05"/>
+                  <path d="M24 9.5C27.2 9.5 29.9 10.6 31.9 12.5L39.1 5.3C35.9 2.3 30.5 0 24 0C15.1 0 7.2 6.9 2.1 12.1L10.3 17.5C12.2 12.1 17.7 9.5 24 9.5Z" fill="#EA4335"/>
+                </g>
+                <defs>
+                  <clipPath id="clip0_17_40">
+                    <rect width="48" height="48" fill="white"/>
+                  </clipPath>
+                </defs>
+              </svg>
+              Sign in with Google
+            </>
+          )}
         </Button>
         {/* Email */}
         <div>
@@ -126,6 +145,7 @@ export default function Login() {
               value={email}
               onChange={e => setEmail(e.target.value)}
               required
+              disabled={isEmailLoading || isGoogleLoading}
             />
           </div>
         </div>
@@ -144,8 +164,14 @@ export default function Login() {
               value={password}
               onChange={e => setPassword(e.target.value)}
               required
+              disabled={isEmailLoading || isGoogleLoading}
             />
-            <button type="button" onClick={() => setShowPassword(v => !v)} className="absolute inset-y-0 right-0 flex items-center pr-3 text-gray-400 focus:outline-none">
+            <button 
+              type="button" 
+              onClick={() => setShowPassword(v => !v)} 
+              className="absolute inset-y-0 right-0 flex items-center pr-3 text-gray-400 focus:outline-none"
+              disabled={isEmailLoading || isGoogleLoading}
+            >
               {/* Eye/Eye-off icon */}
               {showPassword ? (
                 // Eye icon
@@ -166,7 +192,13 @@ export default function Login() {
         {/* Remember me and Forgot password */}
         <div className="flex flex-col sm:flex-row items-center justify-between gap-2 sm:gap-0">
           <label className="flex items-center text-sm">
-            <input type="checkbox" className="form-checkbox rounded text-blue-600 mr-2" checked={remember} onChange={e => setRemember(e.target.checked)} />
+            <input 
+              type="checkbox" 
+              className="form-checkbox rounded text-blue-600 mr-2" 
+              checked={remember} 
+              onChange={e => setRemember(e.target.checked)}
+              disabled={isEmailLoading || isGoogleLoading}
+            />
             Remember me
           </label>
           <a href="#" className="text-blue-600 text-sm hover:underline">Forgot password?</a>
@@ -174,7 +206,20 @@ export default function Login() {
         {/* Error */}
         {error && <div className="text-red-500 text-sm text-center">{error}</div>}
         {/* Sign in button */}
-        <Button type="submit" className="w-full bg-blue-600 hover:bg-blue-700 text-white font-semibold py-2 rounded text-base">Sign in</Button>
+        <Button 
+          type="submit" 
+          className="w-full bg-blue-600 hover:bg-blue-700 text-white font-semibold py-2 rounded text-base flex items-center justify-center gap-2"
+          disabled={isEmailLoading || isGoogleLoading}
+        >
+          {isEmailLoading ? (
+            <>
+              <Loader2 className="w-5 h-5 animate-spin" />
+              Signing in...
+            </>
+          ) : (
+            'Sign in'
+          )}
+        </Button>
       </form>
     </div>
   );

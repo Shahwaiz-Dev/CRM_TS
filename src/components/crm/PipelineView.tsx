@@ -6,12 +6,14 @@ import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
 import { Input } from '@/components/ui/input';
-import { Plus, Pencil, Trash2, Loader2 } from 'lucide-react';
+import { Plus, Pencil, Trash2, Loader2, Filter, X } from 'lucide-react';
 import { DragDropContext, Droppable, Draggable, DropResult } from '@hello-pangea/dnd';
 import { collection, getDocs, addDoc, updateDoc, deleteDoc, doc } from 'firebase/firestore';
 import { db } from '../../lib/firebase';
 import { useAuth } from '@/contexts/AuthContext';
 import { Navigate } from 'react-router-dom';
+import { Select, SelectTrigger, SelectValue, SelectContent, SelectItem } from '@/components/ui/select';
+import { motion } from 'framer-motion';
 
 interface Deal {
   id: string;
@@ -52,6 +54,14 @@ export function PipelineView() {
   const [showEdit, setShowEdit] = useState(false);
   const [loadingDealId, setLoadingDealId] = useState<string | null>(null);
   const [deleteDealId, setDeleteDealId] = useState<string | null>(null);
+  const [showFilter, setShowFilter] = useState(false);
+  const [filters, setFilters] = useState({
+    stage: 'all',
+    assignee: 'all',
+    minValue: '',
+    maxValue: '',
+    search: ''
+  });
 
   const fetchDeals = async () => {
     setDataLoading(true);
@@ -154,10 +164,34 @@ export function PipelineView() {
     ));
   };
 
-  const getStageDeals = (stageName: string) => deals.filter(d => d.stage === stageName);
+  const getAssigneeAvatar = (assignee: string) => assignee?.trim()?.charAt(0)?.toUpperCase() || 'A';
+
+  const getFilteredDeals = () => {
+    return deals.filter(deal => {
+      // Stage filter
+      if (filters.stage !== 'all' && deal.stage !== filters.stage) return false;
+      
+      // Assignee filter
+      if (filters.assignee !== 'all' && deal.assignee !== filters.assignee) return false;
+      
+      // Value range filter
+      if (filters.minValue && deal.value < Number(filters.minValue)) return false;
+      if (filters.maxValue && deal.value > Number(filters.maxValue)) return false;
+      
+      // Search filter
+      if (filters.search) {
+        const searchTerm = filters.search.toLowerCase();
+        const searchableText = `${deal.title} ${deal.company} ${deal.assignee} ${deal.type}`.toLowerCase();
+        if (!searchableText.includes(searchTerm)) return false;
+      }
+      
+      return true;
+    });
+  };
+
+  const getStageDeals = (stageName: string) => getFilteredDeals().filter(d => d.stage === stageName);
   const getStageTotal = (stageName: string) => getStageDeals(stageName).reduce((sum, d) => sum + (d.value || 0), 0);
   const getMaxStageTotal = () => Math.max(...stageNames.map(getStageTotal), 1);
-  const getAssigneeAvatar = (assignee: string) => assignee?.trim()?.charAt(0)?.toUpperCase() || 'A';
 
   const handleEditClick = (deal: Deal) => {
     setEditDeal(deal);
@@ -182,7 +216,12 @@ export function PipelineView() {
   };
 
   return (
-    <div className="p-6 md:p-10 h-screen flex flex-col">
+    <motion.div
+      className="p-4 md:p-4"
+      initial={{ opacity: 0, y: 24 }}
+      animate={{ opacity: 1, y: 0 }}
+      transition={{ duration: 0.2, ease: 'easeOut' }}
+    >
       <div className="flex items-center justify-between mb-4">
         <h1 className="text-3xl font-bold">Sales Pipeline</h1>
         <div className="text-xl font-bold text-green-600">Total: ${getTotalValue().toLocaleString()}</div>
@@ -212,6 +251,97 @@ export function PipelineView() {
                   Save
                 </Button>
                 <Button size="sm" variant="outline" onClick={() => setShowAdd(false)}>Cancel</Button>
+              </div>
+            </div>
+          </DialogContent>
+        </Dialog>
+
+        <Dialog open={showFilter} onOpenChange={setShowFilter}>
+          <DialogTrigger asChild>
+            <Button variant="outline" size="lg" className="gap-2">
+              <Filter className="w-5 h-5" /> Filter
+            </Button>
+          </DialogTrigger>
+          <DialogContent>
+            <DialogHeader>
+              <DialogTitle>Filter Deals</DialogTitle>
+            </DialogHeader>
+            <div className="flex flex-col gap-4">
+              <Input 
+                placeholder="Search deals..." 
+                value={filters.search} 
+                onChange={e => setFilters(f => ({ ...f, search: e.target.value }))} 
+              />
+              
+              <div className="grid grid-cols-2 gap-4">
+                <div>
+                  <label className="block text-sm font-medium mb-1">Stage</label>
+                  <Select value={filters.stage} onValueChange={val => setFilters(f => ({ ...f, stage: val }))}>
+                    <SelectTrigger>
+                      <SelectValue placeholder="All Stages" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="all">All Stages</SelectItem>
+                      {stageNames.map(stage => (
+                        <SelectItem key={stage} value={stage}>{stage}</SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
+                
+                <div>
+                  <label className="block text-sm font-medium mb-1">Assignee</label>
+                  <Select value={filters.assignee} onValueChange={val => setFilters(f => ({ ...f, assignee: val }))}>
+                    <SelectTrigger>
+                      <SelectValue placeholder="All Assignees" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="all">All Assignees</SelectItem>
+                      {Array.from(new Set(deals.map(d => d.assignee).filter(Boolean))).map(assignee => (
+                        <SelectItem key={assignee} value={assignee}>{assignee}</SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
+              </div>
+              
+              <div className="grid grid-cols-2 gap-4">
+                <div>
+                  <label className="block text-sm font-medium mb-1">Min Value</label>
+                  <Input 
+                    type="number" 
+                    placeholder="Min value" 
+                    value={filters.minValue} 
+                    onChange={e => setFilters(f => ({ ...f, minValue: e.target.value }))} 
+                  />
+                </div>
+                <div>
+                  <label className="block text-sm font-medium mb-1">Max Value</label>
+                  <Input 
+                    type="number" 
+                    placeholder="Max value" 
+                    value={filters.maxValue} 
+                    onChange={e => setFilters(f => ({ ...f, maxValue: e.target.value }))} 
+                  />
+                </div>
+              </div>
+              
+              <div className="flex gap-2 justify-end">
+                <Button 
+                  variant="outline" 
+                  onClick={() => setFilters({
+                    stage: 'all',
+                    assignee: 'all',
+                    minValue: '',
+                    maxValue: '',
+                    search: ''
+                  })}
+                >
+                  Clear Filters
+                </Button>
+                <Button onClick={() => setShowFilter(false)}>
+                  Apply Filters
+                </Button>
               </div>
             </div>
           </DialogContent>
@@ -374,6 +504,6 @@ export function PipelineView() {
           })}
         </div>
       </DragDropContext>
-    </div>
+    </motion.div>
   );
 }

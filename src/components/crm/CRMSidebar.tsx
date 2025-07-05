@@ -1,6 +1,6 @@
 import React from 'react';
 import { NavLink, useLocation } from 'react-router-dom';
-import { Users, User, List, Calendar, Trophy, Briefcase, DollarSign, Clock, AlertCircle } from 'lucide-react';
+import { Users, User, List, Calendar, Trophy, Briefcase, DollarSign, Clock, AlertCircle, Shield } from 'lucide-react';
 import {
   Sidebar,
   SidebarContent,
@@ -12,6 +12,7 @@ import {
   SidebarTrigger,
   useSidebar,
 } from '@/components/ui/sidebar';
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
 import { useAuth } from '@/contexts/AuthContext';
 
 const navigationItems = [
@@ -42,9 +43,13 @@ export function CRMSidebar() {
 
   const isActive = (path) => currentPath === path;
 
-  const getLinkClassName = (path) => {
+  const getLinkClassName = (path, hasPermission = true) => {
     const baseClasses = "flex items-center gap-3 w-full p-2 rounded-md transition-all duration-200";
     const isCurrentlyActive = isActive(path);
+    
+    if (!hasPermission) {
+      return `${baseClasses} text-gray-400 cursor-not-allowed opacity-50`;
+    }
     
     if (isCurrentlyActive) {
       return `${baseClasses} bg-blue-600 text-white `;
@@ -53,9 +58,13 @@ export function CRMSidebar() {
     return `hover:bg-white-600 text-gray-700 ${baseClasses}`;
   };
 
-  const getIconClassName = (path) => {
+  const getIconClassName = (path, hasPermission = true) => {
     const baseClasses = "h-5 w-5 flex-shrink-0 transition-colors duration-200";
     const isCurrentlyActive = isActive(path);
+    
+    if (!hasPermission) {
+      return `${baseClasses} text-gray-400`;
+    }
     
     if (isCurrentlyActive) {
       return `${baseClasses} text-white`;
@@ -64,15 +73,59 @@ export function CRMSidebar() {
     return `${baseClasses} text-gray-500`;
   };
 
-  const getTextClassName = (path) => {
+  const getTextClassName = (path, hasPermission = true) => {
     const baseClasses = `text-[16px] transition-colors duration-200 ${collapsed ? 'opacity-0 hidden' : 'opacity-100'}`;
     const isCurrentlyActive = isActive(path);
+    
+    if (!hasPermission) {
+      return `${baseClasses} text-gray-400`;
+    }
     
     if (isCurrentlyActive) {
       return `${baseClasses} text-white`;
     }
     
     return `${baseClasses} text-gray-700`;
+  };
+
+  const renderNavigationItem = (item) => {
+    const hasPermission = item.roles.includes(role);
+    
+    if (hasPermission) {
+      return (
+        <SidebarMenuItem key={item.title}>
+          <NavLink to={item.url} end className={getLinkClassName(item.url, true)}>
+            <item.icon className={getIconClassName(item.url, true)} />
+            <span className={getTextClassName(item.url, true)}>
+              {item.title}
+            </span>
+          </NavLink>
+        </SidebarMenuItem>
+      );
+    } else {
+      return (
+        <TooltipProvider key={item.title}>
+          <Tooltip>
+            <TooltipTrigger asChild>
+              <SidebarMenuItem>
+                <div className={getLinkClassName(item.url, false)}>
+                  <item.icon className={getIconClassName(item.url, false)} />
+                  <span className={getTextClassName(item.url, false)}>
+                    {item.title}
+                  </span>
+                </div>
+              </SidebarMenuItem>
+            </TooltipTrigger>
+            <TooltipContent>
+              <div className="flex items-center gap-2">
+                <Shield className="w-4 h-4" />
+                <span>Requires: {item.roles.join(', ')}</span>
+              </div>
+            </TooltipContent>
+          </Tooltip>
+        </TooltipProvider>
+      );
+    }
   };
 
   return (
@@ -82,41 +135,22 @@ export function CRMSidebar() {
         <div className="p-4 bg-white">
           <h2 className={`font-bold text-2xl text-gray-800 transition-opacity duration-200 ${collapsed ? 'opacity-0 hidden' : 'opacity-100'}`}>CRM Pro</h2>
         </div>
-        {/* Only show NAVIGATION section if not HR-only */}
-        {role !== 'hr' && (
-          <SidebarGroup>
-            <SidebarGroupLabel className="text-gray-700 text-lg font-semibold pb-1">NAVIGATION</SidebarGroupLabel>
-            <SidebarGroupContent className="bg-white">
-              <SidebarMenu>
-                {navigationItems.filter(item => item.roles.includes(role)).map((item) => (
-                  <SidebarMenuItem key={item.title}>
-                    <NavLink to={item.url} end className={getLinkClassName(item.url)}>
-                      <item.icon className={getIconClassName(item.url)} />
-                      <span className={getTextClassName(item.url)}>
-                        {item.title}
-                      </span>
-                    </NavLink>
-                  </SidebarMenuItem>
-                ))}
-              </SidebarMenu>
-            </SidebarGroupContent>
-          </SidebarGroup>
-        )}
-        {/* HR MANAGEMENT section visible to admin and hr */}
+        {/* NAVIGATION section - show all items but disable unauthorized ones */}
+        <SidebarGroup>
+          <SidebarGroupLabel className="text-gray-700 text-lg font-semibold pb-1">NAVIGATION</SidebarGroupLabel>
+          <SidebarGroupContent className="bg-white">
+            <SidebarMenu>
+              {navigationItems.map(renderNavigationItem)}
+            </SidebarMenu>
+          </SidebarGroupContent>
+        </SidebarGroup>
+        
+        {/* HR MANAGEMENT section - show all items but disable unauthorized ones */}
         <SidebarGroup>
           <SidebarGroupLabel className="text-gray-700 text-lg font-semibold pb-1">HR MANAGEMENT</SidebarGroupLabel>
           <SidebarGroupContent className="bg-white">
             <SidebarMenu>
-              {hrNavigationItems.filter(item => item.roles.includes(role)).map((item) => (
-                <SidebarMenuItem key={item.title}>
-                  <NavLink to={item.url} className={getLinkClassName(item.url)}>
-                    <item.icon className={getIconClassName(item.url)} />
-                    <span className={getTextClassName(item.url)}>
-                      {item.title}
-                    </span>
-                  </NavLink>
-                </SidebarMenuItem>
-              ))}
+              {hrNavigationItems.map(renderNavigationItem)}
             </SidebarMenu>
           </SidebarGroupContent>
         </SidebarGroup>

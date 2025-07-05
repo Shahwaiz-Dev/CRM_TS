@@ -107,7 +107,7 @@ export function UsersView() {
   };
 
   return (
-    <div className="p-4 md:p-10 max-w-full">
+    <div className="p-4 md:p-4">
       <div className="space-y-6">
         <div className="flex flex-col md:flex-row md:justify-between md:items-center gap-4 mb-4">
           <h1 className="text-3xl font-bold">User & Role Management</h1>

@@ -4,6 +4,7 @@ import { Search, Filter, Edit, Trash2, Calendar, Loader2 } from 'lucide-react';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
 import { useAuth } from '@/contexts/AuthContext';
 import { Navigate } from 'react-router-dom';
+import { motion } from 'framer-motion';
 
 export default function Employees() {
   const { user, loading } = useAuth();
@@ -68,7 +69,12 @@ export default function Employees() {
   };
 
   return (
-    <div className="p-6 md:p-10">
+    <motion.div
+      className="p-4 md:p-4"
+      initial={{ opacity: 0, y: 24 }}
+      animate={{ opacity: 1, y: 0 }}
+      transition={{ duration: 0.2, ease: 'easeOut' }}
+    >
       <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4 mb-6">
         <div>
           <h1 className="text-3xl md:text-4xl font-extrabold">Employees</h1>
@@ -192,6 +198,6 @@ export default function Employees() {
           </table>
         </div>
       </div>
-    </div>
+    </motion.div>
   );
 } 

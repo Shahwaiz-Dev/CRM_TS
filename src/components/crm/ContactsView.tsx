@@ -8,6 +8,8 @@ import { Avatar, AvatarFallback } from '@/components/ui/avatar';
 import { User, Search, Plus, Edit, Trash2, Phone, Mail, Building, Loader2 } from 'lucide-react';
 import { addContact, getContacts, updateContact, deleteContact, getAccounts } from '@/lib/firebase';
 import { useToast } from '@/hooks/use-toast';
+import { motion } from 'framer-motion';
+import { addNotification } from '@/lib/firebase';
 
 interface Contact {
   id: string;
@@ -61,8 +63,8 @@ export function ContactsView() {
         getContacts(),
         getAccounts()
       ]);
-      setContacts(contactsData);
-      setAccounts(accountsData);
+      setContacts(contactsData as Contact[]);
+      setAccounts(accountsData as Account[]);
     } catch (error) {
       toast({
         title: "Error",
@@ -120,6 +122,14 @@ export function ContactsView() {
         });
       } else {
         await addContact(form);
+        
+        // Create notification for new contact
+        await addNotification({
+          title: 'New Contact Added',
+          body: `${form.firstName} ${form.lastName} has been added as a new contact`,
+          type: 'general'
+        });
+        
         toast({
           title: "Success", 
           description: "Contact created successfully"
@@ -172,28 +182,25 @@ export function ContactsView() {
     return `${firstName?.charAt(0) || ''}${lastName?.charAt(0) || ''}`.toUpperCase();
   };
 
-  if (dataLoading) {
-    return (
-      <div className="p-6 md:p-10">
-        <div className="flex items-center justify-center h-64">
-          <Loader2 className="w-8 h-8 animate-spin" />
-        </div>
-      </div>
-    );
-  }
+  // Remove the early return for loading state
 
   return (
-    <div className="p-6 md:p-10">
+    <motion.div
+      className="p-4 md:p-4"
+      initial={{ opacity: 0, y: 24 }}
+      animate={{ opacity: 1, y: 0 }}
+      transition={{ duration: 0.2, ease: 'easeOut' }}
+    >
       <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4 mb-6">
         <h1 className="text-2xl font-bold">All Contacts</h1>
         <div className="flex gap-2 items-center">
-          <Input
-            placeholder="Search contacts..."
-            value={search}
-            onChange={e => setSearch(e.target.value)}
-            className="w-64"
-            icon={<Search className="w-4 h-4" />}
-          />
+                      <Input
+              placeholder="Search contacts..."
+              value={search}
+              onChange={e => setSearch(e.target.value)}
+              className="w-64"
+            />
+            {/* Search input */}
           <Select value={filterAccount} onValueChange={setFilterAccount}>
             <SelectTrigger className="w-48">
               <SelectValue placeholder="Filter by account" />
@@ -207,10 +214,7 @@ export function ContactsView() {
               ))}
             </SelectContent>
           </Select>
-          <Button onClick={openAdd} className="gap-2">
-            <Plus className="w-4 h-4" />
-            New Contact
-          </Button>
+          <Button onClick={openAdd} size="sm" className="gap-1"><Plus className="w-4 h-4" /> Add Contact</Button>
         </div>
       </div>
 
@@ -391,6 +395,6 @@ export function ContactsView() {
           </div>
         </DialogContent>
       </Dialog>
-    </div>
+    </motion.div>
   );
 } 

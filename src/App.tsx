@@ -8,6 +8,7 @@ import NotFound from "./pages/NotFound";
 import Login from './pages/Login';
 import Signup from './pages/Signup';
 import Index from './pages/Index';
+import Settings from './pages/Settings';
 import { useEffect, useState } from "react";
 import { PageLoader } from "@/components/ui/PageLoader";
 import { AuthProvider } from "./contexts/AuthContext";
@@ -35,6 +36,7 @@ function AppRoutes() {
       <Routes>
         <Route path="/login" element={<Login />} />
         <Route path="/signup" element={<Signup />} />
+        <Route path="/settings" element={<PrivateRoute><Settings /></PrivateRoute>} />
         <Route path="/*" element={<PrivateRoute><Dashboard /></PrivateRoute>} />
         <Route path="*" element={<Index />} />
       </Routes>

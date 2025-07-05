@@ -8,6 +8,7 @@ import { db } from '../lib/firebase';
 import { useLoading } from "@/components/ui/PageLoader";
 import { useAuth } from '@/contexts/AuthContext';
 import { Navigate } from 'react-router-dom';
+import { motion } from 'framer-motion';
 
 function toCSV(rows) {
   const header = ['Name','Employee ID','Position','Department','Base Salary','Overtime','Bonuses','Deductions','Net Pay','Status'];
@@ -331,7 +332,12 @@ export default function Payroll() {
   });
 
   return (
-    <div className="p-6 md:p-10">
+    <motion.div
+      className="p-4 md:p-4"
+      initial={{ opacity: 0, y: 24 }}
+      animate={{ opacity: 1, y: 0 }}
+      transition={{ duration: 0.2, ease: 'easeOut' }}
+    >
       {error && (
         <div className="mb-4 p-4 bg-red-100 border border-red-400 text-red-700 rounded-lg flex items-center justify-between">
           <span>{error}</span>
@@ -662,6 +668,6 @@ export default function Payroll() {
           </div>
         </DialogContent>
       </Dialog>
-    </div>
+    </motion.div>
   );
 }

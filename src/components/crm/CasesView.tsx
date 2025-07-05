@@ -8,6 +8,8 @@ import { Textarea } from '@/components/ui/textarea';
 import { Search, Plus, Edit, Trash2, AlertCircle, Clock, CheckCircle, XCircle, Loader2, Building } from 'lucide-react';
 import { addCase, getCases, updateCase, deleteCase, getAccounts } from '@/lib/firebase';
 import { useToast } from '@/hooks/use-toast';
+import { motion } from 'framer-motion';
+import { addNotification } from '@/lib/firebase';
 
 interface Case {
   id: string;
@@ -82,8 +84,8 @@ export function CasesView() {
         getCases(),
         getAccounts()
       ]);
-      setCases(casesData);
-      setAccounts(accountsData);
+      setCases(casesData as Case[]);
+      setAccounts(accountsData as Account[]);
     } catch (error) {
       toast({
         title: "Error",
@@ -104,8 +106,8 @@ export function CasesView() {
     setForm({
       subject: caseItem.subject || '',
       description: caseItem.description || '',
-      priority: caseItem.priority || 'Medium',
-      status: caseItem.status || 'New',
+      priority: (caseItem.priority as any) || 'Medium',
+      status: (caseItem.status as any) || 'New',
       accountId: caseItem.accountId || '',
       accountName: caseItem.accountName || ''
     });
@@ -140,6 +142,14 @@ export function CasesView() {
         });
       } else {
         await addCase(form);
+        
+        // Create notification for new case
+        await addNotification({
+          title: 'New Case Created',
+          body: `A new case "${form.subject}" has been created`,
+          type: 'task'
+        });
+        
         toast({
           title: "Success",
           description: "Case created successfully"
@@ -193,28 +203,24 @@ export function CasesView() {
     return <Icon className="w-4 h-4" />;
   };
 
-  if (dataLoading) {
-    return (
-      <div className="p-6 md:p-10">
-        <div className="flex items-center justify-center h-64">
-          <Loader2 className="w-8 h-8 animate-spin" />
-        </div>
-      </div>
-    );
-  }
+  // Remove the early return for loading state
 
   return (
-    <div className="p-6 md:p-10">
+    <motion.div
+      className="p-4 md:p-4"
+      initial={{ opacity: 0, y: 24 }}
+      animate={{ opacity: 1, y: 0 }}
+      transition={{ duration: 0.2, ease: 'easeOut' }}
+    >
       <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4 mb-6">
         <h1 className="text-2xl font-bold">All Cases</h1>
         <div className="flex gap-2 items-center">
-          <Input
-            placeholder="Search cases..."
-            value={search}
-            onChange={e => setSearch(e.target.value)}
-            className="w-64"
-            icon={<Search className="w-4 h-4" />}
-          />
+                      <Input
+              placeholder="Search cases..."
+              value={search}
+              onChange={e => setSearch(e.target.value)}
+              className="w-64"
+            />
           <Select value={filterStatus} onValueChange={setFilterStatus}>
             <SelectTrigger className="w-32">
               <SelectValue placeholder="Status" />
@@ -434,6 +440,6 @@ export function CasesView() {
           </div>
         </DialogContent>
       </Dialog>
-    </div>
+    </motion.div>
   );
 } 

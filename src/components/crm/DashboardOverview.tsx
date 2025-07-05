@@ -5,6 +5,7 @@ import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, PieChart, Pie, C
 import { collection, getDocs, query, where, orderBy, limit } from 'firebase/firestore';
 import { db } from '../../lib/firebase';
 import { Loader2 } from 'lucide-react';
+import { motion } from 'framer-motion';
 
 interface Deal {
   id: string;
@@ -148,7 +149,12 @@ export function DashboardOverview() {
   });
 
   return (
-    <div className="p-6 md:p-10">
+    <motion.div
+      className="p-4 md:p-4"
+      initial={{ opacity: 0, y: 24 }}
+      animate={{ opacity: 1, y: 0 }}
+      transition={{ duration: 0.2, ease: 'easeOut' }}
+    >
       <div className="space-y-6">
         <h1 className="text-3xl font-bold">CRM Dashboard</h1>
         
@@ -281,6 +287,6 @@ export function DashboardOverview() {
           </Card>
         </div>
       </div>
-    </div>
+    </motion.div>
   );
 }

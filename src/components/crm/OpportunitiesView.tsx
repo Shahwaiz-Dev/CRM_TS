@@ -6,6 +6,7 @@ import { Select, SelectTrigger, SelectValue, SelectContent, SelectItem } from '@
 import { getOpportunities, addOpportunity, updateOpportunity, deleteOpportunity } from '@/lib/firebase';
 import { useAuth } from '@/contexts/AuthContext';
 import { Navigate } from 'react-router-dom';
+import { motion } from 'framer-motion';
 
 const STAGES = [
   'Qualify',
@@ -103,7 +104,12 @@ export function OpportunitiesView() {
   );
 
   return (
-    <div className="p-6 md:p-10">
+    <motion.div
+      className="p-4 md:p-4"
+      initial={{ opacity: 0, y: 24 }}
+      animate={{ opacity: 1, y: 0 }}
+      transition={{ duration: 0.2, ease: 'easeOut' }}
+    >
       <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4 mb-4">
         <h1 className="text-2xl font-bold">All Opportunities</h1>
         <div className="flex gap-2 items-center">
@@ -134,7 +140,7 @@ export function OpportunitiesView() {
           </thead>
           <tbody>
             {dataLoading ? (
-              <tr><td colSpan={10} className="text-center py-8">Loading...</td></tr>
+              null
             ) : filtered.length === 0 ? (
               <tr><td colSpan={10} className="text-center py-8">No opportunities found.</td></tr>
             ) : (
@@ -246,6 +252,6 @@ export function OpportunitiesView() {
           </DialogFooter>
         </DialogContent>
       </Dialog>
-    </div>
+    </motion.div>
   );
 } 

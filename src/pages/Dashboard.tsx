@@ -30,7 +30,7 @@ const Dashboard = () => {
         <CRMSidebar />
         <div className="flex-1 flex flex-col min-w-0 bg-white">
           <DashboardHeader />
-          <main className="flex-1 overflow-auto bg-gray-50 px-2 sm:px-4 md:px-6 lg:px-12 py-2 md:py-4">
+          <main className="flex-1 overflow-auto bg-gray-50 px-2 sm:px-3 md:px-4 lg:px-6 py-2 md:py-4">
             <AnimatePresence mode="wait">
               <motion.div
                 key={location.pathname}

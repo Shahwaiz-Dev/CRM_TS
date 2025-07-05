@@ -207,4 +207,50 @@ export const deleteCase = async (id: string) => {
     console.error('Error deleting case:', error);
     throw error;
   }
+};
+
+// Notifications CRUD
+export const addNotification = async (notificationData: any) => {
+  try {
+    const docRef = await addDoc(collection(db, 'notifications'), {
+      ...notificationData,
+      createdAt: new Date(),
+      read: false
+    });
+    return docRef.id;
+  } catch (error) {
+    console.error('Error adding notification:', error);
+    throw error;
+  }
+};
+
+export const getNotifications = async () => {
+  try {
+    const querySnapshot = await getDocs(collection(db, 'notifications'));
+    return querySnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+  } catch (error) {
+    console.error('Error getting notifications:', error);
+    throw error;
+  }
+};
+
+export const updateNotification = async (id: string, notificationData: any) => {
+  try {
+    await updateDoc(doc(db, 'notifications', id), {
+      ...notificationData,
+      updatedAt: new Date()
+    });
+  } catch (error) {
+    console.error('Error updating notification:', error);
+    throw error;
+  }
+};
+
+export const deleteNotification = async (id: string) => {
+  try {
+    await deleteDoc(doc(db, 'notifications', id));
+  } catch (error) {
+    console.error('Error deleting notification:', error);
+    throw error;
+  }
 }; 

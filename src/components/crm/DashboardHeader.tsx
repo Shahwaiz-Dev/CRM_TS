@@ -2,10 +2,10 @@ import React, { useEffect, useState } from 'react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { SidebarTrigger } from '@/components/ui/sidebar';
-import { User, Bell, LogOut, Settings, HelpCircle, ClipboardList, Briefcase } from 'lucide-react';
+import { User, Bell, LogOut, Settings, HelpCircle, ClipboardList, Briefcase, Trash2 } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { DropdownMenu, DropdownMenuTrigger, DropdownMenuContent, DropdownMenuItem, DropdownMenuSeparator } from '@/components/ui/dropdown-menu';
-import { collection, getDocs, updateDoc, doc, onSnapshot, query, orderBy, limit } from 'firebase/firestore';
+import { collection, getDocs, updateDoc, doc, onSnapshot, query, orderBy, limit, deleteDoc } from 'firebase/firestore';
 import { db } from '../../lib/firebase';
 import { useAuth } from '@/contexts/AuthContext';
 
@@ -114,6 +114,16 @@ export function DashboardHeader() {
     }
   };
 
+  const handleDeleteNotification = async (notificationId: string) => {
+    try {
+      await deleteDoc(doc(db, 'notifications', notificationId));
+      // Remove from local state
+      setNotifications(prev => prev.filter(n => n.id !== notificationId));
+    } catch (error) {
+      console.error('Error deleting notification:', error);
+    }
+  };
+
   return (
     <header className="h-auto min-h-16 border-b bg-white flex flex-col md:flex-row items-start md:items-center justify-between px-2 md:px-6 py-2 md:py-0 transition-colors gap-2 md:gap-0">
       <div className="flex items-center gap-2 md:gap-4 w-full md:w-auto">
@@ -158,9 +168,9 @@ export function DashboardHeader() {
             )}
             
             {!loading && !error && notifications.map((notif, idx) => (
-              <DropdownMenuItem 
+              <div 
                 key={notif.id || idx} 
-                className={`gap-2 p-3 ${!notif.read ? 'bg-blue-50 border-l-4 border-blue-500' : ''}`}
+                className={`p-3 ${!notif.read ? 'bg-blue-50 border-l-4 border-blue-500' : 'bg-white'}`}
               >
                 <div className="flex items-start gap-3 w-full">
                   {/* Icon by type */}
@@ -182,11 +192,23 @@ export function DashboardHeader() {
                     {notif.body && <div className="text-xs text-gray-600 mt-1 leading-tight">{notif.body}</div>}
                     <div className="text-xs text-gray-400 mt-2">{formatTime(notif.createdAt || notif.time)}</div>
                   </div>
-                  {!notif.read && (
-                    <div className="w-2 h-2 bg-blue-500 rounded-full flex-shrink-0 mt-2"></div>
-                  )}
+                  <div className="flex items-center gap-2 flex-shrink-0">
+                    {!notif.read && (
+                      <div className="w-2 h-2 bg-blue-500 rounded-full"></div>
+                    )}
+                    <button
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        handleDeleteNotification(notif.id);
+                      }}
+                      className="p-1 text-gray-400 hover:text-red-500 transition-colors"
+                      title="Delete notification"
+                    >
+                      <Trash2 className="w-3 h-3" />
+                    </button>
+                  </div>
                 </div>
-              </DropdownMenuItem>
+              </div>
             ))}
           </DropdownMenuContent>
         </DropdownMenu>
@@ -204,7 +226,7 @@ export function DashboardHeader() {
               <div className="text-xs text-gray-500">{email}</div>
             </div>
             <DropdownMenuItem className="gap-2 cursor-pointer"><User className="w-4 h-4" /> Profile</DropdownMenuItem>
-            <DropdownMenuItem className="gap-2 cursor-pointer"><Settings className="w-4 h-4" /> Settings</DropdownMenuItem>
+            <DropdownMenuItem className="gap-2 cursor-pointer" onClick={() => navigate('/settings')}><Settings className="w-4 h-4" /> Settings</DropdownMenuItem>
             <DropdownMenuItem className="gap-2 cursor-pointer"><HelpCircle className="w-4 h-4" /> Support</DropdownMenuItem>
             <DropdownMenuSeparator />
             <DropdownMenuItem className="gap-2 text-red-600 cursor-pointer" onClick={handleLogout}><LogOut className="w-4 h-4" /> Log out</DropdownMenuItem>

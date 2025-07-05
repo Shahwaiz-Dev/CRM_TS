@@ -9,6 +9,8 @@ import { db } from '../lib/firebase';
 import { useLoading } from "@/components/ui/PageLoader";
 import { useAuth } from '@/contexts/AuthContext';
 import { Navigate } from 'react-router-dom';
+import { motion } from 'framer-motion';
+import { DateRange } from 'react-day-picker';
 
 const today = new Date();
 
@@ -30,6 +32,9 @@ export default function Attendance() {
   const [employees, setEmployees] = useState([]);
   const [leaveModalOpen, setLeaveModalOpen] = useState(false);
   const [newLeave, setNewLeave] = useState({ employeeId: '', type: '', dateRange: '', reason: '', status: 'Pending' });
+  const [leaveDateRange, setLeaveDateRange] = useState<DateRange | undefined>();
+  const [saving, setSaving] = useState(false);
+  const [leaveSaving, setLeaveSaving] = useState(false);
 
   const fetchEmployees = async () => {
     try {
@@ -55,13 +60,17 @@ export default function Attendance() {
   }, []);
 
   const handleAdd = async () => {
+    setSaving(true);
     try {
       await addAttendance(newAttendance);
       setNewAttendance({ employeeId: "", date: "", status: "Present" });
+      setModalOpen(false);
       fetchAttendance();
     } catch (e) {
       setError("Failed to add attendance");
+      alert('Failed to add attendance. Please try again.');
     }
+    setSaving(false);
   };
 
   const handleEdit = (a) => {
@@ -70,13 +79,17 @@ export default function Attendance() {
   };
 
   const handleUpdate = async () => {
+    setSaving(true);
     try {
       await updateAttendance(editId, editAttendance);
       setEditId(null);
+      setModalOpen(false);
       fetchAttendance();
     } catch (e) {
       setError("Failed to update attendance");
+      alert('Failed to update attendance. Please try again.');
     }
+    setSaving(false);
   };
 
   const handleDelete = async (id) => {
@@ -100,15 +113,22 @@ export default function Attendance() {
   const handleAddLeave = async () => {
     if (!newLeave.employeeId || !newLeave.type || !newLeave.dateRange) {
       setError('Please fill all leave request fields');
+      alert('Please fill all leave request fields');
       return;
     }
+    setLeaveSaving(true);
     try {
       await addDoc(collection(db, 'leaveRequests'), newLeave);
       setNewLeave({ employeeId: '', type: '', dateRange: '', reason: '', status: 'Pending' });
+      setLeaveDateRange(undefined);
       setLeaveModalOpen(false);
       fetchLeaveRequests();
     } catch (e) {
+      console.error('Error adding leave request:', e);
       setError('Failed to add leave request');
+      alert('Failed to add leave request. Please try again.');
+    } finally {
+      setLeaveSaving(false);
     }
   };
 
@@ -157,13 +177,33 @@ export default function Attendance() {
   const attendanceRate = attendance.length ? ((presentToday / attendance.length) * 100).toFixed(1) : '0.0';
 
   return (
-    <div className="p-6 md:p-10">
+    <motion.div
+      className="p-4 md:p-4"
+      initial={{ opacity: 0, y: 24 }}
+      animate={{ opacity: 1, y: 0 }}
+      transition={{ duration: 0.2, ease: 'easeOut' }}
+    >
       <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4 mb-6">
         <div>
           <h1 className="text-3xl md:text-4xl font-extrabold">Attendance Management</h1>
           <p className="text-gray-500 mt-1">Track employee attendance and manage leave requests</p>
         </div>
-        <button onClick={() => { setLeaveModalOpen(true); setModalMode('add'); setModalOpen(true); }} className="bg-blue-600 hover:bg-blue-700 text-white font-semibold px-5 py-2 rounded-lg text-base flex items-center gap-2 self-start md:self-auto"><Plus className="h-5 w-5" /> Add Leave Request</button>
+        <div className="flex gap-2 self-start md:self-auto">
+          <button onClick={() => { 
+            setNewAttendance({ employeeId: "", date: "", status: "Present" });
+            setModalMode('add');
+            setModalOpen(true);
+          }} className="bg-green-600 hover:bg-green-700 text-white font-semibold px-5 py-2 rounded-lg text-base flex items-center gap-2">
+            <Plus className="h-5 w-5" /> Add Attendance
+          </button>
+          <button onClick={() => { 
+            setNewLeave({ employeeId: '', type: '', dateRange: '', reason: '', status: 'Pending' });
+            setLeaveDateRange(undefined);
+            setLeaveModalOpen(true); 
+          }} className="bg-blue-600 hover:bg-blue-700 text-white font-semibold px-5 py-2 rounded-lg text-base flex items-center gap-2">
+            <Plus className="h-5 w-5" /> Add Leave Request
+          </button>
+        </div>
       </div>
       {/* Stats Cards */}
       <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-4 mb-8">
@@ -258,6 +298,9 @@ export default function Attendance() {
               selected={selectedDate}
               onSelect={setSelectedDate}
               className="rounded-lg border"
+              classNames={{
+                day_today: "bg-gray-100 text-gray-900 font-semibold"
+              }}
             />
           </div>
         </div>
@@ -283,9 +326,26 @@ export default function Attendance() {
                   </div>
                   <div className="text-gray-400 text-xs md:text-right">{req.reason}</div>
                   <div className="flex gap-2 mt-2 md:mt-0">
-                    <button onClick={() => handleApprove(req.id)} className="border rounded px-3 py-1 text-sm font-medium hover:bg-blue-50 hover:border-blue-600">Approve</button>
-                    <button onClick={() => handleReject(req.id)} className="border rounded px-3 py-1 text-sm font-medium hover:bg-red-50 hover:border-red-600">Reject</button>
-                    <button onClick={() => handleDeleteLeave(req.id)} className="border rounded px-3 py-1 text-sm font-medium hover:bg-gray-50 hover:border-gray-600 text-gray-500">Delete</button>
+                    <button
+                      onClick={() => handleApprove(req.id)}
+                      className="border rounded px-3 py-1 text-sm font-medium hover:bg-blue-50 hover:border-blue-600"
+                      disabled={req.status !== 'Pending'}
+                    >
+                      Approve
+                    </button>
+                    <button
+                      onClick={() => handleReject(req.id)}
+                      className="border rounded px-3 py-1 text-sm font-medium hover:bg-red-50 hover:border-red-600"
+                      disabled={req.status !== 'Pending'}
+                    >
+                      Reject
+                    </button>
+                    <button
+                      onClick={() => handleDeleteLeave(req.id)}
+                      className="border rounded px-3 py-1 text-sm font-medium hover:bg-gray-50 hover:border-gray-600 text-gray-500"
+                    >
+                      Delete
+                    </button>
                   </div>
                 </div>
               </div>
@@ -314,15 +374,28 @@ export default function Attendance() {
               <option value="Late">Late</option>
             </select>
             <div className="flex gap-2 mt-2">
-              <Button onClick={modalMode === 'add' ? handleAdd : handleUpdate}>{modalMode === 'add' ? 'Add' : 'Save'}</Button>
-              <Button variant="outline" onClick={() => setModalOpen(false)}>Cancel</Button>
+              <Button 
+                onClick={modalMode === 'add' ? handleAdd : handleUpdate}
+                disabled={saving}
+                className="flex items-center gap-2"
+              >
+                {saving ? (
+                  <>
+                    <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
+                    {modalMode === 'add' ? 'Adding...' : 'Saving...'}
+                  </>
+                ) : (
+                  modalMode === 'add' ? 'Add' : 'Save'
+                )}
+              </Button>
+              <Button variant="outline" onClick={() => setModalOpen(false)} disabled={saving}>Cancel</Button>
             </div>
           </div>
         </DialogContent>
       </Dialog>
       {/* Add Leave Request Modal */}
       <Dialog open={leaveModalOpen} onOpenChange={setLeaveModalOpen}>
-        <DialogContent>
+        <DialogContent className="max-w-md">
           <DialogHeader>
             <DialogTitle>Add Leave Request</DialogTitle>
             <DialogDescription>Fill out the form to request leave.</DialogDescription>
@@ -335,15 +408,69 @@ export default function Attendance() {
               ))}
             </select>
             <input placeholder="Type (e.g. Sick, Vacation)" value={newLeave.type} onChange={e => setNewLeave({ ...newLeave, type: e.target.value })} className="border p-1 rounded" />
-            <input placeholder="Date Range" value={newLeave.dateRange} onChange={e => setNewLeave({ ...newLeave, dateRange: e.target.value })} className="border p-1 rounded" />
+                         <div className="space-y-3">
+               <div>
+                 <label className="block text-sm font-medium mb-2">Select Leave Date Range</label>
+                 <p className="text-xs text-gray-500 mb-3">Click on a start date, then click on an end date to select your leave period</p>
+               </div>
+                                <div className="flex justify-center">
+                   <Calendar
+                     mode="range"
+                     selected={leaveDateRange}
+                     onSelect={(range) => {
+                       setLeaveDateRange(range);
+                       if (range?.from && range?.to) {
+                         const from = range.from.toLocaleDateString();
+                         const to   = range.to.toLocaleDateString();
+                         setNewLeave({ ...newLeave, dateRange: `${from} - ${to}` });
+                       }
+                     }}
+                     numberOfMonths={1}
+                     className="rounded-lg border"
+                     showOutsideDays={false}
+                     disabled={{ before: new Date() }}
+                     classNames={{
+                       day_today: "bg-gray-100 text-gray-900 font-semibold"
+                     }}
+                   />
+                 </div>
+               {!leaveDateRange?.from && !leaveDateRange?.to && (
+                 <div className="text-center text-xs text-gray-500 bg-blue-50 px-3 py-2 rounded-md">
+                   👆 Click to select your leave dates
+                 </div>
+               )}
+               {leaveDateRange?.from && !leaveDateRange?.to && (
+                 <div className="text-center text-sm font-medium text-blue-700 bg-blue-50 px-3 py-2 rounded-md">
+                   ✅ Start date selected: {leaveDateRange.from.toLocaleDateString()}
+                   <br />
+                   <span className="text-xs">Now click on your end date</span>
+                 </div>
+               )}
+               {leaveDateRange?.from && leaveDateRange?.to && (
+                 <div className="text-center text-sm font-medium text-green-700 bg-green-50 px-3 py-2 rounded-md border border-green-200">
+                   ✅ Leave period selected: {leaveDateRange.from.toLocaleDateString()} – {leaveDateRange.to.toLocaleDateString()}
+                   <br />
+                   <span className="text-xs font-normal">({Math.ceil((leaveDateRange.to.getTime() - leaveDateRange.from.getTime()) / (1000 * 60 * 60 * 24))} days)</span>
+                 </div>
+               )}
+             </div>
             <input placeholder="Reason" value={newLeave.reason} onChange={e => setNewLeave({ ...newLeave, reason: e.target.value })} className="border p-1 rounded" />
             <div className="flex gap-2 mt-2">
-              <Button onClick={handleAddLeave}>Submit</Button>
+              <Button onClick={handleAddLeave} disabled={leaveSaving}>
+                {leaveSaving ? (
+                  <>
+                    <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
+                    Submitting...
+                  </>
+                ) : (
+                  'Submit'
+                )}
+              </Button>
               <Button variant="outline" onClick={() => setLeaveModalOpen(false)}>Cancel</Button>
             </div>
           </div>
         </DialogContent>
       </Dialog>
-    </div>
+    </motion.div>
   );
 } 

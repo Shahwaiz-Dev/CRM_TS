@@ -9,6 +9,8 @@ import { Search, Plus, Edit, Trash2, DollarSign, Calendar, Building, User, Loade
 import { addDoc, getDocs, updateDoc, deleteDoc, doc, collection } from 'firebase/firestore';
 import { db } from '@/lib/firebase';
 import { useToast } from '@/hooks/use-toast';
+import { motion } from 'framer-motion';
+import { addNotification } from '@/lib/firebase';
 
 interface Deal {
   id: string;
@@ -150,6 +152,14 @@ export function DealsView() {
       } else {
         dealData.createdAt = new Date();
         await addDoc(collection(db, 'deals'), dealData);
+        
+        // Create notification for new deal
+        await addNotification({
+          title: 'New Deal Created',
+          body: `A new deal "${form.title}" worth $${form.value?.toLocaleString()} has been created for ${form.company}`,
+          type: 'deal'
+        });
+        
         toast({
           title: "Success",
           description: "Deal created successfully"
@@ -174,6 +184,17 @@ export function DealsView() {
         closedAt: new Date(),
         updatedAt: new Date()
       });
+      
+      // Create notification for deal closure
+      const deal = deals.find(d => d.id === dealId);
+      if (deal) {
+        await addNotification({
+          title: `Deal ${stage}`,
+          body: `The deal "${deal.title}" has been ${stage.toLowerCase()}!`,
+          type: 'deal'
+        });
+      }
+      
       toast({
         title: "Success",
         description: `Deal marked as ${stage.toLowerCase()}`
@@ -287,18 +308,15 @@ export function DealsView() {
   const wonValue = deals.filter(d => d.stage === 'Won').reduce((sum, deal) => sum + (deal.value || 0), 0);
   const activeDeals = deals.filter(d => d.stage !== 'Won' && d.stage !== 'Lost').length;
 
-  if (dataLoading) {
-    return (
-      <div className="p-6 md:p-10">
-        <div className="flex items-center justify-center h-64">
-          <Loader2 className="w-8 h-8 animate-spin" />
-        </div>
-      </div>
-    );
-  }
+  // Remove the early return for loading state
 
   return (
-    <div className="p-6 md:p-10">
+    <motion.div
+      className="p-4 md:p-4"
+      initial={{ opacity: 0, y: 24 }}
+      animate={{ opacity: 1, y: 0 }}
+      transition={{ duration: 0.2, ease: 'easeOut' }}
+    >
       <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4 mb-6">
         <h1 className="text-2xl font-bold">Deals Management</h1>
         <div className="flex gap-2 items-center">
@@ -603,6 +621,6 @@ export function DealsView() {
           </div>
         </DialogContent>
       </Dialog>
-    </div>
+    </motion.div>
   );
 } 
