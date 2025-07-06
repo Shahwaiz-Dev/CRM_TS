@@ -1,0 +1,1 @@
+// Remove entire file content as ThemeProvider and dark mode are no longer needed. 
