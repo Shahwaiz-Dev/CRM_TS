@@ -11,6 +11,7 @@ import { useAuth } from '@/contexts/AuthContext';
 import { Navigate } from 'react-router-dom';
 import { motion } from 'framer-motion';
 import { DateRange } from 'react-day-picker';
+import { useLanguage } from '@/contexts/LanguageContext';
 
 const today = new Date();
 
@@ -35,6 +36,7 @@ export default function Attendance() {
   const [leaveDateRange, setLeaveDateRange] = useState<DateRange | undefined>();
   const [saving, setSaving] = useState(false);
   const [leaveSaving, setLeaveSaving] = useState(false);
+  const { t } = useLanguage();
 
   const fetchEmployees = async () => {
     try {
@@ -185,8 +187,8 @@ export default function Attendance() {
     >
       <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4 mb-6">
         <div>
-          <h1 className="text-3xl md:text-4xl font-extrabold">Attendance Management</h1>
-          <p className="text-gray-500 mt-1">Track employee attendance and manage leave requests</p>
+          <h1 className="text-3xl md:text-4xl font-extrabold">{t('attendance_management')}</h1>
+          <p className="text-gray-500 mt-1">{t('track_attendance_and_leaves')}</p>
         </div>
         <div className="flex gap-2 self-start md:self-auto">
           <button onClick={() => { 
@@ -194,36 +196,36 @@ export default function Attendance() {
             setModalMode('add');
             setModalOpen(true);
           }} className="bg-green-600 hover:bg-green-700 text-white font-semibold px-5 py-2 rounded-lg text-base flex items-center gap-2">
-            <Plus className="h-5 w-5" /> Add Attendance
+            <Plus className="h-5 w-5" /> {t('add_attendance')}
           </button>
           <button onClick={() => { 
             setNewLeave({ employeeId: '', type: '', dateRange: '', reason: '', status: 'Pending' });
             setLeaveDateRange(undefined);
             setLeaveModalOpen(true); 
           }} className="bg-blue-600 hover:bg-blue-700 text-white font-semibold px-5 py-2 rounded-lg text-base flex items-center gap-2">
-            <Plus className="h-5 w-5" /> Add Leave Request
+            <Plus className="h-5 w-5" /> {t('add_leave_request')}
           </button>
         </div>
       </div>
       {/* Stats Cards */}
       <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-4 mb-8">
         <div className="bg-white rounded-lg border p-5 flex flex-col">
-          <span className="text-gray-500 text-sm">Present Today</span>
+          <span className="text-gray-500 text-sm">{t('present_today')}</span>
           <span className="text-3xl font-bold">{presentToday}</span>
-          <span className="text-gray-500 text-xs mt-1">{attendance.length ? ((presentToday / attendance.length) * 100).toFixed(1) : '0.0'}% of workforce</span>
+          <span className="text-gray-500 text-xs mt-1">{attendance.length ? ((presentToday / attendance.length) * 100).toFixed(1) : '0.0'}% {t('of_workforce')}</span>
         </div>
         <div className="bg-white rounded-lg border p-5 flex flex-col">
-          <span className="text-gray-500 text-sm">Late Arrivals</span>
+          <span className="text-gray-500 text-sm">{t('late_arrivals')}</span>
           <span className="text-3xl font-bold">{lateToday}</span>
-          <span className="text-gray-500 text-xs mt-1">Arrived after 9:00 AM</span>
+          <span className="text-gray-500 text-xs mt-1">{t('arrived_after_9am')}</span>
         </div>
         <div className="bg-white rounded-lg border p-5 flex flex-col">
-          <span className="text-gray-500 text-sm">Absent Today</span>
+          <span className="text-gray-500 text-sm">{t('absent_today')}</span>
           <span className="text-3xl font-bold">{absentToday}</span>
-          <span className="text-gray-500 text-xs mt-1">Without prior notice</span>
+          <span className="text-gray-500 text-xs mt-1">{t('without_prior_notice')}</span>
         </div>
         <div className="bg-white rounded-lg border p-5 flex flex-col">
-          <span className="text-gray-500 text-sm">Attendance Rate</span>
+          <span className="text-gray-500 text-sm">{t('attendance_rate')}</span>
           <span className="text-3xl font-bold">{attendanceRate}%</span>
           <span className="text-green-600 text-xs mt-1">&nbsp;</span>
         </div>
@@ -234,20 +236,20 @@ export default function Attendance() {
           <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4 mb-4">
             <div>
               <h2 className="text-xl font-bold">Daily Attendance</h2>
-              <p className="text-gray-500 text-sm">Employee check-in and check-out records</p>
+              <p className="text-gray-500 text-sm">{t('employee_checkin_checkout')}</p>
             </div>
             <div className="flex gap-2 w-full md:w-auto">
               <div className="relative flex-1">
                 <input
                   type="text"
-                  placeholder="Search employees..."
+                  placeholder={t('search_employees')}
                   className="pl-10 pr-3 py-2 border rounded-lg w-full focus:ring-2 focus:ring-blue-500 focus:outline-none text-sm"
                   value={search}
                   onChange={e => setSearch(e.target.value)}
                 />
                 <Search className="absolute left-3 top-2.5 h-4 w-4 text-gray-400" />
               </div>
-              <button onClick={handleFilter} className="border rounded-lg px-4 py-2 flex items-center gap-2 text-gray-700 hover:bg-gray-100"><Filter className="h-4 w-4" /> Filter</button>
+              <button onClick={handleFilter} className="border rounded-lg px-4 py-2 flex items-center gap-2 text-gray-700 hover:bg-gray-100"><Filter className="h-4 w-4" /> {t('filter')}</button>
             </div>
           </div>
           <div className="overflow-x-auto">
@@ -276,7 +278,7 @@ export default function Attendance() {
                       <td className="py-3 px-3 font-mono">{emp.checkIn || '-'}</td>
                       <td className="py-3 px-3 font-mono">{emp.checkOut || '-'}</td>
                       <td className="py-3 px-3 font-semibold">{emp.totalHours || '-'}</td>
-                      <td className="py-3 px-3"><span className="bg-green-100 text-green-700 rounded-full px-3 py-1 text-xs font-semibold">{emp.status}</span></td>
+                      <td className="py-3 px-3"><span className="bg-green-100 text-green-700 rounded-full px-3 py-1 text-xs font-semibold">{t(emp.status.toLowerCase())}</span></td>
                       <td className="py-3 px-3 flex gap-2">
                         <button onClick={() => { handleEdit(emp); setModalMode('edit'); setModalOpen(true); }} className="text-gray-500 hover:text-blue-600" title="Edit">✏️</button>
                         <button onClick={() => handleDelete(emp.id)} className="text-gray-500 hover:text-red-600" title="Delete">🗑️</button>
@@ -291,7 +293,7 @@ export default function Attendance() {
         {/* Calendar Card */}
         <div className="bg-white rounded-xl border p-6 w-full lg:w-[340px] flex-shrink-0">
           <h2 className="text-xl font-bold mb-1">Calendar</h2>
-          <p className="text-gray-500 text-sm mb-4">Select date to view attendance</p>
+          <p className="text-gray-500 text-sm mb-4">{t('select_date_to_view_attendance')}</p>
           <div className="flex flex-col items-center">
             <Calendar
               mode="single"
@@ -309,7 +311,7 @@ export default function Attendance() {
       <div className="mt-8">
         <div className="bg-white rounded-xl border p-6">
           <h2 className="text-xl font-bold mb-1">Leave Requests</h2>
-          <p className="text-gray-500 text-sm mb-4">Pending and recent leave requests</p>
+          <p className="text-gray-500 text-sm mb-4">{t('pending_and_recent_leave_requests')}</p>
           <div className="space-y-4">
             {leaveRequests.map(req => (
               <div key={req.id} className="flex flex-col md:flex-row md:items-center md:justify-between gap-2 border rounded-lg p-4">
@@ -320,9 +322,9 @@ export default function Attendance() {
                 <div className="flex flex-col md:items-end md:flex-row md:gap-4 gap-1">
                   <div className="flex items-center gap-2 text-gray-700 text-sm">
                     <span className="flex items-center gap-1"><CalendarIcon className="h-4 w-4" /> {req.dateRange}</span>
-                    {req.status === 'Pending' && <span className="bg-gray-100 text-gray-700 rounded-full px-3 py-1 text-xs font-semibold ml-2">Pending</span>}
-                    {req.status === 'Approved' && <span className="bg-blue-600 text-white rounded-full px-3 py-1 text-xs font-semibold ml-2">Approved</span>}
-                    {req.status === 'Rejected' && <span className="bg-red-100 text-red-700 rounded-full px-3 py-1 text-xs font-semibold ml-2">Rejected</span>}
+                    {req.status === 'Pending' && <span className="bg-gray-100 text-gray-700 rounded-full px-3 py-1 text-xs font-semibold ml-2">{t('pending')}</span>}
+                    {req.status === 'Approved' && <span className="bg-blue-600 text-white rounded-full px-3 py-1 text-xs font-semibold ml-2">{t('approved')}</span>}
+                    {req.status === 'Rejected' && <span className="bg-red-100 text-red-700 rounded-full px-3 py-1 text-xs font-semibold ml-2">{t('rejected')}</span>}
                   </div>
                   <div className="text-gray-400 text-xs md:text-right">{req.reason}</div>
                   <div className="flex gap-2 mt-2 md:mt-0">
@@ -331,20 +333,20 @@ export default function Attendance() {
                       className="border rounded px-3 py-1 text-sm font-medium hover:bg-blue-50 hover:border-blue-600"
                       disabled={req.status !== 'Pending'}
                     >
-                      Approve
+                      {t('approve')}
                     </button>
                     <button
                       onClick={() => handleReject(req.id)}
                       className="border rounded px-3 py-1 text-sm font-medium hover:bg-red-50 hover:border-red-600"
                       disabled={req.status !== 'Pending'}
                     >
-                      Reject
+                      {t('reject')}
                     </button>
                     <button
                       onClick={() => handleDeleteLeave(req.id)}
                       className="border rounded px-3 py-1 text-sm font-medium hover:bg-gray-50 hover:border-gray-600 text-gray-500"
                     >
-                      Delete
+                      {t('delete')}
                     </button>
                   </div>
                 </div>
@@ -357,21 +359,21 @@ export default function Attendance() {
       <Dialog open={modalOpen} onOpenChange={setModalOpen}>
         <DialogContent>
           <DialogHeader>
-            <DialogTitle>{modalMode === 'add' ? 'Add Attendance' : 'Edit Attendance'}</DialogTitle>
-            <DialogDescription>{modalMode === 'add' ? 'Fill out the form to add a new attendance record.' : 'Edit the attendance record.'}</DialogDescription>
+            <DialogTitle>{modalMode === 'add' ? t('add_attendance') : t('edit_attendance')}</DialogTitle>
+            <DialogDescription>{modalMode === 'add' ? t('add_attendance_desc') : t('edit_attendance_desc')}</DialogDescription>
           </DialogHeader>
           <div className="flex flex-col gap-2">
             <select value={modalMode === 'add' ? newAttendance.employeeId : editAttendance.employeeId} onChange={e => modalMode === 'add' ? setNewAttendance({ ...newAttendance, employeeId: e.target.value }) : setEditAttendance({ ...editAttendance, employeeId: e.target.value })} className="border p-1 rounded">
-              <option value="">Select Employee</option>
+              <option value="">{t('select_employee')}</option>
               {employees.map((e) => (
                 <option key={e.id} value={e.id}>{e.name}</option>
               ))}
             </select>
             <input type="date" value={modalMode === 'add' ? newAttendance.date : editAttendance.date} onChange={e => modalMode === 'add' ? setNewAttendance({ ...newAttendance, date: e.target.value }) : setEditAttendance({ ...editAttendance, date: e.target.value })} className="border p-1 rounded" />
             <select value={modalMode === 'add' ? newAttendance.status : editAttendance.status} onChange={e => modalMode === 'add' ? setNewAttendance({ ...newAttendance, status: e.target.value }) : setEditAttendance({ ...editAttendance, status: e.target.value })} className="border p-1 rounded">
-              <option value="Present">Present</option>
-              <option value="Absent">Absent</option>
-              <option value="Late">Late</option>
+              <option value="Present">{t('present')}</option>
+              <option value="Absent">{t('absent')}</option>
+              <option value="Late">{t('late')}</option>
             </select>
             <div className="flex gap-2 mt-2">
               <Button 
@@ -382,13 +384,13 @@ export default function Attendance() {
                 {saving ? (
                   <>
                     <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
-                    {modalMode === 'add' ? 'Adding...' : 'Saving...'}
+                    {modalMode === 'add' ? t('adding') : t('saving')}
                   </>
                 ) : (
-                  modalMode === 'add' ? 'Add' : 'Save'
+                  modalMode === 'add' ? t('add') : t('save')
                 )}
               </Button>
-              <Button variant="outline" onClick={() => setModalOpen(false)} disabled={saving}>Cancel</Button>
+              <Button variant="outline" onClick={() => setModalOpen(false)} disabled={saving}>{t('cancel')}</Button>
             </div>
           </div>
         </DialogContent>
@@ -397,12 +399,12 @@ export default function Attendance() {
       <Dialog open={leaveModalOpen} onOpenChange={setLeaveModalOpen}>
         <DialogContent className="max-w-md">
           <DialogHeader>
-            <DialogTitle>Add Leave Request</DialogTitle>
-            <DialogDescription>Fill out the form to request leave.</DialogDescription>
+            <DialogTitle>{t('add_leave_request')}</DialogTitle>
+            <DialogDescription>{t('add_leave_request_desc')}</DialogDescription>
           </DialogHeader>
           <div className="flex flex-col gap-2">
             <select value={newLeave.employeeId} onChange={e => setNewLeave({ ...newLeave, employeeId: e.target.value })} className="border p-1 rounded">
-              <option value="">Select Employee</option>
+              <option value="">{t('select_employee')}</option>
               {employees.map((e) => (
                 <option key={e.id} value={e.id}>{e.name}</option>
               ))}
@@ -460,13 +462,13 @@ export default function Attendance() {
                 {leaveSaving ? (
                   <>
                     <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
-                    Submitting...
+                    {t('submitting')}
                   </>
                 ) : (
-                  'Submit'
+                  t('submit')
                 )}
               </Button>
-              <Button variant="outline" onClick={() => setLeaveModalOpen(false)}>Cancel</Button>
+              <Button variant="outline" onClick={() => setLeaveModalOpen(false)}>{t('cancel')}</Button>
             </div>
           </div>
         </DialogContent>

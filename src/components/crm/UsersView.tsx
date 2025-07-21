@@ -8,6 +8,7 @@ import { getUsers, addUser, updateUser, deleteUser } from '@/lib/firebase';
 import { collection, query, where, getDocs, updateDoc, doc } from 'firebase/firestore';
 import { db } from '@/lib/firebase';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
+import { useLanguage } from '@/contexts/LanguageContext';
 
 interface User {
   id: string;
@@ -27,6 +28,7 @@ const rolePermissions = {
 };
 
 export function UsersView() {
+  const { t } = useLanguage();
   const [users, setUsers] = useState<User[]>([]);
   const [filterRole, setFilterRole] = useState('all');
   const [filterStatus, setFilterStatus] = useState('all');
@@ -110,31 +112,31 @@ export function UsersView() {
     <div className="p-4 md:p-4">
       <div className="space-y-6">
         <div className="flex flex-col md:flex-row md:justify-between md:items-center gap-4 mb-4">
-          <h1 className="text-3xl font-bold">User & Role Management</h1>
+          <h1 className="text-3xl font-bold">{t('userAndRoleManagement')}</h1>
           <Dialog open={modalOpen} onOpenChange={setModalOpen}>
             <DialogTrigger asChild>
-              <Button onClick={() => { setModalMode('add'); setEditUser(null); }}>Add New User</Button>
+              <Button onClick={() => { setModalMode('add'); setEditUser(null); }}>{t('addNewUser')}</Button>
             </DialogTrigger>
             <DialogContent>
               <DialogHeader>
-                <DialogTitle>{modalMode === 'add' ? 'Add New User' : 'Edit User'}</DialogTitle>
+                <DialogTitle>{modalMode === 'add' ? t('addNewUser') : t('editUser')}</DialogTitle>
               </DialogHeader>
               <div className="flex flex-col gap-2">
-                <input placeholder="Name" value={modalMode === 'add' ? newUser.name : editUser?.name || ''} onChange={e => modalMode === 'add' ? setNewUser({ ...newUser, name: e.target.value }) : setEditUser(editUser && { ...editUser, name: e.target.value })} className="border p-1 rounded" />
-                <input placeholder="Email" value={modalMode === 'add' ? newUser.email : editUser?.email || ''} onChange={e => modalMode === 'add' ? setNewUser({ ...newUser, email: e.target.value }) : setEditUser(editUser && { ...editUser, email: e.target.value })} className="border p-1 rounded" />
-                <input placeholder="Department" value={modalMode === 'add' ? newUser.department : editUser?.department || ''} onChange={e => modalMode === 'add' ? setNewUser({ ...newUser, department: e.target.value }) : setEditUser(editUser && { ...editUser, department: e.target.value })} className="border p-1 rounded" />
+                <input placeholder={t('name')} value={modalMode === 'add' ? newUser.name : editUser?.name || ''} onChange={e => modalMode === 'add' ? setNewUser({ ...newUser, name: e.target.value }) : setEditUser(editUser && { ...editUser, name: e.target.value })} className="border p-1 rounded" />
+                <input placeholder={t('email')} value={modalMode === 'add' ? newUser.email : editUser?.email || ''} onChange={e => modalMode === 'add' ? setNewUser({ ...newUser, email: e.target.value }) : setEditUser(editUser && { ...editUser, email: e.target.value })} className="border p-1 rounded" />
+                <input placeholder={t('department')} value={modalMode === 'add' ? newUser.department : editUser?.department || ''} onChange={e => modalMode === 'add' ? setNewUser({ ...newUser, department: e.target.value }) : setEditUser(editUser && { ...editUser, department: e.target.value })} className="border p-1 rounded" />
                 <select value={modalMode === 'add' ? newUser.role : editUser?.role || 'sales'} onChange={e => modalMode === 'add' ? setNewUser({ ...newUser, role: e.target.value as any }) : setEditUser(editUser && { ...editUser, role: e.target.value as any })} className="border p-1 rounded">
-                  <option value="admin">Admin</option>
-                  <option value="sales">Sales</option>
-                  <option value="hr">HR</option>
+                  <option value="admin">{t('admin')}</option>
+                  <option value="sales">{t('sales')}</option>
+                  <option value="hr">{t('hr')}</option>
                 </select>
                 <select value={modalMode === 'add' ? newUser.status : editUser?.status || 'Active'} onChange={e => modalMode === 'add' ? setNewUser({ ...newUser, status: e.target.value as any }) : setEditUser(editUser && { ...editUser, status: e.target.value as any })} className="border p-1 rounded">
-                  <option value="Active">Active</option>
-                  <option value="Inactive">Inactive</option>
+                  <option value="Active">{t('active')}</option>
+                  <option value="Inactive">{t('inactive')}</option>
                 </select>
                 <div className="flex gap-2 mt-2">
-                  <Button onClick={modalMode === 'add' ? handleAddUser : handleEditUser}>{modalMode === 'add' ? 'Add' : 'Save'}</Button>
-                  <Button variant="outline" onClick={() => setModalOpen(false)}>Cancel</Button>
+                  <Button onClick={modalMode === 'add' ? handleAddUser : handleEditUser}>{modalMode === 'add' ? t('add') : t('save')}</Button>
+                  <Button variant="outline" onClick={() => setModalOpen(false)}>{t('cancel')}</Button>
                 </div>
               </div>
             </DialogContent>
@@ -144,7 +146,7 @@ export function UsersView() {
         <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mb-4">
           <Card>
             <CardHeader className="pb-2">
-              <CardTitle className="text-sm font-medium text-gray-600">Total Users</CardTitle>
+              <CardTitle className="text-sm font-medium text-gray-600">{t('totalUsers')}</CardTitle>
             </CardHeader>
             <CardContent>
               <div className="text-2xl font-bold">{users.length}</div>
@@ -153,7 +155,7 @@ export function UsersView() {
           
           <Card>
             <CardHeader className="pb-2">
-              <CardTitle className="text-sm font-medium text-gray-600">Active Users</CardTitle>
+              <CardTitle className="text-sm font-medium text-gray-600">{t('activeUsers')}</CardTitle>
             </CardHeader>
             <CardContent>
               <div className="text-2xl font-bold text-green-600">
@@ -164,7 +166,7 @@ export function UsersView() {
           
           <Card>
             <CardHeader className="pb-2">
-              <CardTitle className="text-sm font-medium text-gray-600">Sales Team</CardTitle>
+              <CardTitle className="text-sm font-medium text-gray-600">{t('salesTeam')}</CardTitle>
             </CardHeader>
             <CardContent>
               <div className="text-2xl font-bold text-blue-600">
@@ -175,7 +177,7 @@ export function UsersView() {
           
           <Card>
             <CardHeader className="pb-2">
-              <CardTitle className="text-sm font-medium text-gray-600">Admins</CardTitle>
+              <CardTitle className="text-sm font-medium text-gray-600">{t('admins')}</CardTitle>
             </CardHeader>
             <CardContent>
               <div className="text-2xl font-bold text-purple-600">
@@ -187,29 +189,29 @@ export function UsersView() {
 
         <Card>
           <CardHeader>
-            <CardTitle>Filter Users</CardTitle>
+            <CardTitle>{t('filterUsers')}</CardTitle>
           </CardHeader>
           <CardContent>
             <div className="flex flex-col sm:flex-row gap-4 flex-wrap">
               <Select value={filterRole} onValueChange={setFilterRole}>
                 <SelectTrigger className="w-48">
-                  <SelectValue placeholder="Filter by role" />
+                  <SelectValue placeholder={t('filterByRole')} />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="all">All Roles</SelectItem>
-                  <SelectItem value="admin">Admin</SelectItem>
-                  <SelectItem value="sales">Sales</SelectItem>
-                  <SelectItem value="hr">HR</SelectItem>
+                  <SelectItem value="all">{t('allRoles')}</SelectItem>
+                  <SelectItem value="admin">{t('admin')}</SelectItem>
+                  <SelectItem value="sales">{t('sales')}</SelectItem>
+                  <SelectItem value="hr">{t('hr')}</SelectItem>
                 </SelectContent>
               </Select>
               <Select value={filterStatus} onValueChange={setFilterStatus}>
                 <SelectTrigger className="w-48">
-                  <SelectValue placeholder="Filter by status" />
+                  <SelectValue placeholder={t('filterByStatus')} />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="all">All Status</SelectItem>
-                  <SelectItem value="Active">Active</SelectItem>
-                  <SelectItem value="Inactive">Inactive</SelectItem>
+                  <SelectItem value="all">{t('allStatus')}</SelectItem>
+                  <SelectItem value="Active">{t('active')}</SelectItem>
+                  <SelectItem value="Inactive">{t('inactive')}</SelectItem>
                 </SelectContent>
               </Select>
             </div>
@@ -218,20 +220,20 @@ export function UsersView() {
 
         <Card>
           <CardHeader>
-            <CardTitle>Users</CardTitle>
+            <CardTitle>{t('users')}</CardTitle>
           </CardHeader>
           <CardContent>
             <div className="overflow-x-auto">
               <Table className="min-w-[700px]">
                 <TableHeader>
                   <TableRow>
-                    <TableHead>Name</TableHead>
-                    <TableHead>Email</TableHead>
-                    <TableHead>Role</TableHead>
-                    <TableHead>Department</TableHead>
-                    <TableHead>Status</TableHead>
-                    <TableHead>Last Login</TableHead>
-                    <TableHead>Actions</TableHead>
+                    <TableHead>{t('name')}</TableHead>
+                    <TableHead>{t('email')}</TableHead>
+                    <TableHead>{t('role')}</TableHead>
+                    <TableHead>{t('department')}</TableHead>
+                    <TableHead>{t('status')}</TableHead>
+                    <TableHead>{t('lastLogin')}</TableHead>
+                    <TableHead>{t('actions')}</TableHead>
                   </TableRow>
                 </TableHeader>
                 <TableBody>
@@ -240,15 +242,11 @@ export function UsersView() {
                       <TableCell>{user.name}</TableCell>
                       <TableCell>{user.email}</TableCell>
                       <TableCell>
-                        <Badge className={getRoleColor(user.role)}>
-                          {user.role}
-                        </Badge>
+                        <Badge className={getRoleColor(user.role)}>{t(user.role)}</Badge>
                       </TableCell>
                       <TableCell>{user.department}</TableCell>
                       <TableCell>
-                        <Badge className={getStatusColor(user.status)}>
-                          {user.status}
-                        </Badge>
+                        <Badge className={getStatusColor(user.status)}>{t(user.status ? user.status.toLowerCase() : 'active')}</Badge>
                       </TableCell>
                       <TableCell>{user.lastLogin}</TableCell>
                       <TableCell>
@@ -262,7 +260,7 @@ export function UsersView() {
                               setModalOpen(true);
                             }}
                           >
-                            Edit
+                            {t('edit')}
                           </Button>
                           <Select
                             value={user.role}
@@ -272,9 +270,9 @@ export function UsersView() {
                               <SelectValue />
                             </SelectTrigger>
                             <SelectContent>
-                              <SelectItem value="admin">Admin</SelectItem>
-                              <SelectItem value="sales">Sales</SelectItem>
-                              <SelectItem value="hr">HR</SelectItem>
+                              <SelectItem value="admin">{t('admin')}</SelectItem>
+                              <SelectItem value="sales">{t('sales')}</SelectItem>
+                              <SelectItem value="hr">{t('hr')}</SelectItem>
                             </SelectContent>
                           </Select>
                           <Select
@@ -285,8 +283,8 @@ export function UsersView() {
                               <SelectValue />
                             </SelectTrigger>
                             <SelectContent>
-                              <SelectItem value="Active">Active</SelectItem>
-                              <SelectItem value="Inactive">Inactive</SelectItem>
+                              <SelectItem value="Active">{t('active')}</SelectItem>
+                              <SelectItem value="Inactive">{t('inactive')}</SelectItem>
                             </SelectContent>
                           </Select>
                           <Button
@@ -294,7 +292,7 @@ export function UsersView() {
                             variant="destructive"
                             onClick={() => handleDeleteUser(user.id)}
                           >
-                            Delete
+                            {t('delete')}
                           </Button>
                         </div>
                       </TableCell>

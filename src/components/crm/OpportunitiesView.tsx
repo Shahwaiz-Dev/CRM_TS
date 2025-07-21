@@ -7,6 +7,7 @@ import { getOpportunities, addOpportunity, updateOpportunity, deleteOpportunity 
 import { useAuth } from '@/contexts/AuthContext';
 import { Navigate } from 'react-router-dom';
 import { motion } from 'framer-motion';
+import { useLanguage } from '@/contexts/LanguageContext';
 
 const STAGES = [
   'Qualify',
@@ -38,6 +39,7 @@ export function OpportunitiesView() {
   const [editId, setEditId] = useState(null);
   const [submitting, setSubmitting] = useState(false);
   const [deleteId, setDeleteId] = useState(null);
+  const { t } = useLanguage();
 
   useEffect(() => {
     fetchOpportunities();
@@ -111,38 +113,37 @@ export function OpportunitiesView() {
       transition={{ duration: 0.2, ease: 'easeOut' }}
     >
       <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4 mb-4">
-        <h1 className="text-2xl font-bold">All Opportunities</h1>
+        <h1 className="text-2xl font-bold">{t('all_opportunities')}</h1>
         <div className="flex gap-2 items-center">
           <Input
-            placeholder="Search this list..."
+            placeholder={t('search_this_list')}
             value={search}
             onChange={e => setSearch(e.target.value)}
             className="w-64"
           />
-          <Button onClick={openAdd}>New</Button>
+          <Button onClick={openAdd}>{t('new')}</Button>
         </div>
       </div>
       <div className="overflow-x-auto rounded-lg border bg-white">
         <table className="min-w-full text-sm">
           <thead className="bg-gray-50 border-b">
             <tr>
-              <th className="px-4 py-2 text-left font-semibold">#</th>
-              <th className="px-4 py-2 text-left font-semibold">Opportunity Name</th>
-              <th className="px-4 py-2 text-left font-semibold">Account Name</th>
-              <th className="px-4 py-2 text-left font-semibold">Company Name</th>
-              <th className="px-4 py-2 text-left font-semibold">Company Billing Address</th>
-              <th className="px-4 py-2 text-left font-semibold">Amount</th>
-              <th className="px-4 py-2 text-left font-semibold">Close Date</th>
-              <th className="px-4 py-2 text-left font-semibold">Stage</th>
-              <th className="px-4 py-2 text-left font-semibold">Opportunity Owner Alias</th>
-              <th className="px-4 py-2 text-left font-semibold">Actions</th>
+              <th className="px-4 py-2 text-left font-semibold">{t('opportunity_name')}</th>
+              <th className="px-4 py-2 text-left font-semibold">{t('account_name')}</th>
+              <th className="px-4 py-2 text-left font-semibold">{t('company_name')}</th>
+              <th className="px-4 py-2 text-left font-semibold">{t('company_billing_address')}</th>
+              <th className="px-4 py-2 text-left font-semibold">{t('amount')}</th>
+              <th className="px-4 py-2 text-left font-semibold">{t('close_date')}</th>
+              <th className="px-4 py-2 text-left font-semibold">{t('stage')}</th>
+              <th className="px-4 py-2 text-left font-semibold">{t('opportunity_owner_alias')}</th>
+              <th className="px-4 py-2 text-left font-semibold">{t('actions')}</th>
             </tr>
           </thead>
           <tbody>
             {dataLoading ? (
               null
             ) : filtered.length === 0 ? (
-              <tr><td colSpan={10} className="text-center py-8">No opportunities found.</td></tr>
+              <tr><td colSpan={10} className="text-center py-8">{t('no_opportunities_found')}</td></tr>
             ) : (
               filtered.map((o, i) => (
                 <tr key={o.id || o.name} className="border-b hover:bg-gray-50">
@@ -156,8 +157,8 @@ export function OpportunitiesView() {
                   <td className="px-4 py-2">{o.stage}</td>
                   <td className="px-4 py-2 text-blue-700 font-medium cursor-pointer hover:underline">{o.owner}</td>
                   <td className="px-4 py-2 flex gap-2">
-                    <Button size="sm" variant="outline" onClick={() => openEdit(o)}>Edit</Button>
-                    <Button size="sm" variant="destructive" onClick={() => setDeleteId(o.id)}>Delete</Button>
+                    <Button size="sm" variant="outline" onClick={() => openEdit(o)}>{t('edit')}</Button>
+                    <Button size="sm" variant="destructive" onClick={() => setDeleteId(o.id)}>{t('delete')}</Button>
                   </td>
                 </tr>
               ))
@@ -169,42 +170,42 @@ export function OpportunitiesView() {
       <Dialog open={modalOpen} onOpenChange={setModalOpen}>
         <DialogContent>
           <DialogHeader>
-            <DialogTitle>{editId ? 'Edit Opportunity' : 'Add Opportunity'}</DialogTitle>
+            <DialogTitle>{editId ? t('edit_opportunity') : t('add_opportunity')}</DialogTitle>
           </DialogHeader>
           <form onSubmit={handleSubmit} className="space-y-4">
             <Input
-              placeholder="Opportunity Name"
+              placeholder={t('opportunity_name')}
               value={form.name}
               onChange={e => setForm(f => ({ ...f, name: e.target.value }))}
               required
             />
             <Input
-              placeholder="Account Name"
+              placeholder={t('account_name')}
               value={form.account}
               onChange={e => setForm(f => ({ ...f, account: e.target.value }))}
               required
             />
             <Input
-              placeholder="Company Name"
+              placeholder={t('company_name')}
               value={form.companyName}
               onChange={e => setForm(f => ({ ...f, companyName: e.target.value }))}
               required
             />
             <Input
-              placeholder="Company Billing Address"
+              placeholder={t('company_billing_address')}
               value={form.companyBillingAddress}
               onChange={e => setForm(f => ({ ...f, companyBillingAddress: e.target.value }))}
               required
             />
             <Input
-              placeholder="Amount"
+              placeholder={t('amount')}
               type="number"
               value={form.amount}
               onChange={e => setForm(f => ({ ...f, amount: e.target.value }))}
               required
             />
             <Input
-              placeholder="Close Date"
+              placeholder={t('close_date')}
               type="date"
               value={form.closeDate}
               onChange={e => setForm(f => ({ ...f, closeDate: e.target.value }))}
@@ -212,24 +213,24 @@ export function OpportunitiesView() {
             />
             <Select value={form.stage} onValueChange={val => setForm(f => ({ ...f, stage: val }))} required>
               <SelectTrigger>
-                <SelectValue placeholder="Stage" />
+                <SelectValue placeholder={t('stage')} />
               </SelectTrigger>
               <SelectContent>
                 {STAGES.map(stage => (
-                  <SelectItem key={stage} value={stage}>{stage}</SelectItem>
+                  <SelectItem key={stage} value={stage}>{t(`stage_${stage.toLowerCase().replace(/ /g, '_')}`)}</SelectItem>
                 ))}
               </SelectContent>
             </Select>
             <Input
-              placeholder="Owner Alias"
+              placeholder={t('owner_alias')}
               value={form.owner}
               onChange={e => setForm(f => ({ ...f, owner: e.target.value }))}
               required
             />
             <DialogFooter>
-              <Button type="submit" disabled={submitting}>{submitting ? 'Saving...' : 'Save'}</Button>
+              <Button type="submit" disabled={submitting}>{submitting ? t('saving') : t('save')}</Button>
               <DialogClose asChild>
-                <Button type="button" variant="outline">Cancel</Button>
+                <Button type="button" variant="outline">{t('cancel')}</Button>
               </DialogClose>
             </DialogFooter>
           </form>
@@ -239,15 +240,13 @@ export function OpportunitiesView() {
       <Dialog open={!!deleteId} onOpenChange={v => !v && setDeleteId(null)}>
         <DialogContent>
           <DialogHeader>
-            <DialogTitle>Delete Opportunity</DialogTitle>
+            <DialogTitle>{t('delete_opportunity')}</DialogTitle>
           </DialogHeader>
-          <div>Are you sure you want to delete this opportunity?</div>
+          <div>{t('are_you_sure_you_want_to_delete_this_opportunity')}</div>
           <DialogFooter>
-            <Button variant="destructive" onClick={() => handleDelete(deleteId)}>
-              Delete
-            </Button>
+            <Button variant="destructive" onClick={() => handleDelete(deleteId)}>{t('delete')}</Button>
             <DialogClose asChild>
-              <Button variant="outline">Cancel</Button>
+              <Button variant="outline">{t('cancel')}</Button>
             </DialogClose>
           </DialogFooter>
         </DialogContent>

@@ -10,6 +10,7 @@ import { addCase, getCases, updateCase, deleteCase, getAccounts } from '@/lib/fi
 import { useToast } from '@/hooks/use-toast';
 import { motion } from 'framer-motion';
 import { addNotification } from '@/lib/firebase';
+import { useLanguage } from '@/contexts/LanguageContext';
 
 interface Case {
   id: string;
@@ -72,6 +73,7 @@ export function CasesView() {
   const [filterPriority, setFilterPriority] = useState('all');
   const [filterAccount, setFilterAccount] = useState('all');
   const { toast } = useToast();
+  const { t } = useLanguage();
 
   useEffect(() => {
     fetchData();
@@ -213,44 +215,44 @@ export function CasesView() {
       transition={{ duration: 0.2, ease: 'easeOut' }}
     >
       <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4 mb-6">
-        <h1 className="text-2xl font-bold">All Cases</h1>
+        <h1 className="text-2xl font-bold">{t('all_cases')}</h1>
         <div className="flex gap-2 items-center">
                       <Input
-              placeholder="Search cases..."
+              placeholder={t('search_cases')}
               value={search}
               onChange={e => setSearch(e.target.value)}
               className="w-64"
             />
           <Select value={filterStatus} onValueChange={setFilterStatus}>
             <SelectTrigger className="w-32">
-              <SelectValue placeholder="Status" />
+              <SelectValue placeholder={t('status')} />
             </SelectTrigger>
             <SelectContent>
-              <SelectItem value="all">All Status</SelectItem>
-              <SelectItem value="New">New</SelectItem>
-              <SelectItem value="Working">Working</SelectItem>
-              <SelectItem value="Escalated">Escalated</SelectItem>
-              <SelectItem value="Closed">Closed</SelectItem>
+              <SelectItem value="all">{t('all_status')}</SelectItem>
+              <SelectItem value="New">{t('new')}</SelectItem>
+              <SelectItem value="Working">{t('working')}</SelectItem>
+              <SelectItem value="Escalated">{t('escalated')}</SelectItem>
+              <SelectItem value="Closed">{t('closed')}</SelectItem>
             </SelectContent>
           </Select>
           <Select value={filterPriority} onValueChange={setFilterPriority}>
             <SelectTrigger className="w-32">
-              <SelectValue placeholder="Priority" />
+              <SelectValue placeholder={t('priority')} />
             </SelectTrigger>
             <SelectContent>
-              <SelectItem value="all">All Priority</SelectItem>
-              <SelectItem value="Low">Low</SelectItem>
-              <SelectItem value="Medium">Medium</SelectItem>
-              <SelectItem value="High">High</SelectItem>
-              <SelectItem value="Critical">Critical</SelectItem>
+              <SelectItem value="all">{t('all_priority')}</SelectItem>
+              <SelectItem value="Low">{t('low')}</SelectItem>
+              <SelectItem value="Medium">{t('medium')}</SelectItem>
+              <SelectItem value="High">{t('high')}</SelectItem>
+              <SelectItem value="Critical">{t('critical')}</SelectItem>
             </SelectContent>
           </Select>
           <Select value={filterAccount} onValueChange={setFilterAccount}>
             <SelectTrigger className="w-48">
-              <SelectValue placeholder="Account" />
+              <SelectValue placeholder={t('account')} />
             </SelectTrigger>
             <SelectContent>
-              <SelectItem value="all">All Accounts</SelectItem>
+              <SelectItem value="all">{t('all_accounts')}</SelectItem>
               {accounts.map(account => (
                 <SelectItem key={account.id} value={account.id}>
                   {account.accountName}
@@ -260,7 +262,7 @@ export function CasesView() {
           </Select>
           <Button onClick={openAdd} className="gap-2">
             <Plus className="w-4 h-4" />
-            New Case
+            {t('new_case')}
           </Button>
         </div>
       </div>
@@ -269,15 +271,15 @@ export function CasesView() {
         {filteredCases.length === 0 ? (
           <div className="text-center py-12">
             <AlertCircle className="w-12 h-12 text-gray-400 mx-auto mb-4" />
-            <h3 className="text-lg font-semibold text-gray-900 mb-2">No cases found</h3>
+            <h3 className="text-lg font-semibold text-gray-900 mb-2">{t('no_cases_found')}</h3>
             <p className="text-gray-500 mb-4">
               {search || filterStatus !== 'all' || filterPriority !== 'all' || filterAccount !== 'all'
-                ? 'Try adjusting your search or filters'
-                : 'Create your first case to get started'
+                ? t('try_adjusting_search_or_filters')
+                : t('create_first_case_to_get_started')
               }
             </p>
             {!search && filterStatus === 'all' && filterPriority === 'all' && filterAccount === 'all' && (
-              <Button onClick={openAdd}>Create First Case</Button>
+              <Button onClick={openAdd}>{t('create_first_case')}</Button>
             )}
           </div>
         ) : (
@@ -288,13 +290,8 @@ export function CasesView() {
                   <div className="flex-1">
                     <div className="flex items-center gap-3 mb-2">
                       <h3 className="font-semibold text-gray-900">{caseItem.subject}</h3>
-                      <Badge className={priorityColors[caseItem.priority]}>
-                        {caseItem.priority}
-                      </Badge>
-                      <Badge className={statusColors[caseItem.status]}>
-                        {getStatusIcon(caseItem.status)}
-                        {caseItem.status}
-                      </Badge>
+                      <Badge className={priorityColors[caseItem.priority]}>{t(caseItem.priority.toLowerCase())}</Badge>
+                      <Badge className={statusColors[caseItem.status]}>{getStatusIcon(caseItem.status)}{t(caseItem.status.toLowerCase())}</Badge>
                     </div>
                     <p className="text-sm text-gray-600 line-clamp-2">{caseItem.description}</p>
                   </div>
@@ -338,17 +335,17 @@ export function CasesView() {
       <Dialog open={modalOpen} onOpenChange={setModalOpen}>
         <DialogContent>
           <DialogHeader>
-            <DialogTitle>{editId ? 'Edit Case' : 'Add New Case'}</DialogTitle>
+            <DialogTitle>{editId ? t('edit_case') : t('add_new_case')}</DialogTitle>
           </DialogHeader>
           <form onSubmit={handleSubmit} className="space-y-4">
             <Input
-              placeholder="Subject"
+              placeholder={t('subject')}
               value={form.subject}
               onChange={e => setForm(f => ({ ...f, subject: e.target.value }))}
               required
             />
             <Textarea
-              placeholder="Description"
+              placeholder={t('description')}
               value={form.description}
               onChange={e => setForm(f => ({ ...f, description: e.target.value }))}
               required
@@ -356,24 +353,24 @@ export function CasesView() {
             <div className="grid grid-cols-2 gap-4">
               <Select value={form.priority} onValueChange={val => setForm(f => ({ ...f, priority: val as any }))}>
                 <SelectTrigger>
-                  <SelectValue placeholder="Priority" />
+                  <SelectValue placeholder={t('priority')} />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="Low">Low</SelectItem>
-                  <SelectItem value="Medium">Medium</SelectItem>
-                  <SelectItem value="High">High</SelectItem>
-                  <SelectItem value="Critical">Critical</SelectItem>
+                  <SelectItem value="Low">{t('low')}</SelectItem>
+                  <SelectItem value="Medium">{t('medium')}</SelectItem>
+                  <SelectItem value="High">{t('high')}</SelectItem>
+                  <SelectItem value="Critical">{t('critical')}</SelectItem>
                 </SelectContent>
               </Select>
               <Select value={form.status} onValueChange={val => setForm(f => ({ ...f, status: val as any }))}>
                 <SelectTrigger>
-                  <SelectValue placeholder="Status" />
+                  <SelectValue placeholder={t('status')} />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="New">New</SelectItem>
-                  <SelectItem value="Working">Working</SelectItem>
-                  <SelectItem value="Escalated">Escalated</SelectItem>
-                  <SelectItem value="Closed">Closed</SelectItem>
+                  <SelectItem value="New">{t('new')}</SelectItem>
+                  <SelectItem value="Working">{t('working')}</SelectItem>
+                  <SelectItem value="Escalated">{t('escalated')}</SelectItem>
+                  <SelectItem value="Closed">{t('closed')}</SelectItem>
                 </SelectContent>
               </Select>
             </div>
@@ -389,7 +386,7 @@ export function CasesView() {
               }}
             >
               <SelectTrigger>
-                <SelectValue placeholder="Select Account" />
+                <SelectValue placeholder={t('select_account')} />
               </SelectTrigger>
               <SelectContent>
                 {accounts.map(account => (
@@ -404,14 +401,14 @@ export function CasesView() {
                 {submitting ? (
                   <>
                     <Loader2 className="w-4 h-4 mr-2 animate-spin" />
-                    {editId ? 'Updating...' : 'Creating...'}
+                    {editId ? t('updating') : t('creating')}
                   </>
                 ) : (
-                  editId ? 'Update Case' : 'Create Case'
+                  editId ? t('update_case') : t('create_case')
                 )}
               </Button>
               <DialogClose asChild>
-                <Button type="button" variant="outline">Cancel</Button>
+                <Button type="button" variant="outline">{t('cancel')}</Button>
               </DialogClose>
             </DialogFooter>
           </form>
@@ -422,19 +419,19 @@ export function CasesView() {
       <Dialog open={!!deleteId} onOpenChange={() => setDeleteId(null)}>
         <DialogContent>
           <DialogHeader>
-            <DialogTitle>Delete Case</DialogTitle>
+            <DialogTitle>{t('delete_case')}</DialogTitle>
           </DialogHeader>
           <div className="space-y-4">
-            <p>Are you sure you want to delete this case? This action cannot be undone.</p>
+            <p>{t('are_you_sure_delete_case')}</p>
             <DialogFooter>
               <Button 
                 variant="destructive" 
                 onClick={() => deleteId && handleDelete(deleteId)}
               >
-                Delete
+                {t('delete')}
               </Button>
               <DialogClose asChild>
-                <Button variant="outline">Cancel</Button>
+                <Button variant="outline">{t('cancel')}</Button>
               </DialogClose>
             </DialogFooter>
           </div>

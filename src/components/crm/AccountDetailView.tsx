@@ -11,6 +11,7 @@ import { db } from '../../lib/firebase';
 import { Select, SelectTrigger, SelectValue, SelectContent, SelectItem } from '@/components/ui/select';
 import { Textarea } from '@/components/ui/textarea';
 import { addContact, addCase, getContacts, getCases } from '@/lib/firebase';
+import { useLanguage } from '@/contexts/LanguageContext';
 
 const priorityColors = {
   Low: 'bg-green-100 text-green-800',
@@ -67,6 +68,8 @@ export function AccountDetailView({ account, onUpdate }) {
   const [relatedContacts, setRelatedContacts] = useState([]);
   const [relatedCases, setRelatedCases] = useState([]);
   const [relatedLoading, setRelatedLoading] = useState(false);
+
+  const { t } = useLanguage();
 
   // Update details when account prop changes
   useEffect(() => {
@@ -228,7 +231,7 @@ export function AccountDetailView({ account, onUpdate }) {
   };
 
   if (!account) {
-    return <div className="p-8 text-center text-gray-500">No account selected</div>;
+    return <div className="p-8 text-center text-gray-500">{t('no_account_selected')}</div>;
   }
 
   const priorityColors = {
@@ -257,8 +260,8 @@ export function AccountDetailView({ account, onUpdate }) {
           </Avatar>
           <div>
             <div className="flex items-center gap-2">
-              <span className="uppercase text-xs text-gray-500 font-semibold tracking-widest">Account</span>
-              <Badge variant="outline" className="ml-2">{details.type}</Badge>
+              <span className="uppercase text-xs text-gray-500 font-semibold tracking-widest">{t('account')}</span>
+              <Badge variant="outline" className="ml-2">{t(details.type.toLowerCase())}</Badge>
             </div>
             <h1 className="text-2xl font-bold text-gray-900 leading-tight">{details.accountName}</h1>
           </div>
@@ -267,66 +270,66 @@ export function AccountDetailView({ account, onUpdate }) {
           <Button size="sm" onClick={() => setModal('follow')} variant={followStatus ? "default" : "outline"}>
             {followStatus ? "✓ Following" : "+ Follow"}
           </Button>
-          <Button size="sm" onClick={() => setModal('newcontact')}>New Contact</Button>
-          <Button size="sm" onClick={() => setModal('newcase')}>New Case</Button>
-          <Button size="sm" onClick={() => setModal('newnote')}>New Note</Button>
-          <Button size="sm" onClick={() => setModal('newopportunity')}>New Opportunity</Button>
+          <Button size="sm" onClick={() => setModal('newcontact')}>{t('new_contact')}</Button>
+          <Button size="sm" onClick={() => setModal('newcase')}>{t('new_case')}</Button>
+          <Button size="sm" onClick={() => setModal('newnote')}>{t('new_note')}</Button>
+          <Button size="sm" onClick={() => setModal('newopportunity')}>{t('new_opportunity')}</Button>
           <Button variant="outline" size="sm" onClick={() => setModal('edit')}><MoreHorizontal className="h-4 w-4" /></Button>
         </div>
       </div>
       {/* Info Row */}
       <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4 py-4 border-b">
         <div>
-          <div className="text-xs text-gray-500">Type</div>
-          <div className="font-medium">{details.type}</div>
+          <div className="text-xs text-gray-500">{t('type')}</div>
+          <div className="font-medium">{t(details.type.toLowerCase())}</div>
         </div>
         <div>
-          <div className="text-xs text-gray-500">Phone</div>
+          <div className="text-xs text-gray-500">{t('phone')}</div>
           <div className="font-medium">{details.phone}</div>
         </div>
         <div>
-          <div className="text-xs text-gray-500">Website</div>
+          <div className="text-xs text-gray-500">{t('website')}</div>
           <div className="font-medium text-blue-600 underline cursor-pointer">{details.website}</div>
         </div>
         <div>
-          <div className="text-xs text-gray-500">Billing Address</div>
+          <div className="text-xs text-gray-500">{t('billing_address')}</div>
           <div className="font-medium">{details.billingAddress}</div>
         </div>
         <div>
-          <div className="text-xs text-gray-500">Open Opportunities Amount Lifetime</div>
+          <div className="text-xs text-gray-500">{t('open_opportunities_amount_lifetime')}</div>
           <div className="font-medium">$0.00</div>
         </div>
       </div>
       {/* Tabs */}
       <Tabs value={tab} onValueChange={setTab} className="mt-4">
         <TabsList className="flex gap-2 border-b mb-4">
-          <TabsTrigger value="details" className="px-4 py-2">DETAILS</TabsTrigger>
-          <TabsTrigger value="related" className="px-4 py-2">RELATED</TabsTrigger>
-          <TabsTrigger value="news" className="px-4 py-2">NEWS</TabsTrigger>
+          <TabsTrigger value="details" className="px-4 py-2">{t('details')}</TabsTrigger>
+          <TabsTrigger value="related" className="px-4 py-2">{t('related')}</TabsTrigger>
+          <TabsTrigger value="news" className="px-4 py-2">{t('news')}</TabsTrigger>
         </TabsList>
         <TabsContent value="details">
           <div className="grid grid-cols-1 md:grid-cols-2 gap-x-8 gap-y-4">
             {/* Left column */}
             <div className="space-y-4">
-              <Field label="Account Owner" value={details.owner} onEdit={() => handleEdit('owner', details.owner)} editing={editField==='owner'} editValue={editValue} setEditValue={setEditValue} onSave={handleEditSave} onCancel={()=>setEditField(null)} />
-              <Field label="Account Name" value={details.accountName} onEdit={() => handleEdit('accountName', details.accountName)} editing={editField==='accountName'} editValue={editValue} setEditValue={setEditValue} onSave={handleEditSave} onCancel={()=>setEditField(null)} />
-              <Field label="Parent Account" value={details.parentAccount} onEdit={() => handleEdit('parentAccount', details.parentAccount)} editing={editField==='parentAccount'} editValue={editValue} setEditValue={setEditValue} onSave={handleEditSave} onCancel={()=>setEditField(null)} />
-              <Field label="Account Number" value={details.accountNumber} onEdit={() => handleEdit('accountNumber', details.accountNumber)} editing={editField==='accountNumber'} editValue={editValue} setEditValue={setEditValue} onSave={handleEditSave} onCancel={()=>setEditField(null)} />
-              <Field label="Type" value={details.type} onEdit={() => handleEdit('type', details.type)} editing={editField==='type'} editValue={editValue} setEditValue={setEditValue} onSave={handleEditSave} onCancel={()=>setEditField(null)} />
-              <Field label="Industry" value={details.industry} onEdit={() => handleEdit('industry', details.industry)} editing={editField==='industry'} editValue={editValue} setEditValue={setEditValue} onSave={handleEditSave} onCancel={()=>setEditField(null)} />
-              <Field label="Annual Revenue" value={details.annualRevenue} onEdit={() => handleEdit('annualRevenue', details.annualRevenue)} editing={editField==='annualRevenue'} editValue={editValue} setEditValue={setEditValue} onSave={handleEditSave} onCancel={()=>setEditField(null)} />
-              <Field label="Billing Address" value={details.billingAddress} onEdit={() => handleEdit('billingAddress', details.billingAddress)} editing={editField==='billingAddress'} editValue={editValue} setEditValue={setEditValue} onSave={handleEditSave} onCancel={()=>setEditField(null)} />
+              <Field label={t('account_owner')} value={details.owner} onEdit={() => handleEdit('owner', details.owner)} editing={editField==='owner'} editValue={editValue} setEditValue={setEditValue} onSave={handleEditSave} onCancel={()=>setEditField(null)} />
+              <Field label={t('account_name')} value={details.accountName} onEdit={() => handleEdit('accountName', details.accountName)} editing={editField==='accountName'} editValue={editValue} setEditValue={setEditValue} onSave={handleEditSave} onCancel={()=>setEditField(null)} />
+              <Field label={t('parent_account')} value={details.parentAccount} onEdit={() => handleEdit('parentAccount', details.parentAccount)} editing={editField==='parentAccount'} editValue={editValue} setEditValue={setEditValue} onSave={handleEditSave} onCancel={()=>setEditField(null)} />
+              <Field label={t('account_number')} value={details.accountNumber} onEdit={() => handleEdit('accountNumber', details.accountNumber)} editing={editField==='accountNumber'} editValue={editValue} setEditValue={setEditValue} onSave={handleEditSave} onCancel={()=>setEditField(null)} />
+              <Field label={t('type')} value={details.type} onEdit={() => handleEdit('type', details.type)} editing={editField==='type'} editValue={editValue} setEditValue={setEditValue} onSave={handleEditSave} onCancel={()=>setEditField(null)} />
+              <Field label={t('industry')} value={details.industry} onEdit={() => handleEdit('industry', details.industry)} editing={editField==='industry'} editValue={editValue} setEditValue={setEditValue} onSave={handleEditSave} onCancel={()=>setEditField(null)} />
+              <Field label={t('annual_revenue')} value={details.annualRevenue} onEdit={() => handleEdit('annualRevenue', details.annualRevenue)} editing={editField==='annualRevenue'} editValue={editValue} setEditValue={setEditValue} onSave={handleEditSave} onCancel={()=>setEditField(null)} />
+              <Field label={t('billing_address')} value={details.billingAddress} onEdit={() => handleEdit('billingAddress', details.billingAddress)} editing={editField==='billingAddress'} editValue={editValue} setEditValue={setEditValue} onSave={handleEditSave} onCancel={()=>setEditField(null)} />
             </div>
             {/* Right column */}
             <div className="space-y-4">
-              <Field label="Phone" value={details.phone} onEdit={() => handleEdit('phone', details.phone)} editing={editField==='phone'} editValue={editValue} setEditValue={setEditValue} onSave={handleEditSave} onCancel={()=>setEditField(null)} />
-              <Field label="Fax" value={details.fax} onEdit={() => handleEdit('fax', details.fax)} editing={editField==='fax'} editValue={editValue} setEditValue={setEditValue} onSave={handleEditSave} onCancel={()=>setEditField(null)} />
-              <Field label="Website" value={details.website} onEdit={() => handleEdit('website', details.website)} editing={editField==='website'} editValue={editValue} setEditValue={setEditValue} onSave={handleEditSave} onCancel={()=>setEditField(null)} />
-              <Field label="Ticker Symbol" value={details.tickerSymbol} onEdit={() => handleEdit('tickerSymbol', details.tickerSymbol)} editing={editField==='tickerSymbol'} editValue={editValue} setEditValue={setEditValue} onSave={handleEditSave} onCancel={()=>setEditField(null)} />
-              <Field label="Ownership" value={details.ownership} onEdit={() => handleEdit('ownership', details.ownership)} editing={editField==='ownership'} editValue={editValue} setEditValue={setEditValue} onSave={handleEditSave} onCancel={()=>setEditField(null)} />
-              <Field label="Number of Locations" value={details.numberOfLocations} onEdit={() => handleEdit('numberOfLocations', details.numberOfLocations)} editing={editField==='numberOfLocations'} editValue={editValue} setEditValue={setEditValue} onSave={handleEditSave} onCancel={()=>setEditField(null)} />
-              <Field label="Employees" value={details.employees} onEdit={() => handleEdit('employees', details.employees)} editing={editField==='employees'} editValue={editValue} setEditValue={setEditValue} onSave={handleEditSave} onCancel={()=>setEditField(null)} />
-              <Field label="Shipping Address" value={details.shippingAddress} onEdit={() => handleEdit('shippingAddress', details.shippingAddress)} editing={editField==='shippingAddress'} editValue={editValue} setEditValue={setEditValue} onSave={handleEditSave} onCancel={()=>setEditField(null)} />
+              <Field label={t('phone')} value={details.phone} onEdit={() => handleEdit('phone', details.phone)} editing={editField==='phone'} editValue={editValue} setEditValue={setEditValue} onSave={handleEditSave} onCancel={()=>setEditField(null)} />
+              <Field label={t('fax')} value={details.fax} onEdit={() => handleEdit('fax', details.fax)} editing={editField==='fax'} editValue={editValue} setEditValue={setEditValue} onSave={handleEditSave} onCancel={()=>setEditField(null)} />
+              <Field label={t('website')} value={details.website} onEdit={() => handleEdit('website', details.website)} editing={editField==='website'} editValue={editValue} setEditValue={setEditValue} onSave={handleEditSave} onCancel={()=>setEditField(null)} />
+              <Field label={t('ticker_symbol')} value={details.tickerSymbol} onEdit={() => handleEdit('tickerSymbol', details.tickerSymbol)} editing={editField==='tickerSymbol'} editValue={editValue} setEditValue={setEditValue} onSave={handleEditSave} onCancel={()=>setEditField(null)} />
+              <Field label={t('ownership')} value={details.ownership} onEdit={() => handleEdit('ownership', details.ownership)} editing={editField==='ownership'} editValue={editValue} setEditValue={setEditValue} onSave={handleEditSave} onCancel={()=>setEditField(null)} />
+              <Field label={t('number_of_locations')} value={details.numberOfLocations} onEdit={() => handleEdit('numberOfLocations', details.numberOfLocations)} editing={editField==='numberOfLocations'} editValue={editValue} setEditValue={setEditValue} onSave={handleEditSave} onCancel={()=>setEditField(null)} />
+              <Field label={t('employees')} value={details.employees} onEdit={() => handleEdit('employees', details.employees)} editing={editField==='employees'} editValue={editValue} setEditValue={setEditValue} onSave={handleEditSave} onCancel={()=>setEditField(null)} />
+              <Field label={t('shipping_address')} value={details.shippingAddress} onEdit={() => handleEdit('shippingAddress', details.shippingAddress)} editing={editField==='shippingAddress'} editValue={editValue} setEditValue={setEditValue} onSave={handleEditSave} onCancel={()=>setEditField(null)} />
             </div>
           </div>
         </TabsContent>
@@ -335,10 +338,10 @@ export function AccountDetailView({ account, onUpdate }) {
             {/* Contacts Section */}
             <div>
               <div className="flex items-center justify-between mb-4">
-                <h3 className="text-lg font-semibold">Contacts ({relatedContacts.length})</h3>
+                <h3 className="text-lg font-semibold">{t('contacts')} ({relatedContacts.length})</h3>
                 <Button size="sm" onClick={() => setModal('newcontact')}>
                   <Plus className="w-4 h-4 mr-2" />
-                  Add Contact
+                  {t('add_contact')}
                 </Button>
               </div>
               {relatedLoading ? (
@@ -348,7 +351,7 @@ export function AccountDetailView({ account, onUpdate }) {
               ) : relatedContacts.length === 0 ? (
                 <div className="text-center py-8 text-gray-500">
                   <User className="w-8 h-8 mx-auto mb-2 text-gray-400" />
-                  <p>No contacts found for this account</p>
+                  <p>{t('no_contacts_found_for_this_account')}</p>
                 </div>
               ) : (
                 <div className="grid gap-3">
@@ -376,7 +379,7 @@ export function AccountDetailView({ account, onUpdate }) {
                   {relatedContacts.length > 5 && (
                     <div className="text-center">
                       <Button variant="outline" size="sm" onClick={() => window.location.href = '/contacts'}>
-                        View All Contacts ({relatedContacts.length})
+                        {t('view_all_contacts', { count: relatedContacts.length })}
                       </Button>
                     </div>
                   )}
@@ -387,10 +390,10 @@ export function AccountDetailView({ account, onUpdate }) {
             {/* Cases Section */}
             <div>
               <div className="flex items-center justify-between mb-4">
-                <h3 className="text-lg font-semibold">Cases ({relatedCases.length})</h3>
+                <h3 className="text-lg font-semibold">{t('cases')} ({relatedCases.length})</h3>
                 <Button size="sm" onClick={() => setModal('newcase')}>
                   <Plus className="w-4 h-4 mr-2" />
-                  Add Case
+                  {t('add_case')}
                 </Button>
               </div>
               {relatedLoading ? (
@@ -400,7 +403,7 @@ export function AccountDetailView({ account, onUpdate }) {
               ) : relatedCases.length === 0 ? (
                 <div className="text-center py-8 text-gray-500">
                   <AlertCircle className="w-8 h-8 mx-auto mb-2 text-gray-400" />
-                  <p>No cases found for this account</p>
+                  <p>{t('no_cases_found_for_this_account')}</p>
                 </div>
               ) : (
                 <div className="grid gap-3">
@@ -423,7 +426,7 @@ export function AccountDetailView({ account, onUpdate }) {
                   {relatedCases.length > 5 && (
                     <div className="text-center">
                       <Button variant="outline" size="sm" onClick={() => window.location.href = '/cases'}>
-                        View All Cases ({relatedCases.length})
+                        {t('view_all_cases', { count: relatedCases.length })}
                       </Button>
                     </div>
                   )}
@@ -433,7 +436,7 @@ export function AccountDetailView({ account, onUpdate }) {
           </div>
         </TabsContent>
         <TabsContent value="news">
-          <div className="text-gray-500 p-8 text-center">News coming soon...</div>
+          <div className="text-gray-500 p-8 text-center">{t('news_coming_soon')}</div>
         </TabsContent>
       </Tabs>
       {/* Activity/Chatter */}
@@ -442,20 +445,20 @@ export function AccountDetailView({ account, onUpdate }) {
         <div className="md:col-span-2">
           <Tabs value={activityTab} onValueChange={setActivityTab} className="mb-2">
             <TabsList className="flex gap-2 border-b mb-2">
-              <TabsTrigger value="newtask" className="px-3 py-1">New Task</TabsTrigger>
-              <TabsTrigger value="logcall" className="px-3 py-1">Log a Call</TabsTrigger>
-              <TabsTrigger value="newevent" className="px-3 py-1">New Event</TabsTrigger>
-              <TabsTrigger value="email" className="px-3 py-1">Email</TabsTrigger>
+              <TabsTrigger value="newtask" className="px-3 py-1">{t('new_task')}</TabsTrigger>
+              <TabsTrigger value="logcall" className="px-3 py-1">{t('log_a_call')}</TabsTrigger>
+              <TabsTrigger value="newevent" className="px-3 py-1">{t('new_event')}</TabsTrigger>
+              <TabsTrigger value="email" className="px-3 py-1">{t('email')}</TabsTrigger>
             </TabsList>
             <TabsContent value={activityTab}>
               <div className="flex gap-2 items-center mb-2">
                 <Input
-                  placeholder={`Recap your ${activityTab === 'logcall' ? 'call' : activityTab === 'newtask' ? 'task' : activityTab === 'newevent' ? 'event' : 'email'}...`}
+                  placeholder={t('recap_your', { type: t(activityTab) })}
                   value={activityInput}
                   onChange={e => setActivityInput(e.target.value)}
                   className="flex-1"
                 />
-                <Button onClick={handleActivityAdd}>Add</Button>
+                <Button onClick={handleActivityAdd}>{t('add')}</Button>
               </div>
               <div className="space-y-2">
                 {activityLog.map((activity, idx) => (
@@ -473,23 +476,23 @@ export function AccountDetailView({ account, onUpdate }) {
         </div>
         {/* Quick Actions */}
         <div>
-          <h3 className="font-semibold mb-3">Quick Actions</h3>
+          <h3 className="font-semibold mb-3">{t('quick_actions')}</h3>
           <div className="space-y-2">
             <Button variant="outline" size="sm" className="w-full justify-start" onClick={() => handleQuickAction('call')}>
               <Phone className="w-4 h-4 mr-2" />
-              Call
+              {t('call')}
             </Button>
             <Button variant="outline" size="sm" className="w-full justify-start" onClick={() => handleQuickAction('email')}>
               <Mail className="w-4 h-4 mr-2" />
-              Email
+              {t('email')}
             </Button>
             <Button variant="outline" size="sm" className="w-full justify-start" onClick={() => handleQuickAction('schedule')}>
               <Calendar className="w-4 h-4 mr-2" />
-              Schedule Meeting
+              {t('schedule_meeting')}
             </Button>
             <Button variant="outline" size="sm" className="w-full justify-start" onClick={() => handleQuickAction('quote')}>
               <FileText className="w-4 h-4 mr-2" />
-              Create Quote
+              {t('create_quote')}
             </Button>
           </div>
         </div>
@@ -500,16 +503,16 @@ export function AccountDetailView({ account, onUpdate }) {
       <Dialog open={modal === 'follow'} onOpenChange={() => setModal(null)}>
         <DialogContent>
           <DialogHeader>
-            <DialogTitle>Follow Account</DialogTitle>
+            <DialogTitle>{t('follow_account')}</DialogTitle>
           </DialogHeader>
           <div className="space-y-4">
-            <p>Would you like to follow updates for {details.accountName}?</p>
+            <p>{t('would_you_like_to_follow_updates_for', { name: details.accountName })}</p>
             <DialogFooter>
               <Button onClick={handleFollow}>
-                {followStatus ? 'Unfollow' : 'Follow'}
+                {followStatus ? t('unfollow') : t('follow')}
               </Button>
               <DialogClose asChild>
-                <Button variant="outline">Cancel</Button>
+                <Button variant="outline">{t('cancel')}</Button>
               </DialogClose>
             </DialogFooter>
           </div>
@@ -520,43 +523,43 @@ export function AccountDetailView({ account, onUpdate }) {
       <Dialog open={modal === 'newcontact'} onOpenChange={() => setModal(null)}>
         <DialogContent>
           <DialogHeader>
-            <DialogTitle>New Contact</DialogTitle>
+            <DialogTitle>{t('new_contact')}</DialogTitle>
           </DialogHeader>
           <form onSubmit={(e) => { e.preventDefault(); handleNewContact(); }} className="space-y-4">
             <div className="grid grid-cols-2 gap-4">
               <Input
-                placeholder="First Name"
+                placeholder={t('first_name')}
                 value={contactForm.firstName}
                 onChange={e => setContactForm(f => ({ ...f, firstName: e.target.value }))}
                 required
               />
               <Input
-                placeholder="Last Name"
+                placeholder={t('last_name')}
                 value={contactForm.lastName}
                 onChange={e => setContactForm(f => ({ ...f, lastName: e.target.value }))}
                 required
               />
             </div>
             <Input
-              placeholder="Email"
+              placeholder={t('email')}
               type="email"
               value={contactForm.email}
               onChange={e => setContactForm(f => ({ ...f, email: e.target.value }))}
             />
             <Input
-              placeholder="Phone"
+              placeholder={t('phone')}
               value={contactForm.phone}
               onChange={e => setContactForm(f => ({ ...f, phone: e.target.value }))}
             />
             <Input
-              placeholder="Title"
+              placeholder={t('title')}
               value={contactForm.title}
               onChange={e => setContactForm(f => ({ ...f, title: e.target.value }))}
             />
             <DialogFooter>
-              <Button type="submit">Create Contact</Button>
+              <Button type="submit">{t('create_contact')}</Button>
               <DialogClose asChild>
-                <Button variant="outline">Cancel</Button>
+                <Button variant="outline">{t('cancel')}</Button>
               </DialogClose>
             </DialogFooter>
           </form>
@@ -567,17 +570,17 @@ export function AccountDetailView({ account, onUpdate }) {
       <Dialog open={modal === 'newcase'} onOpenChange={() => setModal(null)}>
         <DialogContent>
           <DialogHeader>
-            <DialogTitle>New Case</DialogTitle>
+            <DialogTitle>{t('new_case')}</DialogTitle>
           </DialogHeader>
           <form onSubmit={(e) => { e.preventDefault(); handleNewCase(); }} className="space-y-4">
             <Input
-              placeholder="Subject"
+              placeholder={t('subject')}
               value={caseForm.subject}
               onChange={e => setCaseForm(f => ({ ...f, subject: e.target.value }))}
               required
             />
             <Textarea
-              placeholder="Description"
+              placeholder={t('description')}
               value={caseForm.description}
               onChange={e => setCaseForm(f => ({ ...f, description: e.target.value }))}
               required
@@ -585,31 +588,31 @@ export function AccountDetailView({ account, onUpdate }) {
             <div className="grid grid-cols-2 gap-4">
               <Select value={caseForm.priority} onValueChange={val => setCaseForm(f => ({ ...f, priority: val }))}>
                 <SelectTrigger>
-                  <SelectValue placeholder="Priority" />
+                  <SelectValue placeholder={t('priority')} />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="Low">Low</SelectItem>
-                  <SelectItem value="Medium">Medium</SelectItem>
-                  <SelectItem value="High">High</SelectItem>
-                  <SelectItem value="Critical">Critical</SelectItem>
+                  <SelectItem value="Low">{t('low')}</SelectItem>
+                  <SelectItem value="Medium">{t('medium')}</SelectItem>
+                  <SelectItem value="High">{t('high')}</SelectItem>
+                  <SelectItem value="Critical">{t('critical')}</SelectItem>
                 </SelectContent>
               </Select>
               <Select value={caseForm.status} onValueChange={val => setCaseForm(f => ({ ...f, status: val }))}>
                 <SelectTrigger>
-                  <SelectValue placeholder="Status" />
+                  <SelectValue placeholder={t('status')} />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="New">New</SelectItem>
-                  <SelectItem value="Working">Working</SelectItem>
-                  <SelectItem value="Escalated">Escalated</SelectItem>
-                  <SelectItem value="Closed">Closed</SelectItem>
+                  <SelectItem value="New">{t('new')}</SelectItem>
+                  <SelectItem value="Working">{t('working')}</SelectItem>
+                  <SelectItem value="Escalated">{t('escalated')}</SelectItem>
+                  <SelectItem value="Closed">{t('closed')}</SelectItem>
                 </SelectContent>
               </Select>
             </div>
             <DialogFooter>
-              <Button type="submit">Create Case</Button>
+              <Button type="submit">{t('create_case')}</Button>
               <DialogClose asChild>
-                <Button variant="outline">Cancel</Button>
+                <Button variant="outline">{t('cancel')}</Button>
               </DialogClose>
             </DialogFooter>
           </form>
@@ -620,25 +623,25 @@ export function AccountDetailView({ account, onUpdate }) {
       <Dialog open={modal === 'newnote'} onOpenChange={() => setModal(null)}>
         <DialogContent>
           <DialogHeader>
-            <DialogTitle>New Note</DialogTitle>
+            <DialogTitle>{t('new_note')}</DialogTitle>
           </DialogHeader>
           <form onSubmit={(e) => { e.preventDefault(); handleNewNote(); }} className="space-y-4">
             <Input
-              placeholder="Note Title"
+              placeholder={t('note_title')}
               value={noteForm.title}
               onChange={e => setNoteForm(f => ({ ...f, title: e.target.value }))}
               required
             />
             <Textarea
-              placeholder="Note Content"
+              placeholder={t('note_content')}
               value={noteForm.content}
               onChange={e => setNoteForm(f => ({ ...f, content: e.target.value }))}
               required
             />
             <DialogFooter>
-              <Button type="submit">Create Note</Button>
+              <Button type="submit">{t('create_note')}</Button>
               <DialogClose asChild>
-                <Button variant="outline">Cancel</Button>
+                <Button variant="outline">{t('cancel')}</Button>
               </DialogClose>
             </DialogFooter>
           </form>
@@ -649,45 +652,45 @@ export function AccountDetailView({ account, onUpdate }) {
       <Dialog open={modal === 'newopportunity'} onOpenChange={() => setModal(null)}>
         <DialogContent>
           <DialogHeader>
-            <DialogTitle>New Opportunity</DialogTitle>
+            <DialogTitle>{t('new_opportunity')}</DialogTitle>
           </DialogHeader>
           <form onSubmit={(e) => { e.preventDefault(); handleNewOpportunity(); }} className="space-y-4">
             <Input
-              placeholder="Opportunity Name"
+              placeholder={t('opportunity_name')}
               value={opportunityForm.name}
               onChange={e => setOpportunityForm(f => ({ ...f, name: e.target.value }))}
               required
             />
             <Input
-              placeholder="Amount"
+              placeholder={t('amount')}
               type="number"
               value={opportunityForm.amount}
               onChange={e => setOpportunityForm(f => ({ ...f, amount: e.target.value }))}
               required
             />
             <Input
-              placeholder="Close Date"
+              placeholder={t('close_date')}
               type="date"
               value={opportunityForm.closeDate}
               onChange={e => setOpportunityForm(f => ({ ...f, closeDate: e.target.value }))}
             />
             <Select value={opportunityForm.stage} onValueChange={val => setOpportunityForm(f => ({ ...f, stage: val }))}>
               <SelectTrigger>
-                <SelectValue placeholder="Stage" />
+                <SelectValue placeholder={t('stage')} />
               </SelectTrigger>
               <SelectContent>
-                <SelectItem value="Qualify">Qualify</SelectItem>
-                <SelectItem value="Meet & Present">Meet & Present</SelectItem>
-                <SelectItem value="Propose">Propose</SelectItem>
-                <SelectItem value="Negotiate">Negotiate</SelectItem>
-                <SelectItem value="Closed Won">Closed Won</SelectItem>
-                <SelectItem value="Closed Lost">Closed Lost</SelectItem>
+                <SelectItem value="Qualify">{t('qualify')}</SelectItem>
+                <SelectItem value="Meet & Present">{t('meet_and_present')}</SelectItem>
+                <SelectItem value="Propose">{t('propose')}</SelectItem>
+                <SelectItem value="Negotiate">{t('negotiate')}</SelectItem>
+                <SelectItem value="Closed Won">{t('closed_won')}</SelectItem>
+                <SelectItem value="Closed Lost">{t('closed_lost')}</SelectItem>
               </SelectContent>
             </Select>
             <DialogFooter>
-              <Button type="submit">Create Opportunity</Button>
+              <Button type="submit">{t('create_opportunity')}</Button>
               <DialogClose asChild>
-                <Button variant="outline">Cancel</Button>
+                <Button variant="outline">{t('cancel')}</Button>
               </DialogClose>
             </DialogFooter>
           </form>
@@ -698,13 +701,13 @@ export function AccountDetailView({ account, onUpdate }) {
       <Dialog open={modal === 'edit'} onOpenChange={() => setModal(null)}>
         <DialogContent>
           <DialogHeader>
-            <DialogTitle>Edit Account</DialogTitle>
+            <DialogTitle>{t('edit_account')}</DialogTitle>
           </DialogHeader>
           <div className="space-y-4">
-            <p>Account editing is available inline. Click the edit icon next to any field to modify it.</p>
+            <p>{t('account_editing_inline')}</p>
             <DialogFooter>
               <DialogClose asChild>
-                <Button variant="outline">Close</Button>
+                <Button variant="outline">{t('close')}</Button>
               </DialogClose>
             </DialogFooter>
           </div>
@@ -726,8 +729,8 @@ function Field({ label, value, onEdit, editing, editValue, setEditValue, onSave,
             onChange={e => setEditValue(e.target.value)}
             className="flex-1"
           />
-          <Button size="sm" onClick={onSave}>Save</Button>
-          <Button size="sm" variant="outline" onClick={onCancel}>Cancel</Button>
+          <Button size="sm" onClick={onSave}>{t('save')}</Button>
+          <Button size="sm" variant="outline" onClick={onCancel}>{t('cancel')}</Button>
         </div>
       </div>
     );

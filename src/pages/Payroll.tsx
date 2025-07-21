@@ -9,6 +9,7 @@ import { useLoading } from "@/components/ui/PageLoader";
 import { useAuth } from '@/contexts/AuthContext';
 import { Navigate } from 'react-router-dom';
 import { motion } from 'framer-motion';
+import { useLanguage } from '@/contexts/LanguageContext';
 
 function toCSV(rows) {
   const header = ['Name','Employee ID','Position','Department','Base Salary','Overtime','Bonuses','Deductions','Net Pay','Status'];
@@ -71,6 +72,7 @@ export default function Payroll() {
   const [modalMode, setModalMode] = useState('add');
   const [employees, setEmployees] = useState([]);
   const [search, setSearch] = useState('');
+  const { t } = useLanguage();
 
   const fetchPayroll = async () => {
     setError("");
@@ -349,27 +351,27 @@ export default function Payroll() {
 
       <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4 mb-6">
         <div>
-          <h1 className="text-3xl md:text-4xl font-extrabold">Payroll Management</h1>
-          <p className="text-gray-500 mt-1">Manage employee compensation and payroll processing</p>
+          <h1 className="text-3xl md:text-4xl font-extrabold">{t('payroll_management')}</h1>
+          <p className="text-gray-500 mt-1">{t('manage_employee_compensation')}</p>
         </div>
         <div className="flex gap-2 self-start md:self-auto">
           <button 
             onClick={handleExport} 
             className="border rounded-lg px-4 py-2 flex items-center gap-2 text-gray-700 hover:bg-gray-100"
           >
-            <Download className="h-4 w-4" /> Export Report
+            <Download className="h-4 w-4" /> {t('export_report')}
           </button>
           <button 
             onClick={openAddModal}
             className="bg-green-600 hover:bg-green-700 text-white font-semibold px-5 py-2 rounded-lg text-base flex items-center gap-2"
           >
-            <Plus className="h-4 w-4" /> Add Payroll
+            <Plus className="h-4 w-4" /> {t('add_payroll')}
           </button>
           <button 
             onClick={handleProcess} 
             className="bg-blue-600 hover:bg-blue-700 text-white font-semibold px-5 py-2 rounded-lg text-base flex items-center gap-2"
           >
-            <DollarSign className="h-4 w-4" /> Process Payroll
+            <DollarSign className="h-4 w-4" /> {t('process_payroll')}
           </button>
         </div>
       </div>
@@ -377,24 +379,24 @@ export default function Payroll() {
       {/* Stats Cards */}
       <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-4 mb-8">
         <div className="bg-white rounded-lg border p-5 flex flex-col">
-          <span className="text-gray-500 text-sm">Total Payroll</span>
+          <span className="text-gray-500 text-sm">{t('total_payroll')}</span>
           <span className="text-3xl font-bold">${totalPayroll.toLocaleString()}</span>
-          <span className="text-green-600 text-xs mt-1">Current period</span>
+          <span className="text-green-600 text-xs mt-1">{t('current_period')}</span>
         </div>
         <div className="bg-white rounded-lg border p-5 flex flex-col">
-          <span className="text-gray-500 text-sm">Average Salary</span>
+          <span className="text-gray-500 text-sm">{t('average_salary')}</span>
           <span className="text-3xl font-bold">${Math.round(averageSalary).toLocaleString()}</span>
-          <span className="text-gray-500 text-xs mt-1">Per employee</span>
+          <span className="text-gray-500 text-xs mt-1">{t('per_employee')}</span>
         </div>
         <div className="bg-white rounded-lg border p-5 flex flex-col">
-          <span className="text-gray-500 text-sm">Total Overtime</span>
+          <span className="text-gray-500 text-sm">{t('total_overtime')}</span>
           <span className="text-3xl font-bold">${totalOvertime.toLocaleString()}</span>
-          <span className="text-gray-500 text-xs mt-1">This pay period</span>
+          <span className="text-gray-500 text-xs mt-1">{t('this_pay_period')}</span>
         </div>
         <div className="bg-white rounded-lg border p-5 flex flex-col">
-          <span className="text-gray-500 text-sm">Total Bonuses</span>
+          <span className="text-gray-500 text-sm">{t('total_bonuses')}</span>
           <span className="text-3xl font-bold">${totalBonuses.toLocaleString()}</span>
-          <span className="text-gray-500 text-xs mt-1">Performance bonuses</span>
+          <span className="text-gray-500 text-xs mt-1">{t('performance_bonuses')}</span>
         </div>
       </div>
 
@@ -402,14 +404,14 @@ export default function Payroll() {
       <div className="bg-white rounded-xl border p-6">
         <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4 mb-4">
           <div>
-            <h2 className="text-xl font-bold">Payroll Records</h2>
-            <p className="text-gray-500 text-sm">View and manage employee payroll information ({filteredPayroll.length} records)</p>
+            <h2 className="text-xl font-bold">{t('payroll_records')}</h2>
+            <p className="text-gray-500 text-sm">{t('view_and_manage_payroll_info', { count: filteredPayroll.length })}</p>
           </div>
           <div className="flex gap-2 w-full md:w-auto">
             <div className="relative flex-1">
               <input
                 type="text"
-                placeholder="Search payroll..."
+                placeholder={t('search_payroll')}
                 value={search}
                 onChange={e => setSearch(e.target.value)}
                 className="pl-10 pr-3 py-2 border rounded-lg w-full focus:ring-2 focus:ring-blue-500 focus:outline-none text-sm"
@@ -420,7 +422,7 @@ export default function Payroll() {
               onClick={() => setFilterModal(true)}
               className="border rounded-lg px-4 py-2 flex items-center gap-2 text-gray-700 hover:bg-gray-100"
             >
-              <Filter className="h-4 w-4" /> Filter
+              <Filter className="h-4 w-4" /> {t('filter')}
             </button>
           </div>
         </div>
@@ -440,15 +442,15 @@ export default function Payroll() {
             <table className="min-w-full text-sm">
               <thead>
                 <tr className="border-b">
-                  <th className="py-2 px-3 text-left font-semibold text-gray-700">Employee</th>
-                  <th className="py-2 px-3 text-left font-semibold text-gray-700">Position</th>
-                  <th className="py-2 px-3 text-left font-semibold text-gray-700">Base Salary</th>
-                  <th className="py-2 px-3 text-left font-semibold text-gray-700">Overtime</th>
-                  <th className="py-2 px-3 text-left font-semibold text-gray-700">Bonuses</th>
-                  <th className="py-2 px-3 text-left font-semibold text-gray-700">Deductions</th>
-                  <th className="py-2 px-3 text-left font-semibold text-gray-700">Net Pay</th>
-                  <th className="py-2 px-3 text-left font-semibold text-gray-700">Status</th>
-                  <th className="py-2 px-3 text-left font-semibold text-gray-700">Actions</th>
+                  <th className="py-2 px-3 text-left font-semibold text-gray-700">{t('employee')}</th>
+                  <th className="py-2 px-3 text-left font-semibold text-gray-700">{t('position')}</th>
+                  <th className="py-2 px-3 text-left font-semibold text-gray-700">{t('base_salary')}</th>
+                  <th className="py-2 px-3 text-left font-semibold text-gray-700">{t('overtime')}</th>
+                  <th className="py-2 px-3 text-left font-semibold text-gray-700">{t('bonuses')}</th>
+                  <th className="py-2 px-3 text-left font-semibold text-gray-700">{t('deductions')}</th>
+                  <th className="py-2 px-3 text-left font-semibold text-gray-700">{t('net_pay')}</th>
+                  <th className="py-2 px-3 text-left font-semibold text-gray-700">{t('status')}</th>
+                  <th className="py-2 px-3 text-left font-semibold text-gray-700">{t('actions')}</th>
                 </tr>
               </thead>
               <tbody>
@@ -479,7 +481,7 @@ export default function Payroll() {
                             ? 'bg-green-100 text-green-700' 
                             : 'bg-yellow-100 text-yellow-700'
                         }`}>
-                          {pay.status}
+                          {t(pay.status.toLowerCase())}
                         </span>
                       </td>
                       <td className="py-3 px-3 flex gap-2">
@@ -526,44 +528,44 @@ export default function Payroll() {
       <Dialog open={filterModal} onOpenChange={setFilterModal}>
         <DialogContent>
           <DialogHeader>
-            <DialogTitle>Filter Payroll</DialogTitle>
-            <DialogDescription>Filter payroll records by employee, month, or status.</DialogDescription>
+            <DialogTitle>{t('filter_payroll')}</DialogTitle>
+            <DialogDescription>{t('filter_payroll_description')}</DialogDescription>
           </DialogHeader>
           <div className="flex flex-col gap-4">
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">Employee</label>
+              <label className="block text-sm font-medium text-gray-700 mb-1">{t('employee')}</label>
               <input 
-                placeholder="Employee Name" 
+                placeholder={t('employee_name')} 
                 value={filter.employee} 
                 onChange={e => setFilter(f => ({ ...f, employee: e.target.value }))} 
                 className="w-full border rounded-lg px-3 py-2 focus:ring-2 focus:ring-blue-500 focus:outline-none" 
               />
             </div>
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">Month</label>
+              <label className="block text-sm font-medium text-gray-700 mb-1">{t('month')}</label>
               <input 
                 type="month"
-                placeholder="Month" 
+                placeholder={t('month')} 
                 value={filter.month} 
                 onChange={e => setFilter(f => ({ ...f, month: e.target.value }))} 
                 className="w-full border rounded-lg px-3 py-2 focus:ring-2 focus:ring-blue-500 focus:outline-none" 
               />
             </div>
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">Status</label>
+              <label className="block text-sm font-medium text-gray-700 mb-1">{t('status')}</label>
               <select 
                 value={filter.status} 
                 onChange={e => setFilter(f => ({ ...f, status: e.target.value }))} 
                 className="w-full border rounded-lg px-3 py-2 focus:ring-2 focus:ring-blue-500 focus:outline-none"
               >
-                <option value="">All Statuses</option>
-                <option value="Pending">Pending</option>
-                <option value="Paid">Paid</option>
+                <option value="">{t('all_statuses')}</option>
+                <option value="Pending">{t('pending')}</option>
+                <option value="Paid">{t('paid')}</option>
               </select>
             </div>
             <div className="flex gap-2 mt-4">
-              <Button onClick={applyFilters} className="flex-1">Apply Filters</Button>
-              <Button variant="outline" onClick={clearFilters} className="flex-1">Clear All</Button>
+              <Button onClick={applyFilters} className="flex-1">{t('apply_filters')}</Button>
+              <Button variant="outline" onClick={clearFilters} className="flex-1">{t('clear_all')}</Button>
             </div>
           </div>
         </DialogContent>
@@ -573,14 +575,14 @@ export default function Payroll() {
       <Dialog open={modalOpen} onOpenChange={setModalOpen}>
         <DialogContent className="max-w-md">
           <DialogHeader>
-            <DialogTitle>{modalMode === 'add' ? 'Add New Payroll' : 'Edit Payroll'}</DialogTitle>
+            <DialogTitle>{modalMode === 'add' ? t('add_new_payroll') : t('edit_payroll')}</DialogTitle>
             <DialogDescription>
-              {modalMode === 'add' ? 'Fill out the form to add a new payroll record.' : 'Fill out the form to edit the payroll record.'}
+              {modalMode === 'add' ? t('add_new_payroll_desc') : t('edit_payroll_desc')}
             </DialogDescription>
           </DialogHeader>
           <div className="flex flex-col gap-4">
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">Employee *</label>
+              <label className="block text-sm font-medium text-gray-700 mb-1">{t('employee')} *</label>
               <select 
                 value={modalMode === 'add' ? newPayroll.employeeId : editPayroll.employeeId} 
                 onChange={e => modalMode === 'add' 
@@ -589,17 +591,17 @@ export default function Payroll() {
                 } 
                 className="w-full border rounded-lg px-3 py-2 focus:ring-2 focus:ring-blue-500 focus:outline-none"
               >
-                <option value="">Select Employee</option>
+                <option value="">{t('select_employee')}</option>
                 {employees.map((e) => (
                   <option key={e.id} value={e.id}>{e.name}</option>
                 ))}
               </select>
             </div>
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">Month *</label>
+              <label className="block text-sm font-medium text-gray-700 mb-1">{t('month')} *</label>
               <input 
                 type="month"
-                placeholder="Month" 
+                placeholder={t('month')} 
                 value={modalMode === 'add' ? newPayroll.month : editPayroll.month} 
                 onChange={e => modalMode === 'add' 
                   ? setNewPayroll({ ...newPayroll, month: e.target.value }) 
@@ -609,10 +611,10 @@ export default function Payroll() {
               />
             </div>
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">Base Salary</label>
+              <label className="block text-sm font-medium text-gray-700 mb-1">{t('base_salary')}</label>
               <input 
                 type="number" 
-                placeholder="Base Salary" 
+                placeholder={t('base_salary')} 
                 value={modalMode === 'add' ? newPayroll.amount : editPayroll.amount} 
                 onChange={e => modalMode === 'add' 
                   ? setNewPayroll({ ...newPayroll, amount: Number(e.target.value) }) 
@@ -622,10 +624,10 @@ export default function Payroll() {
               />
             </div>
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">Overtime</label>
+              <label className="block text-sm font-medium text-gray-700 mb-1">{t('overtime')}</label>
               <input 
                 type="number" 
-                placeholder="Overtime Pay" 
+                placeholder={t('overtime_pay')} 
                 value={modalMode === 'add' ? newPayroll.overtime : editPayroll.overtime} 
                 onChange={e => modalMode === 'add' 
                   ? setNewPayroll({ ...newPayroll, overtime: Number(e.target.value) }) 
@@ -635,10 +637,10 @@ export default function Payroll() {
               />
             </div>
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">Bonuses</label>
+              <label className="block text-sm font-medium text-gray-700 mb-1">{t('bonuses')}</label>
               <input 
                 type="number" 
-                placeholder="Bonuses" 
+                placeholder={t('bonuses')} 
                 value={modalMode === 'add' ? newPayroll.bonuses : editPayroll.bonuses} 
                 onChange={e => modalMode === 'add' 
                   ? setNewPayroll({ ...newPayroll, bonuses: Number(e.target.value) }) 
@@ -648,10 +650,10 @@ export default function Payroll() {
               />
             </div>
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">Deductions</label>
+              <label className="block text-sm font-medium text-gray-700 mb-1">{t('deductions')}</label>
               <input 
                 type="number" 
-                placeholder="Deductions" 
+                placeholder={t('deductions')} 
                 value={modalMode === 'add' ? newPayroll.deductions : editPayroll.deductions} 
                 onChange={e => modalMode === 'add' 
                   ? setNewPayroll({ ...newPayroll, deductions: Number(e.target.value) }) 
@@ -662,8 +664,8 @@ export default function Payroll() {
             </div>
             {/* Add any other fields here if needed */}
             <div className="flex gap-2 mt-4">
-              <Button onClick={modalMode === 'add' ? handleAdd : handleUpdate} className="flex-1">{modalMode === 'add' ? 'Add Payroll' : 'Save Changes'}</Button>
-              <Button variant="outline" onClick={() => setModalOpen(false)} className="flex-1">Cancel</Button>
+              <Button onClick={modalMode === 'add' ? handleAdd : handleUpdate} className="flex-1">{modalMode === 'add' ? t('add_payroll') : t('save_changes')}</Button>
+              <Button variant="outline" onClick={() => setModalOpen(false)} className="flex-1">{t('cancel')}</Button>
             </div>
           </div>
         </DialogContent>

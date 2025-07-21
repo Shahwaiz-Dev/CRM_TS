@@ -6,6 +6,7 @@ import { doc, getDoc, setDoc } from "firebase/firestore";
 import { auth, db } from "@/lib/firebase";
 import { useAuth } from '@/contexts/AuthContext';
 import { Loader2 } from 'lucide-react';
+import { useLanguage } from '@/contexts/LanguageContext';
 
 export default function Login() {
   const [email, setEmail] = useState('');
@@ -17,6 +18,7 @@ export default function Login() {
   const [isGoogleLoading, setIsGoogleLoading] = useState(false);
   const navigate = useNavigate();
   const { setUser } = useAuth();
+  const { t, language, setLanguage } = useLanguage();
 
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -37,7 +39,7 @@ export default function Login() {
         });
         navigate('/');
       } else {
-        setError("User profile not found.");
+        setError(t('user_profile_not_found'));
       }
     } catch (err: any) {
       setError(err.message);
@@ -90,15 +92,32 @@ export default function Login() {
 
   return (
     <div className="min-h-screen flex flex-col items-center justify-center bg-gray-50 p-2 sm:p-6 md:p-10">
+      {/* Language Switcher */}
+      <div className="flex gap-2 mb-4 self-center">
+        <button
+          onClick={() => setLanguage('en')}
+          className={`px-2 py-1 rounded text-sm font-medium border ${language === 'en' ? 'bg-blue-600 text-white' : 'bg-white text-gray-700 hover:bg-gray-100'}`}
+          aria-label="Switch to English"
+        >
+          EN
+        </button>
+        <button
+          onClick={() => setLanguage('el')}
+          className={`px-2 py-1 rounded text-sm font-medium border ${language === 'el' ? 'bg-blue-600 text-white' : 'bg-white text-gray-700 hover:bg-gray-100'}`}
+          aria-label="Switch to Greek"
+        >
+          ΕΛ
+        </button>
+      </div>
       {/* Top Title */}
       <div className="mb-4 sm:mb-6 text-center">
         <h1 className="text-3xl sm:text-4xl font-bold text-gray-900">CRM</h1>
-        <p className="text-gray-500 mt-1">Sign in to your account</p>
+        <p className="text-gray-500 mt-1">{t('sign_in_to_account')}</p>
       </div>
       {/* Card */}
       <form onSubmit={handleLogin} className="bg-white p-4 sm:p-6 md:p-8 rounded-xl shadow w-full max-w-xs sm:max-w-sm md:max-w-md space-y-4 mx-auto">
-        <h2 className="text-xl sm:text-2xl font-bold text-center mb-1">Welcome back</h2>
-        <p className="text-gray-500 text-center text-sm mb-4">Enter your credentials to access your dashboard</p>
+        <h2 className="text-xl sm:text-2xl font-bold text-center mb-1">{t('welcome_back')}</h2>
+        <p className="text-gray-500 text-center text-sm mb-4">{t('enter_credentials')}</p>
         {/* Google Sign-In Button */}
         <Button
           type="button"
@@ -109,7 +128,7 @@ export default function Login() {
           {isGoogleLoading ? (
             <>
               <Loader2 className="w-5 h-5 animate-spin" />
-              Signing in...
+              {t('signing_in')}
             </>
           ) : (
             <>
@@ -126,13 +145,13 @@ export default function Login() {
                   </clipPath>
                 </defs>
               </svg>
-              Sign in with Google
+              {t('sign_in_with_google')}
             </>
           )}
         </Button>
         {/* Email */}
         <div>
-          <label className="block text-sm font-medium text-gray-700 mb-1" htmlFor="email">Email</label>
+          <label className="block text-sm font-medium text-gray-700 mb-1" htmlFor="email">{t('email')}</label>
           <div className="relative">
             <span className="absolute inset-y-0 left-0 flex items-center pl-3 text-gray-400">
               <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor" className="h-5 w-5"><path strokeLinecap="round" strokeLinejoin="round" d="M21.75 6.75v10.5a2.25 2.25 0 01-2.25 2.25H4.5a2.25 2.25 0 01-2.25-2.25V6.75m19.5 0A2.25 2.25 0 0019.5 4.5H4.5a2.25 2.25 0 00-2.25 2.25m19.5 0v.243a2.25 2.25 0 01-.876 1.797l-7.5 5.625a2.25 2.25 0 01-2.648 0l-7.5-5.625A2.25 2.25 0 012.25 6.993V6.75" /></svg>
@@ -141,7 +160,7 @@ export default function Login() {
               id="email"
               type="email"
               className="block w-full pl-10 pr-3 py-2 border border-gray-300 rounded focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-sm"
-              placeholder="admin@crmpro.com"
+              placeholder={t('email_placeholder')}
               value={email}
               onChange={e => setEmail(e.target.value)}
               required
@@ -151,7 +170,7 @@ export default function Login() {
         </div>
         {/* Password */}
         <div>
-          <label className="block text-sm font-medium text-gray-700 mb-1" htmlFor="password">Password</label>
+          <label className="block text-sm font-medium text-gray-700 mb-1" htmlFor="password">{t('password')}</label>
           <div className="relative">
             <span className="absolute inset-y-0 left-0 flex items-center pl-3 text-gray-400">
               <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor" className="h-5 w-5"><path strokeLinecap="round" strokeLinejoin="round" d="M16.5 10.5V7.5a4.5 4.5 0 10-9 0v3m12 0A2.25 2.25 0 0119.5 12.75v6A2.25 2.25 0 0117.25 21H6.75A2.25 2.25 0 014.5 18.75v-6A2.25 2.25 0 016.75 10.5h10.5zm-6 3.75h.008v.008H12.5v-.008z" /></svg>
@@ -160,7 +179,7 @@ export default function Login() {
               id="password"
               type={showPassword ? 'text' : 'password'}
               className="block w-full pl-10 pr-10 py-2 border border-gray-300 rounded focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-sm"
-              placeholder="admin123"
+              placeholder={t('password_placeholder')}
               value={password}
               onChange={e => setPassword(e.target.value)}
               required
@@ -199,9 +218,9 @@ export default function Login() {
               onChange={e => setRemember(e.target.checked)}
               disabled={isEmailLoading || isGoogleLoading}
             />
-            Remember me
+            {t('remember_me')}
           </label>
-          <a href="#" className="text-blue-600 text-sm hover:underline">Forgot password?</a>
+          <a href="#" className="text-blue-600 text-sm hover:underline">{t('forgot_password')}</a>
         </div>
         {/* Error */}
         {error && <div className="text-red-500 text-sm text-center">{error}</div>}
@@ -214,10 +233,10 @@ export default function Login() {
           {isEmailLoading ? (
             <>
               <Loader2 className="w-5 h-5 animate-spin" />
-              Signing in...
+              {t('signing_in')}
             </>
           ) : (
-            'Sign in'
+            t('sign_in')
           )}
         </Button>
       </form>

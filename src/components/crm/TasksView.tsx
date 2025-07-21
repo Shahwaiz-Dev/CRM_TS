@@ -10,6 +10,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Plus, Calendar, User, AlertCircle } from 'lucide-react';
 import { collection, getDocs, addDoc, updateDoc, deleteDoc, doc } from 'firebase/firestore';
 import { db } from '../../lib/firebase';
+import { useLanguage } from '@/contexts/LanguageContext';
 
 interface Task {
   id: string;
@@ -23,6 +24,7 @@ interface Task {
 }
 
 export function TasksView() {
+  const { t } = useLanguage();
   const [tasks, setTasks] = useState<Task[]>([]);
   const [searchTerm, setSearchTerm] = useState('');
   const [isDialogOpen, setIsDialogOpen] = useState(false);
@@ -142,30 +144,25 @@ export function TasksView() {
           <div className="flex items-start justify-between">
             <h4 className="font-semibold text-sm leading-tight">{task.title}</h4>
             <Badge className={`text-xs ${getPriorityColor(task.priority)}`}>
-              {task.priority}
+              {t(task.priority.toLowerCase())}
             </Badge>
           </div>
-          
           <p className="text-xs text-gray-600 line-clamp-2">{task.description}</p>
-          
           <div className="space-y-2">
             <div className="flex items-center gap-2 text-xs text-gray-500">
               <User className="w-3 h-3" />
               <span>{task.assignee}</span>
             </div>
-            
             {task.dueDate && (
               <div className="flex items-center gap-2 text-xs text-gray-500">
                 <Calendar className="w-3 h-3" />
                 <span>{new Date(task.dueDate).toLocaleDateString()}</span>
               </div>
             )}
-            
             <div className="text-xs text-gray-500">
               <span className="font-medium">{task.account}</span>
             </div>
           </div>
-
           <div className="flex gap-1 pt-2">
             {task.status !== 'Not Started' && (
               <Button 
@@ -174,7 +171,7 @@ export function TasksView() {
                 className="text-xs h-6 px-2"
                 onClick={() => moveTask(task.id, 'Not Started')}
               >
-                To Do
+                {t('toDo')}
               </Button>
             )}
             {task.status !== 'In Progress' && (
@@ -184,7 +181,7 @@ export function TasksView() {
                 className="text-xs h-6 px-2"
                 onClick={() => moveTask(task.id, 'In Progress')}
               >
-                Progress
+                {t('progress')}
               </Button>
             )}
             {task.status !== 'Completed' && (
@@ -194,11 +191,11 @@ export function TasksView() {
                 className="text-xs h-6 px-2"
                 onClick={() => moveTask(task.id, 'Completed')}
               >
-                Done
+                {t('done')}
               </Button>
             )}
             <Button size="sm" variant="destructive" className="text-xs h-6 px-2" onClick={() => handleDeleteTask(task.id)}>
-              Delete
+              {t('delete')}
             </Button>
           </div>
         </div>
@@ -206,6 +203,11 @@ export function TasksView() {
     </Card>
   );
 
+  const statusTranslationKeys: Record<string, string> = {
+    'Not Started': 'notStarted',
+    'In Progress': 'inProgress',
+    'Completed': 'completed',
+  };
   const StatusColumn = ({ status, tasks: columnTasks }: { status: string, tasks: Task[] }) => (
     <div
       className={`flex-1 min-w-[300px] bg-white rounded-lg border p-4 ${dragOverStatus === status ? 'ring-2 ring-blue-400' : ''}`}
@@ -213,7 +215,7 @@ export function TasksView() {
       onDrop={e => handleDrop(e, status as any)}
       onDragLeave={handleDragLeave}
     >
-      <h3 className={`font-semibold mb-4 text-lg ${getStatusColor(status)}`}>{status}</h3>
+      <h3 className={`font-semibold mb-4 text-lg ${getStatusColor(status)}`}>{t(statusTranslationKeys[status] || 'notStarted')}</h3>
       {columnTasks.map(task => <TaskCard key={task.id} task={task} />)}
     </div>
   );
@@ -221,43 +223,43 @@ export function TasksView() {
   return (
     <div className="p-4 md:p-4">
       <div className="flex justify-between items-center mb-6">
-        <h1 className="text-3xl font-bold">Tasks</h1>
+        <h1 className="text-3xl font-bold">{t('tasks')}</h1>
           <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
             <DialogTrigger asChild>
-            <Button size="sm" className="gap-2"><Plus className="w-4 h-4" /> Add Task</Button>
+            <Button size="sm" className="gap-2"><Plus className="w-4 h-4" /> {t('addTask')}</Button>
             </DialogTrigger>
           <DialogContent>
               <DialogHeader>
-              <DialogTitle>Add New Task</DialogTitle>
+              <DialogTitle>{t('addNewTask')}</DialogTitle>
               </DialogHeader>
               <div className="space-y-4">
-              <Label>Title</Label>
+              <Label>{t('title')}</Label>
               <Input value={newTask.title} onChange={e => setNewTask({ ...newTask, title: e.target.value })} />
-              <Label>Description</Label>
+              <Label>{t('description')}</Label>
               <Textarea value={newTask.description} onChange={e => setNewTask({ ...newTask, description: e.target.value })} />
-              <Label>Assignee</Label>
+              <Label>{t('assignee')}</Label>
               <Input value={newTask.assignee} onChange={e => setNewTask({ ...newTask, assignee: e.target.value })} />
-              <Label>Priority</Label>
+              <Label>{t('priority')}</Label>
               <Select value={newTask.priority} onValueChange={v => setNewTask({ ...newTask, priority: v as any })}>
                 <SelectTrigger className="w-full">
-                  <SelectValue placeholder="Select priority" />
+                  <SelectValue placeholder={t('selectPriority')} />
                     </SelectTrigger>
                     <SelectContent>
-                      <SelectItem value="High">High</SelectItem>
-                      <SelectItem value="Medium">Medium</SelectItem>
-                      <SelectItem value="Low">Low</SelectItem>
+                      <SelectItem value="High">{t('high')}</SelectItem>
+                      <SelectItem value="Medium">{t('medium')}</SelectItem>
+                      <SelectItem value="Low">{t('low')}</SelectItem>
                     </SelectContent>
                   </Select>
-              <Label>Due Date</Label>
+              <Label>{t('dueDate')}</Label>
               <Input type="date" value={newTask.dueDate} onChange={e => setNewTask({ ...newTask, dueDate: e.target.value })} />
-              <Label>Account</Label>
+              <Label>{t('account')}</Label>
               <Input value={newTask.account} onChange={e => setNewTask({ ...newTask, account: e.target.value })} />
-              <Button onClick={handleAddTask}>Add Task</Button>
+              <Button onClick={handleAddTask}>{t('addTask')}</Button>
               </div>
             </DialogContent>
           </Dialog>
         </div>
-      {error && <div className="text-red-600 mb-4 flex items-center gap-2"><AlertCircle className="w-4 h-4" /> {error}</div>}
+      {error && <div className="text-red-600 mb-4 flex items-center gap-2"><AlertCircle className="w-4 h-4" /> {t('error')}: {error}</div>}
       <div className="flex gap-4 overflow-x-auto">
           <StatusColumn status="Not Started" tasks={tasksByStatus['Not Started']} />
           <StatusColumn status="In Progress" tasks={tasksByStatus['In Progress']} />

@@ -11,6 +11,7 @@ import { db } from '@/lib/firebase';
 import { useToast } from '@/hooks/use-toast';
 import { motion } from 'framer-motion';
 import { addNotification } from '@/lib/firebase';
+import { useLanguage } from '@/contexts/LanguageContext';
 
 interface Deal {
   id: string;
@@ -32,8 +33,8 @@ const initialForm = {
   title: '',
   company: '',
   value: 0,
-  stage: 'New' as const,
-  priority: 1 as const,
+  stage: 'New',
+  priority: 1,
   assignee: '',
   type: '',
   description: '',
@@ -73,6 +74,7 @@ export function DealsView() {
   const [filterStage, setFilterStage] = useState('all');
   const [filterPriority, setFilterPriority] = useState('all');
   const { toast } = useToast();
+  const { t } = useLanguage();
 
   useEffect(() => {
     fetchDeals();
@@ -89,8 +91,8 @@ export function DealsView() {
       setDeals(dealsData);
     } catch (error) {
       toast({
-        title: "Error",
-        description: "Failed to load deals",
+        title: t('error'),
+        description: t('failed_to_load_deals'),
         variant: "destructive"
       });
     }
@@ -129,8 +131,8 @@ export function DealsView() {
     e.preventDefault();
     if (!form.title || !form.company) {
       toast({
-        title: "Validation Error",
-        description: "Title and company are required",
+        title: t('validation_error'),
+        description: t('title_and_company_required'),
         variant: "destructive"
       });
       return;
@@ -146,8 +148,8 @@ export function DealsView() {
       if (editId) {
         await updateDoc(doc(db, 'deals', editId), dealData);
         toast({
-          title: "Success",
-          description: "Deal updated successfully"
+          title: t('success'),
+          description: t('deal_updated_successfully')
         });
       } else {
         dealData.createdAt = new Date();
@@ -155,22 +157,22 @@ export function DealsView() {
         
         // Create notification for new deal
         await addNotification({
-          title: 'New Deal Created',
-          body: `A new deal "${form.title}" worth $${form.value?.toLocaleString()} has been created for ${form.company}`,
+          title: t('new_deal_created'),
+          body: `${t('new_deal')} "${form.title}" ${t('worth')} $${form.value?.toLocaleString()} ${t('has_been_created_for')} ${form.company}`,
           type: 'deal'
         });
         
         toast({
-          title: "Success",
-          description: "Deal created successfully"
+          title: t('success'),
+          description: t('deal_created_successfully')
         });
       }
       closeModal();
       fetchDeals();
     } catch (error) {
       toast({
-        title: "Error",
-        description: editId ? "Failed to update deal" : "Failed to create deal",
+        title: t('error'),
+        description: editId ? t('failed_to_update_deal') : t('failed_to_create_deal'),
         variant: "destructive"
       });
     }
@@ -189,21 +191,21 @@ export function DealsView() {
       const deal = deals.find(d => d.id === dealId);
       if (deal) {
         await addNotification({
-          title: `Deal ${stage}`,
-          body: `The deal "${deal.title}" has been ${stage.toLowerCase()}!`,
+          title: `${t('deal')} ${stage}`,
+          body: `${t('deal')} "${deal.title}" ${t('has_been')} ${stage.toLowerCase()}!`,
           type: 'deal'
         });
       }
       
       toast({
-        title: "Success",
-        description: `Deal marked as ${stage.toLowerCase()}`
+        title: t('success'),
+        description: `${t('deal_marked_as')} ${stage.toLowerCase()}`
       });
       fetchDeals();
     } catch (error) {
       toast({
-        title: "Error",
-        description: "Failed to close deal",
+        title: t('error'),
+        description: t('failed_to_close_deal'),
         variant: "destructive"
       });
     }
@@ -213,15 +215,15 @@ export function DealsView() {
     try {
       await deleteDoc(doc(db, 'deals', id));
       toast({
-        title: "Success",
-        description: "Deal deleted successfully"
+        title: t('success'),
+        description: t('deal_deleted_successfully')
       });
       setDeleteId(null);
       fetchDeals();
     } catch (error) {
       toast({
-        title: "Error",
-        description: "Failed to delete deal",
+        title: t('error'),
+        description: t('failed_to_delete_deal'),
         variant: "destructive"
       });
     }
@@ -230,42 +232,42 @@ export function DealsView() {
   async function createSampleData() {
     const sampleDeals = [
       {
-        title: "Enterprise Software License",
-        company: "Tech Corp",
+        title: t('enterprise_software_license'),
+        company: t('tech_corp'),
         value: 50000,
         stage: "Won" as const,
         priority: 2 as const,
-        assignee: "John Doe",
-        type: "Software",
-        description: "Annual enterprise software license",
+        assignee: t('john_doe'),
+        type: t('software'),
+        description: t('annual_enterprise_software_license'),
         closeDate: new Date().toISOString().split('T')[0],
         closedAt: new Date(),
         createdAt: new Date(),
         updatedAt: new Date()
       },
       {
-        title: "Consulting Services",
-        company: "Global Solutions",
+        title: t('consulting_services'),
+        company: t('global_solutions'),
         value: 25000,
         stage: "Won" as const,
         priority: 1 as const,
-        assignee: "Jane Smith",
-        type: "Services",
-        description: "3-month consulting engagement",
+        assignee: t('jane_smith'),
+        type: t('services'),
+        description: t('3_month_consulting_engagement'),
         closeDate: new Date(Date.now() - 30 * 24 * 60 * 60 * 1000).toISOString().split('T')[0],
         closedAt: new Date(Date.now() - 30 * 24 * 60 * 60 * 1000),
         createdAt: new Date(),
         updatedAt: new Date()
       },
       {
-        title: "Hardware Implementation",
-        company: "Manufacturing Inc",
+        title: t('hardware_implementation'),
+        company: t('manufacturing_inc'),
         value: 75000,
         stage: "Negotiation" as const,
         priority: 3 as const,
-        assignee: "Mike Johnson",
-        type: "Hardware",
-        description: "Complete hardware infrastructure setup",
+        assignee: t('mike_johnson'),
+        type: t('hardware'),
+        description: t('complete_hardware_infrastructure_setup'),
         closeDate: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString().split('T')[0],
         createdAt: new Date(),
         updatedAt: new Date()
@@ -278,14 +280,14 @@ export function DealsView() {
         await addDoc(collection(db, 'deals'), deal);
       }
       toast({
-        title: "Success",
-        description: "Sample deals created successfully"
+        title: t('success'),
+        description: t('sample_deals_created_successfully')
       });
       fetchDeals();
     } catch (error) {
       toast({
-        title: "Error",
-        description: "Failed to create sample deals",
+        title: t('error'),
+        description: t('failed_to_create_sample_deals'),
         variant: "destructive"
       });
     }
@@ -318,55 +320,51 @@ export function DealsView() {
       transition={{ duration: 0.2, ease: 'easeOut' }}
     >
       <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4 mb-6">
-        <h1 className="text-2xl font-bold">Deals Management</h1>
+        <h1 className="text-2xl font-bold">{t('deals_management')}</h1>
         <div className="flex gap-2 items-center">
           <Input
-            placeholder="Search deals..."
+            placeholder={t('search_deals')}
             value={search}
             onChange={e => setSearch(e.target.value)}
             className="w-64"
-            icon={<Search className="w-4 h-4" />}
           />
           <Select value={filterStage} onValueChange={setFilterStage}>
             <SelectTrigger className="w-32">
-              <SelectValue placeholder="Stage" />
+              <SelectValue placeholder={t('stage')} />
             </SelectTrigger>
             <SelectContent>
-              <SelectItem value="all">All Stages</SelectItem>
-              <SelectItem value="New">New</SelectItem>
-              <SelectItem value="Qualified">Qualified</SelectItem>
-              <SelectItem value="Proposition">Proposition</SelectItem>
-              <SelectItem value="Negotiation">Negotiation</SelectItem>
-              <SelectItem value="Won">Won</SelectItem>
-              <SelectItem value="Lost">Lost</SelectItem>
+              <SelectItem value="all">{t('all_stages')}</SelectItem>
+              <SelectItem value="New">{t('new')}</SelectItem>
+              <SelectItem value="Qualified">{t('qualified')}</SelectItem>
+              <SelectItem value="Proposition">{t('proposition')}</SelectItem>
+              <SelectItem value="Negotiation">{t('negotiation')}</SelectItem>
+              <SelectItem value="Won">{t('won')}</SelectItem>
+              <SelectItem value="Lost">{t('lost')}</SelectItem>
             </SelectContent>
           </Select>
           <Select value={filterPriority} onValueChange={setFilterPriority}>
             <SelectTrigger className="w-32">
-              <SelectValue placeholder="Priority" />
+              <SelectValue placeholder={t('priority')} />
             </SelectTrigger>
             <SelectContent>
-              <SelectItem value="all">All Priority</SelectItem>
-              <SelectItem value="1">Low</SelectItem>
-              <SelectItem value="2">Medium</SelectItem>
-              <SelectItem value="3">High</SelectItem>
+              <SelectItem value="all">{t('all_priority')}</SelectItem>
+              <SelectItem value="1">{t('low')}</SelectItem>
+              <SelectItem value="2">{t('medium')}</SelectItem>
+              <SelectItem value="3">{t('high')}</SelectItem>
             </SelectContent>
           </Select>
-          <Button onClick={openAdd} className="gap-2">
-            <Plus className="w-4 h-4" />
-            New Deal
-          </Button>
+          <Button onClick={openAdd} className="gap-2">{t('new_deal')}</Button>
           {deals.length === 0 && (
             <Button onClick={createSampleData} variant="outline" className="gap-2" disabled={submitting}>
               {submitting ? (
                 <>
                   <Loader2 className="w-4 h-4 animate-spin" />
-                  Creating...
+                  {t('creating')}...
                 </>
               ) : (
                 <>
                   <Plus className="w-4 h-4" />
-                  Create Sample Data
+                  {t('create_sample_data')}
                 </>
               )}
             </Button>
@@ -379,28 +377,28 @@ export function DealsView() {
         <div className="bg-white rounded-lg border p-4">
           <div className="flex items-center gap-2 mb-2">
             <DollarSign className="w-5 h-5 text-green-600" />
-            <h3 className="font-semibold">Total Value</h3>
+            <h3 className="font-semibold">{t('total_value')}</h3>
           </div>
           <p className="text-2xl font-bold">${totalValue.toLocaleString()}</p>
         </div>
         <div className="bg-white rounded-lg border p-4">
           <div className="flex items-center gap-2 mb-2">
             <CheckCircle className="w-5 h-5 text-green-600" />
-            <h3 className="font-semibold">Won Value</h3>
+            <h3 className="font-semibold">{t('won_value')}</h3>
           </div>
           <p className="text-2xl font-bold">${wonValue.toLocaleString()}</p>
         </div>
         <div className="bg-white rounded-lg border p-4">
           <div className="flex items-center gap-2 mb-2">
             <Building className="w-5 h-5 text-blue-600" />
-            <h3 className="font-semibold">Active Deals</h3>
+            <h3 className="font-semibold">{t('active_deals')}</h3>
           </div>
           <p className="text-2xl font-bold">{activeDeals}</p>
         </div>
         <div className="bg-white rounded-lg border p-4">
           <div className="flex items-center gap-2 mb-2">
             <User className="w-5 h-5 text-purple-600" />
-            <h3 className="font-semibold">Total Deals</h3>
+            <h3 className="font-semibold">{t('total_deals')}</h3>
           </div>
           <p className="text-2xl font-bold">{deals.length}</p>
         </div>
@@ -410,15 +408,15 @@ export function DealsView() {
         {filteredDeals.length === 0 ? (
           <div className="text-center py-12">
             <DollarSign className="w-12 h-12 text-gray-400 mx-auto mb-4" />
-            <h3 className="text-lg font-semibold text-gray-900 mb-2">No deals found</h3>
+            <h3 className="text-lg font-semibold text-gray-900 mb-2">{t('no_deals_found')}</h3>
             <p className="text-gray-500 mb-4">
               {search || filterStage !== 'all' || filterPriority !== 'all'
-                ? 'Try adjusting your search or filters'
-                : 'Create your first deal to get started'
+                ? t('try_adjusting_search_or_filters')
+                : t('create_your_first_deal_to_get_started')
               }
             </p>
             {!search && filterStage === 'all' && filterPriority === 'all' && (
-              <Button onClick={openAdd}>Create First Deal</Button>
+              <Button onClick={openAdd}>{t('create_first_deal')}</Button>
             )}
           </div>
         ) : (
@@ -430,10 +428,10 @@ export function DealsView() {
                     <div className="flex items-center gap-3 mb-2">
                       <h3 className="font-semibold text-gray-900">{deal.title}</h3>
                       <Badge className={priorityColors[deal.priority]}>
-                        {priorityLabels[deal.priority]}
+                        {t(priorityLabels[deal.priority].toLowerCase())}
                       </Badge>
                       <Badge className={stageColors[deal.stage]}>
-                        {deal.stage}
+                        {t(`stage_${deal.stage.toLowerCase()}`)}
                       </Badge>
                     </div>
                     <div className="flex items-center gap-4 text-sm text-gray-500 mb-2">
@@ -509,30 +507,30 @@ export function DealsView() {
       <Dialog open={modalOpen} onOpenChange={setModalOpen}>
         <DialogContent>
           <DialogHeader>
-            <DialogTitle>{editId ? 'Edit Deal' : 'Add New Deal'}</DialogTitle>
+            <DialogTitle>{editId ? t('edit_deal') : t('add_new_deal')}</DialogTitle>
           </DialogHeader>
           <form onSubmit={handleSubmit} className="space-y-4">
             <Input
-              placeholder="Deal Title"
+              placeholder={t('deal_title')}
               value={form.title}
               onChange={e => setForm(f => ({ ...f, title: e.target.value }))}
               required
             />
             <Input
-              placeholder="Company"
+              placeholder={t('company')}
               value={form.company}
               onChange={e => setForm(f => ({ ...f, company: e.target.value }))}
               required
             />
             <div className="grid grid-cols-2 gap-4">
               <Input
-                placeholder="Value ($)"
+                placeholder={t('value_dollar')}
                 type="number"
                 value={form.value}
                 onChange={e => setForm(f => ({ ...f, value: parseFloat(e.target.value) || 0 }))}
               />
               <Input
-                placeholder="Close Date"
+                placeholder={t('close_date')}
                 type="date"
                 value={form.closeDate}
                 onChange={e => setForm(f => ({ ...f, closeDate: e.target.value }))}
@@ -541,40 +539,40 @@ export function DealsView() {
             <div className="grid grid-cols-2 gap-4">
               <Select value={form.stage} onValueChange={val => setForm(f => ({ ...f, stage: val as any }))}>
                 <SelectTrigger>
-                  <SelectValue placeholder="Stage" />
+                  <SelectValue placeholder={t('stage')} />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="New">New</SelectItem>
-                  <SelectItem value="Qualified">Qualified</SelectItem>
-                  <SelectItem value="Proposition">Proposition</SelectItem>
-                  <SelectItem value="Negotiation">Negotiation</SelectItem>
-                  <SelectItem value="Won">Won</SelectItem>
-                  <SelectItem value="Lost">Lost</SelectItem>
+                  <SelectItem value="New">{t('new')}</SelectItem>
+                  <SelectItem value="Qualified">{t('qualified')}</SelectItem>
+                  <SelectItem value="Proposition">{t('proposition')}</SelectItem>
+                  <SelectItem value="Negotiation">{t('negotiation')}</SelectItem>
+                  <SelectItem value="Won">{t('won')}</SelectItem>
+                  <SelectItem value="Lost">{t('lost')}</SelectItem>
                 </SelectContent>
               </Select>
               <Select value={form.priority.toString()} onValueChange={val => setForm(f => ({ ...f, priority: parseInt(val) as any }))}>
                 <SelectTrigger>
-                  <SelectValue placeholder="Priority" />
+                  <SelectValue placeholder={t('priority')} />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="1">Low</SelectItem>
-                  <SelectItem value="2">Medium</SelectItem>
-                  <SelectItem value="3">High</SelectItem>
+                  <SelectItem value="1">{t('low')}</SelectItem>
+                  <SelectItem value="2">{t('medium')}</SelectItem>
+                  <SelectItem value="3">{t('high')}</SelectItem>
                 </SelectContent>
               </Select>
             </div>
             <Input
-              placeholder="Assignee"
+              placeholder={t('assignee')}
               value={form.assignee}
               onChange={e => setForm(f => ({ ...f, assignee: e.target.value }))}
             />
             <Input
-              placeholder="Type"
+              placeholder={t('type')}
               value={form.type}
               onChange={e => setForm(f => ({ ...f, type: e.target.value }))}
             />
             <textarea
-              placeholder="Description"
+              placeholder={t('description')}
               value={form.description}
               onChange={e => setForm(f => ({ ...f, description: e.target.value }))}
               className="w-full p-2 border rounded-md"
@@ -585,14 +583,14 @@ export function DealsView() {
                 {submitting ? (
                   <>
                     <Loader2 className="w-4 h-4 mr-2 animate-spin" />
-                    {editId ? 'Updating...' : 'Creating...'}
+                    {editId ? t('updating') : t('creating')}...
                   </>
                 ) : (
-                  editId ? 'Update Deal' : 'Create Deal'
+                  editId ? t('update_deal') : t('create_deal')
                 )}
               </Button>
               <DialogClose asChild>
-                <Button type="button" variant="outline">Cancel</Button>
+                <Button type="button" variant="outline">{t('cancel')}</Button>
               </DialogClose>
             </DialogFooter>
           </form>
@@ -603,19 +601,19 @@ export function DealsView() {
       <Dialog open={!!deleteId} onOpenChange={() => setDeleteId(null)}>
         <DialogContent>
           <DialogHeader>
-            <DialogTitle>Delete Deal</DialogTitle>
+            <DialogTitle>{t('delete_deal')}</DialogTitle>
           </DialogHeader>
           <div className="space-y-4">
-            <p>Are you sure you want to delete this deal? This action cannot be undone.</p>
+            <p>{t('are_you_sure_you_want_to_delete_this_deal')}</p>
             <DialogFooter>
               <Button 
                 variant="destructive" 
                 onClick={() => deleteId && handleDelete(deleteId)}
               >
-                Delete
+                {t('delete')}
               </Button>
               <DialogClose asChild>
-                <Button variant="outline">Cancel</Button>
+                <Button variant="outline">{t('cancel')}</Button>
               </DialogClose>
             </DialogFooter>
           </div>

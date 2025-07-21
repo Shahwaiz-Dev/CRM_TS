@@ -6,6 +6,7 @@ import { collection, getDocs, query, where, orderBy, limit } from 'firebase/fire
 import { db } from '../../lib/firebase';
 import { Loader2 } from 'lucide-react';
 import { motion } from 'framer-motion';
+import { useLanguage } from '@/contexts/LanguageContext';
 
 interface Deal {
   id: string;
@@ -28,6 +29,7 @@ export function DashboardOverview() {
   const [deals, setDeals] = useState<Deal[]>([]);
   const [tasks, setTasks] = useState<any[]>([]);
   const [activities, setActivities] = useState<any[]>([]);
+  const { t } = useLanguage();
 
   const pieColors = ['#22c55e', '#3b82f6', '#f59e42', '#eab308', '#a78bfa'];
   const activityColors: Record<string, string> = {
@@ -156,46 +158,46 @@ export function DashboardOverview() {
       transition={{ duration: 0.2, ease: 'easeOut' }}
     >
       <div className="space-y-6">
-        <h1 className="text-3xl font-bold">CRM Dashboard</h1>
+        <h1 className="text-3xl font-bold">{t('crm_dashboard')}</h1>
         
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
           <Card>
             <CardHeader className="pb-2">
-              <CardTitle className="text-sm font-medium text-gray-600">Total Leads</CardTitle>
+              <CardTitle className="text-sm font-medium text-gray-600">{t('total_leads')}</CardTitle>
             </CardHeader>
             <CardContent>
               <div className="text-2xl font-bold">{totalLeads}</div>
-              <p className="text-xs text-green-600">+12% from last month</p>
+              <p className="text-xs text-green-600">+12% {t('from_last_month')}</p>
             </CardContent>
           </Card>
           
           <Card>
             <CardHeader className="pb-2">
-              <CardTitle className="text-sm font-medium text-gray-600">Active Deals</CardTitle>
+              <CardTitle className="text-sm font-medium text-gray-600">{t('active_deals')}</CardTitle>
             </CardHeader>
             <CardContent>
               <div className="text-2xl font-bold">{activeDeals}</div>
-              <p className="text-xs text-green-600">+8% from last month</p>
+              <p className="text-xs text-green-600">+8% {t('from_last_month')}</p>
             </CardContent>
           </Card>
           
           <Card>
             <CardHeader className="pb-2">
-              <CardTitle className="text-sm font-medium text-gray-600">Revenue This Month</CardTitle>
+              <CardTitle className="text-sm font-medium text-gray-600">{t('revenue_this_month')}</CardTitle>
             </CardHeader>
             <CardContent>
               <div className="text-2xl font-bold">${revenueThisMonth.toLocaleString()}</div>
-              <p className="text-xs text-green-600">+15% from last month</p>
+              <p className="text-xs text-green-600">+15% {t('from_last_month')}</p>
             </CardContent>
           </Card>
           
           <Card>
             <CardHeader className="pb-2">
-              <CardTitle className="text-sm font-medium text-gray-600">Conversion Rate</CardTitle>
+              <CardTitle className="text-sm font-medium text-gray-600">{t('conversion_rate')}</CardTitle>
             </CardHeader>
             <CardContent>
               <div className="text-2xl font-bold">{conversionRate}%</div>
-              <p className="text-xs text-red-600">-2% from last month</p>
+              <p className="text-xs text-red-600">-2% {t('from_last_month')}</p>
             </CardContent>
           </Card>
         </div>
@@ -203,7 +205,7 @@ export function DashboardOverview() {
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
           <Card>
             <CardHeader>
-              <CardTitle>Revenue Over Time</CardTitle>
+              <CardTitle>{t('revenue_over_time')}</CardTitle>
             </CardHeader>
             <CardContent style={{ height: 300 }}>
               <ResponsiveContainer width="100%" height="100%">
@@ -219,14 +221,14 @@ export function DashboardOverview() {
           </Card>
           <Card>
             <CardHeader>
-              <CardTitle>Deals by Stage</CardTitle>
+              <CardTitle>{t('deals_by_stage')}</CardTitle>
             </CardHeader>
             <CardContent style={{ height: 300 }}>
               <ResponsiveContainer width="100%" height="100%">
                 <PieChart>
                   <Pie data={dealsData} dataKey="value" nameKey="name" cx="50%" cy="50%" outerRadius={80} label>
                     {dealsData.map((entry, idx) => (
-                      <Cell key={`cell-${idx}`} fill={pieColors[idx % pieColors.length]} />
+                      <Cell key={`cell-${idx}`} fill={pieColors[idx % pieColors.length]} name={t(`stage_${entry.name.toLowerCase()}`)} />
                     ))}
                   </Pie>
                   <Tooltip />
@@ -239,7 +241,7 @@ export function DashboardOverview() {
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
           <Card>
             <CardHeader>
-              <CardTitle>Recent Activities</CardTitle>
+              <CardTitle>{t('recent_activities')}</CardTitle>
             </CardHeader>
             <CardContent>
               <div className="space-y-4">
@@ -249,10 +251,10 @@ export function DashboardOverview() {
                   let timeAgo = '';
                   if (activity.updatedAt) {
                     const diff = Date.now() - new Date(activity.updatedAt).getTime();
-                    if (diff < 60000) timeAgo = 'Just now';
-                    else if (diff < 3600000) timeAgo = `${Math.floor(diff / 60000)} minutes ago`;
-                    else if (diff < 86400000) timeAgo = `${Math.floor(diff / 3600000)} hours ago`;
-                    else timeAgo = `${Math.floor(diff / 86400000)} days ago`;
+                    if (diff < 60000) timeAgo = t('just_now');
+                    else if (diff < 3600000) timeAgo = `${Math.floor(diff / 60000)} ${t('minutes_ago')}`;
+                    else if (diff < 86400000) timeAgo = `${Math.floor(diff / 3600000)} ${t('hours_ago')}`;
+                    else timeAgo = `${Math.floor(diff / 86400000)} ${t('days_ago')}`;
                   }
                   return (
                     <div key={idx} className="flex items-start space-x-3">
@@ -269,7 +271,7 @@ export function DashboardOverview() {
           </Card>
           <Card>
             <CardHeader>
-              <CardTitle>Upcoming Tasks</CardTitle>
+              <CardTitle>{t('upcoming_tasks')}</CardTitle>
             </CardHeader>
             <CardContent>
               <div className="space-y-4">
@@ -277,7 +279,7 @@ export function DashboardOverview() {
                   <div key={idx} className="flex items-center justify-between">
                     <div>
                       <p className="text-sm font-medium">{task.title}</p>
-                      <p className="text-xs text-gray-500">Due {task.dueDate ? new Date(task.dueDate).toLocaleDateString() : ''}</p>
+                      <p className="text-xs text-gray-500">{t('due')} {task.dueDate ? new Date(task.dueDate).toLocaleDateString() : ''}</p>
                     </div>
                     <div className="w-3 h-3 bg-red-500 rounded-full"></div>
                   </div>

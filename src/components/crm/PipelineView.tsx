@@ -14,6 +14,7 @@ import { useAuth } from '@/contexts/AuthContext';
 import { Navigate } from 'react-router-dom';
 import { Select, SelectTrigger, SelectValue, SelectContent, SelectItem } from '@/components/ui/select';
 import { motion } from 'framer-motion';
+import { useLanguage } from '@/contexts/LanguageContext';
 
 interface Deal {
   id: string;
@@ -32,6 +33,7 @@ const stageNames = ['Qualify', 'Meet & Present', 'Propose', 'Negotiate', 'Closed
 
 export function PipelineView() {
   const { user, loading } = useAuth();
+  const { t } = useLanguage();
   // Remove useAuth and Navigate imports and any role-checking logic at the top of the component.
 
   const [deals, setDeals] = useState<Deal[]>([]);
@@ -223,34 +225,34 @@ export function PipelineView() {
       transition={{ duration: 0.2, ease: 'easeOut' }}
     >
       <div className="flex items-center justify-between mb-4">
-        <h1 className="text-3xl font-bold">Sales Pipeline</h1>
-        <div className="text-xl font-bold text-green-600">Total: ${getTotalValue().toLocaleString()}</div>
+        <h1 className="text-3xl font-bold">{t('sales_pipeline')}</h1>
+        <div className="text-xl font-bold text-green-600">{t('total')}: ${getTotalValue().toLocaleString()}</div>
       </div>
       
       <div className="flex items-center mb-6">
         <Dialog open={showAdd} onOpenChange={setShowAdd}>
           <DialogTrigger asChild>
             <Button size="lg" className="gap-2 bg-blue-600 hover:bg-blue-700 text-white font-semibold rounded px-6 py-2 text-lg shadow mr-4">
-              <Plus className="w-5 h-5" /> Add Deal
+              <Plus className="w-5 h-5" /> {t('add_deal')}
             </Button>
           </DialogTrigger>
           <DialogContent>
             <DialogHeader>
-              <DialogTitle>Add New Deal</DialogTitle>
+              <DialogTitle>{t('add_new_deal')}</DialogTitle>
             </DialogHeader>
             <div className="flex flex-col gap-2">
-              <Input placeholder="Title" value={newDeal.title} onChange={e => setNewDeal(d => ({ ...d, title: e.target.value }))} />
-              <Input placeholder="Company" value={newDeal.company} onChange={e => setNewDeal(d => ({ ...d, company: e.target.value }))} />
-              <Input placeholder="Value" type="number" value={newDeal.value} onChange={e => setNewDeal(d => ({ ...d, value: Number(e.target.value) }))} />
-              <Input placeholder="Type" value={newDeal.type} onChange={e => setNewDeal(d => ({ ...d, type: e.target.value }))} />
-              <Input placeholder="Assignee" value={newDeal.assignee} onChange={e => setNewDeal(d => ({ ...d, assignee: e.target.value }))} />
-              <Input placeholder="Description" value={newDeal.description} onChange={e => setNewDeal(d => ({ ...d, description: e.target.value }))} />
+              <Input placeholder={t('title')} value={newDeal.title} onChange={e => setNewDeal(d => ({ ...d, title: e.target.value }))} />
+              <Input placeholder={t('company')} value={newDeal.company} onChange={e => setNewDeal(d => ({ ...d, company: e.target.value }))} />
+              <Input placeholder={t('value')} type="number" value={newDeal.value} onChange={e => setNewDeal(d => ({ ...d, value: Number(e.target.value) }))} />
+              <Input placeholder={t('type')} value={newDeal.type} onChange={e => setNewDeal(d => ({ ...d, type: e.target.value }))} />
+              <Input placeholder={t('assignee')} value={newDeal.assignee} onChange={e => setNewDeal(d => ({ ...d, assignee: e.target.value }))} />
+              <Input placeholder={t('description')} value={newDeal.description} onChange={e => setNewDeal(d => ({ ...d, description: e.target.value }))} />
               <div className="flex gap-2 mt-2">
                 <Button size="sm" onClick={async () => { await handleAddDeal(); setShowAdd(false); }} disabled={dataLoading}>
                   {dataLoading ? <Loader2 className="w-4 h-4 animate-spin mr-2" /> : null}
-                  Save
+                  {t('save')}
                 </Button>
-                <Button size="sm" variant="outline" onClick={() => setShowAdd(false)}>Cancel</Button>
+                <Button size="sm" variant="outline" onClick={() => setShowAdd(false)}>{t('cancel')}</Button>
               </div>
             </div>
           </DialogContent>
@@ -259,44 +261,44 @@ export function PipelineView() {
         <Dialog open={showFilter} onOpenChange={setShowFilter}>
           <DialogTrigger asChild>
             <Button variant="outline" size="lg" className="gap-2">
-              <Filter className="w-5 h-5" /> Filter
+              <Filter className="w-5 h-5" /> {t('filter')}
             </Button>
           </DialogTrigger>
           <DialogContent>
             <DialogHeader>
-              <DialogTitle>Filter Deals</DialogTitle>
+              <DialogTitle>{t('filter_deals')}</DialogTitle>
             </DialogHeader>
             <div className="flex flex-col gap-4">
               <Input 
-                placeholder="Search deals..." 
+                placeholder={t('search_deals')} 
                 value={filters.search} 
                 onChange={e => setFilters(f => ({ ...f, search: e.target.value }))} 
               />
               
               <div className="grid grid-cols-2 gap-4">
                 <div>
-                  <label className="block text-sm font-medium mb-1">Stage</label>
+                  <label className="block text-sm font-medium mb-1">{t('stage')}</label>
                   <Select value={filters.stage} onValueChange={val => setFilters(f => ({ ...f, stage: val }))}>
                     <SelectTrigger>
-                      <SelectValue placeholder="All Stages" />
+                      <SelectValue placeholder={t('all_stages')} />
                     </SelectTrigger>
                     <SelectContent>
-                      <SelectItem value="all">All Stages</SelectItem>
+                      <SelectItem value="all">{t('all_stages')}</SelectItem>
                       {stageNames.map(stage => (
-                        <SelectItem key={stage} value={stage}>{stage}</SelectItem>
+                        <SelectItem key={stage} value={stage}>{t(`stage_${stage.toLowerCase().replace(/ /g, '_')}`)}</SelectItem>
                       ))}
                     </SelectContent>
                   </Select>
                 </div>
                 
                 <div>
-                  <label className="block text-sm font-medium mb-1">Assignee</label>
+                  <label className="block text-sm font-medium mb-1">{t('assignee')}</label>
                   <Select value={filters.assignee} onValueChange={val => setFilters(f => ({ ...f, assignee: val }))}>
                     <SelectTrigger>
-                      <SelectValue placeholder="All Assignees" />
+                      <SelectValue placeholder={t('all_assignees')} />
                     </SelectTrigger>
                     <SelectContent>
-                      <SelectItem value="all">All Assignees</SelectItem>
+                      <SelectItem value="all">{t('all_assignees')}</SelectItem>
                       {Array.from(new Set(deals.map(d => d.assignee).filter(Boolean))).map(assignee => (
                         <SelectItem key={assignee} value={assignee}>{assignee}</SelectItem>
                       ))}
@@ -307,19 +309,19 @@ export function PipelineView() {
               
               <div className="grid grid-cols-2 gap-4">
                 <div>
-                  <label className="block text-sm font-medium mb-1">Min Value</label>
+                  <label className="block text-sm font-medium mb-1">{t('min_value')}</label>
                   <Input 
                     type="number" 
-                    placeholder="Min value" 
+                    placeholder={t('min_value')} 
                     value={filters.minValue} 
                     onChange={e => setFilters(f => ({ ...f, minValue: e.target.value }))} 
                   />
                 </div>
                 <div>
-                  <label className="block text-sm font-medium mb-1">Max Value</label>
+                  <label className="block text-sm font-medium mb-1">{t('max_value')}</label>
                   <Input 
                     type="number" 
-                    placeholder="Max value" 
+                    placeholder={t('max_value')} 
                     value={filters.maxValue} 
                     onChange={e => setFilters(f => ({ ...f, maxValue: e.target.value }))} 
                   />
@@ -337,11 +339,9 @@ export function PipelineView() {
                     search: ''
                   })}
                 >
-                  Clear Filters
+                  {t('clear_filters')}
                 </Button>
-                <Button onClick={() => setShowFilter(false)}>
-                  Apply Filters
-                </Button>
+                <Button onClick={() => setShowFilter(false)}>{t('apply_filters')}</Button>
               </div>
             </div>
           </DialogContent>
@@ -353,27 +353,27 @@ export function PipelineView() {
       <Dialog open={showEdit} onOpenChange={setShowEdit}>
         <DialogContent>
           <DialogHeader>
-            <DialogTitle>Edit Deal</DialogTitle>
+            <DialogTitle>{t('edit_deal')}</DialogTitle>
           </DialogHeader>
           <div className="flex flex-col gap-2">
-            <Input placeholder="Title" value={editDealData.title} onChange={e => setEditDealData(d => ({ ...d, title: e.target.value }))} />
-            <Input placeholder="Company" value={editDealData.company} onChange={e => setEditDealData(d => ({ ...d, company: e.target.value }))} />
-            <Input placeholder="Value" type="number" value={editDealData.value} onChange={e => setEditDealData(d => ({ ...d, value: Number(e.target.value) }))} />
-            <Input placeholder="Type" value={editDealData.type} onChange={e => setEditDealData(d => ({ ...d, type: e.target.value }))} />
-            <Input placeholder="Assignee" value={editDealData.assignee} onChange={e => setEditDealData(d => ({ ...d, assignee: e.target.value }))} />
-            <Input placeholder="Description" value={editDealData.description} onChange={e => setEditDealData(d => ({ ...d, description: e.target.value }))} />
-            <Input placeholder="Priority (1-3)" type="number" min={1} max={3} value={editDealData.priority} onChange={e => setEditDealData(d => ({ ...d, priority: Math.max(1, Math.min(3, Number(e.target.value))) }))} />
+            <Input placeholder={t('title')} value={editDealData.title} onChange={e => setEditDealData(d => ({ ...d, title: e.target.value }))} />
+            <Input placeholder={t('company')} value={editDealData.company} onChange={e => setEditDealData(d => ({ ...d, company: e.target.value }))} />
+            <Input placeholder={t('value')} type="number" value={editDealData.value} onChange={e => setEditDealData(d => ({ ...d, value: Number(e.target.value) }))} />
+            <Input placeholder={t('type')} value={editDealData.type} onChange={e => setEditDealData(d => ({ ...d, type: e.target.value }))} />
+            <Input placeholder={t('assignee')} value={editDealData.assignee} onChange={e => setEditDealData(d => ({ ...d, assignee: e.target.value }))} />
+            <Input placeholder={t('description')} value={editDealData.description} onChange={e => setEditDealData(d => ({ ...d, description: e.target.value }))} />
+            <Input placeholder={t('priority')} type="number" min={1} max={3} value={editDealData.priority} onChange={e => setEditDealData(d => ({ ...d, priority: Math.max(1, Math.min(3, Number(e.target.value))) }))} />
             <select className="border rounded px-2 py-1" value={editDealData.stage} onChange={e => setEditDealData(d => ({ ...d, stage: e.target.value }))}>
               {stageNames.map(stage => (
-                <option key={stage} value={stage}>{stage}</option>
+                <option key={stage} value={stage}>{t(`stage_${stage.toLowerCase().replace(/ /g, '_')}`)}</option>
               ))}
             </select>
             <div className="flex gap-2 mt-2">
               <Button size="sm" onClick={async () => { await handleEditDeal(); setShowEdit(false); }} disabled={dataLoading}>
                 {dataLoading ? <Loader2 className="w-4 h-4 animate-spin mr-2" /> : null}
-                Save
+                {t('save')}
               </Button>
-              <Button size="sm" variant="outline" onClick={() => setShowEdit(false)}>Cancel</Button>
+              <Button size="sm" variant="outline" onClick={() => setShowEdit(false)}>{t('cancel')}</Button>
             </div>
           </div>
         </DialogContent>
@@ -383,10 +383,10 @@ export function PipelineView() {
       <Dialog open={!!deleteDealId} onOpenChange={(open) => !open && setDeleteDealId(null)}>
         <DialogContent>
           <DialogHeader>
-            <DialogTitle>Delete Deal</DialogTitle>
+            <DialogTitle>{t('delete_deal')}</DialogTitle>
           </DialogHeader>
           <div className="py-4">
-            <p>Are you sure you want to delete this deal? This action cannot be undone.</p>
+            <p>{t('delete_deal_confirmation')}</p>
           </div>
           <div className="flex gap-2 justify-end">
             <Button 
@@ -395,9 +395,9 @@ export function PipelineView() {
               disabled={dataLoading}
             >
               {dataLoading ? <Loader2 className="w-4 h-4 animate-spin mr-2" /> : null}
-              Delete
+              {t('delete')}
             </Button>
-            <Button variant="outline" onClick={() => setDeleteDealId(null)}>Cancel</Button>
+            <Button variant="outline" onClick={() => setDeleteDealId(null)}>{t('cancel')}</Button>
           </div>
         </DialogContent>
       </Dialog>
@@ -413,7 +413,7 @@ export function PipelineView() {
                   <div className="w-80 flex-shrink-0 flex flex-col h-full">
                     <div className="px-4 pt-4 pb-2 border-b bg-gray-50 rounded-t-lg border border-b-0">
                       <div className="flex items-center justify-between mb-1">
-                        <span className="font-semibold text-lg text-gray-900">{stage}</span>
+                        <span className="font-semibold text-lg text-gray-900">{t(`stage_${stage.toLowerCase().replace(/ /g, '_')}`)}</span>
                         <span className="text-gray-500 text-sm font-semibold">${stageTotal.toLocaleString()}</span>
                       </div>
                       <div className="w-full h-2 bg-gray-200 rounded-full">

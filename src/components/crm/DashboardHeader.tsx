@@ -8,10 +8,12 @@ import { DropdownMenu, DropdownMenuTrigger, DropdownMenuContent, DropdownMenuIte
 import { collection, getDocs, updateDoc, doc, onSnapshot, query, orderBy, limit, deleteDoc } from 'firebase/firestore';
 import { db } from '../../lib/firebase';
 import { useAuth } from '@/contexts/AuthContext';
+import { useLanguage } from '@/contexts/LanguageContext';
 
 export function DashboardHeader() {
   const navigate = useNavigate();
   const { user } = useAuth();
+  const { t, language, setLanguage } = useLanguage();
   const handleLogout = () => {
     localStorage.removeItem('auth');
     localStorage.removeItem('role');
@@ -135,6 +137,23 @@ export function DashboardHeader() {
       </div>
       
       <div className="flex items-center gap-4 w-full md:w-auto justify-end">
+        {/* Language Switcher */}
+        <div className="flex items-center gap-1 mr-2">
+          <button
+            onClick={() => setLanguage('en')}
+            className={`px-2 py-1 rounded text-sm font-medium border ${language === 'en' ? 'bg-blue-600 text-white' : 'bg-white text-gray-700 hover:bg-gray-100'}`}
+            aria-label="Switch to English"
+          >
+            EN
+          </button>
+          <button
+            onClick={() => setLanguage('el')}
+            className={`px-2 py-1 rounded text-sm font-medium border ${language === 'el' ? 'bg-blue-600 text-white' : 'bg-white text-gray-700 hover:bg-gray-100'}`}
+            aria-label="Switch to Greek"
+          >
+            ΕΛ
+          </button>
+        </div>
         {/* Bell icon with notification badge and dropdown */}
         <DropdownMenu open={notifOpen} onOpenChange={setNotifOpen}>
           <DropdownMenuTrigger asChild>
@@ -149,7 +168,7 @@ export function DashboardHeader() {
           </DropdownMenuTrigger>
           <DropdownMenuContent align="end" className="w-80 max-h-96 overflow-y-auto">
             <div className="px-4 py-2 font-semibold text-sm border-b flex items-center justify-between">
-              <span>Notifications</span>
+              <span>{t('notifications')}</span>
               {loading && <div className="w-4 h-4 border-2 border-blue-500 border-t-transparent rounded-full animate-spin"></div>}
             </div>
             
@@ -162,8 +181,8 @@ export function DashboardHeader() {
             {!loading && !error && notifications.length === 0 && (
               <div className="px-4 py-8 text-gray-500 text-sm text-center">
                 <Bell className="w-8 h-8 mx-auto mb-2 text-gray-300" />
-                <div>No notifications yet</div>
-                <div className="text-xs mt-1">We'll notify you when something happens</div>
+                <div>{t('no_notifications')}</div>
+                <div className="text-xs mt-1">{t('notify_when')}</div>
               </div>
             )}
             
@@ -225,11 +244,11 @@ export function DashboardHeader() {
               <div className="font-semibold text-sm">{name || username}</div>
               <div className="text-xs text-gray-500">{email}</div>
             </div>
-            <DropdownMenuItem className="gap-2 cursor-pointer"><User className="w-4 h-4" /> Profile</DropdownMenuItem>
-            <DropdownMenuItem className="gap-2 cursor-pointer" onClick={() => navigate('/settings')}><Settings className="w-4 h-4" /> Settings</DropdownMenuItem>
-            <DropdownMenuItem className="gap-2 cursor-pointer"><HelpCircle className="w-4 h-4" /> Support</DropdownMenuItem>
+            <DropdownMenuItem className="gap-2 cursor-pointer"><User className="w-4 h-4" /> {t('profile')}</DropdownMenuItem>
+            <DropdownMenuItem className="gap-2 cursor-pointer" onClick={() => navigate('/settings')}><Settings className="w-4 h-4" /> {t('settings')}</DropdownMenuItem>
+            <DropdownMenuItem className="gap-2 cursor-pointer"><HelpCircle className="w-4 h-4" /> {t('support')}</DropdownMenuItem>
             <DropdownMenuSeparator />
-            <DropdownMenuItem className="gap-2 text-red-600 cursor-pointer" onClick={handleLogout}><LogOut className="w-4 h-4" /> Log out</DropdownMenuItem>
+            <DropdownMenuItem className="gap-2 text-red-600 cursor-pointer" onClick={handleLogout}><LogOut className="w-4 h-4" /> {t('logout')}</DropdownMenuItem>
           </DropdownMenuContent>
         </DropdownMenu>
       </div>

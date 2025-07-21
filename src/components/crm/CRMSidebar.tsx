@@ -14,24 +14,7 @@ import {
 } from '@/components/ui/sidebar';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
 import { useAuth } from '@/contexts/AuthContext';
-
-const navigationItems = [
-  { title: 'Dashboard', url: '/', icon: Calendar, roles: ['admin', 'sales', 'new user'] },
-  { title: 'Accounts', url: '/accounts', icon: Users, roles: ['admin', 'sales', 'new user'] },
-  { title: 'Contacts', url: '/contacts', icon: User, roles: ['admin', 'sales', 'new user'] },
-  { title: 'Cases', url: '/cases', icon: AlertCircle, roles: ['admin', 'sales', 'new user'] },
-  { title: 'Deals', url: '/deals', icon: DollarSign, roles: ['admin', 'sales', 'new user'] },
-  { title: 'Opportunities', url: '/opportunities', icon: Trophy, roles: ['admin', 'sales', 'new user'] },
-  { title: 'Sales Pipeline', url: '/pipeline', icon: List, roles: ['admin', 'sales', 'new user'] },
-  { title: 'Tasks', url: '/tasks', icon: List, roles: ['admin', 'sales', 'new user'] },
-  { title: 'Users & Roles', url: '/users', icon: User, roles: ['admin'] },
-];
-
-const hrNavigationItems = [
-  { title: 'Employees', url: '/hr/employees', icon: Briefcase, roles: ['admin', 'hr', 'new user'] },
-  { title: 'Payroll', url: '/hr/payroll', icon: DollarSign, roles: ['admin', 'hr', 'new user'] },
-  { title: 'Attendance', url: '/hr/attendance', icon: Clock, roles: ['admin', 'hr', 'new user'] },
-];
+import { useLanguage } from '@/contexts/LanguageContext';
 
 export function CRMSidebar() {
   const { state } = useSidebar();
@@ -40,6 +23,26 @@ export function CRMSidebar() {
   const collapsed = state === 'collapsed';
   const { user } = useAuth();
   const role = user?.role;
+  const { t } = useLanguage();
+
+  // Move navigation items inside the component to use t()
+  const navigationItems = [
+    { title: t('dashboard'), url: '/', icon: Calendar, roles: ['admin', 'sales', 'new user'] },
+    { title: t('accounts'), url: '/accounts', icon: Users, roles: ['admin', 'sales', 'new user'] },
+    { title: t('contacts'), url: '/contacts', icon: User, roles: ['admin', 'sales', 'new user'] },
+    { title: t('cases'), url: '/cases', icon: AlertCircle, roles: ['admin', 'sales', 'new user'] },
+    { title: t('deals'), url: '/deals', icon: DollarSign, roles: ['admin', 'sales', 'new user'] },
+    { title: t('opportunities'), url: '/opportunities', icon: Trophy, roles: ['admin', 'sales', 'new user'] },
+    { title: t('sales_pipeline'), url: '/pipeline', icon: List, roles: ['admin', 'sales', 'new user'] },
+    { title: t('tasks'), url: '/tasks', icon: List, roles: ['admin', 'sales', 'new user'] },
+    { title: t('users_roles'), url: '/users', icon: User, roles: ['admin'] },
+  ];
+
+  const hrNavigationItems = [
+    { title: t('employees'), url: '/hr/employees', icon: Briefcase, roles: ['admin', 'hr', 'new user'] },
+    { title: t('payroll'), url: '/hr/payroll', icon: DollarSign, roles: ['admin', 'hr', 'new user'] },
+    { title: t('attendance'), url: '/hr/attendance', icon: Clock, roles: ['admin', 'hr', 'new user'] },
+  ];
 
   const isActive = (path) => currentPath === path;
 
@@ -119,7 +122,7 @@ export function CRMSidebar() {
             <TooltipContent>
               <div className="flex items-center gap-2">
                 <Shield className="w-4 h-4" />
-                <span>Requires: {item.roles.join(', ')}</span>
+                <span>{t('requires')}: {item.roles.map(r => t(r.replace(/ /g, '_'))).join(', ')}</span>
               </div>
             </TooltipContent>
           </Tooltip>
@@ -137,7 +140,7 @@ export function CRMSidebar() {
         </div>
         {/* NAVIGATION section - show all items but disable unauthorized ones */}
         <SidebarGroup>
-          <SidebarGroupLabel className="text-gray-700 text-lg font-semibold pb-1">NAVIGATION</SidebarGroupLabel>
+          <SidebarGroupLabel className="text-blue-600 text-lg font-semibold pb-1">{t('navigation')}</SidebarGroupLabel>
           <SidebarGroupContent className="bg-white">
             <SidebarMenu>
               {navigationItems.map(renderNavigationItem)}
@@ -147,7 +150,7 @@ export function CRMSidebar() {
         
         {/* HR MANAGEMENT section - show all items but disable unauthorized ones */}
         <SidebarGroup>
-          <SidebarGroupLabel className="text-gray-700 text-lg font-semibold pb-1">HR MANAGEMENT</SidebarGroupLabel>
+          <SidebarGroupLabel className="text-blue-600 text-lg font-semibold pb-1">{t('hr_management')}</SidebarGroupLabel>
           <SidebarGroupContent className="bg-white">
             <SidebarMenu>
               {hrNavigationItems.map(renderNavigationItem)}
