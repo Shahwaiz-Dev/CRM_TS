@@ -33,6 +33,7 @@ interface Contact {
   projectId?: string;
   projectName?: string;
   address?: string;
+  language?: string;
   createdAt: Date;
   updatedAt: Date;
 }
@@ -59,7 +60,8 @@ const initialForm = {
   accountName: '',
   projectId: '',
   projectName: '',
-  address: ''
+  address: '',
+  language: ''
 };
 
 export function ContactsView() {
@@ -128,7 +130,8 @@ export function ContactsView() {
       accountName: contact.accountName || '',
       projectId: contact.projectId || '',
       projectName: contact.projectName || '',
-      address: contact.address || ''
+      address: contact.address || '',
+      language: contact.language || ''
     });
     setEditId(contact.id);
     setModalOpen(true);
@@ -350,6 +353,7 @@ export function ContactsView() {
                   <TableHead>{t('phone')}</TableHead>
                   <TableHead>{t('account')}</TableHead>
                   <TableHead>{t('project')}</TableHead>
+                  <TableHead>{t('language') || 'Language'}</TableHead>
                   <TableHead className="text-right">{t('actions')}</TableHead>
                 </TableRow>
               </TableHeader>
@@ -420,6 +424,9 @@ export function ContactsView() {
                       ) : (
                         '-'
                       )}
+                    </TableCell>
+                    <TableCell>
+                      {contact.language || '-'}
                     </TableCell>
                     <TableCell className="text-right">
                       <div className="flex justify-end gap-1">
@@ -529,6 +536,20 @@ export function ContactsView() {
               value={form.title}
               onChange={e => setForm(f => ({ ...f, title: e.target.value }))}
             />
+            <Select 
+              value={form.language} 
+              onValueChange={val => setForm(f => ({ ...f, language: val }))}
+            >
+              <SelectTrigger>
+                <SelectValue placeholder={t('language') || 'Language'} />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="English">English</SelectItem>
+                <SelectItem value="French">French</SelectItem>
+                <SelectItem value="Dutch">Dutch</SelectItem>
+                <SelectItem value="Greek">Greek</SelectItem>
+              </SelectContent>
+            </Select>
             <Textarea
               placeholder={t('full_address')}
               value={form.address}
