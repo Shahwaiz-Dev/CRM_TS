@@ -9,6 +9,8 @@ import { collection, query, where, getDocs, updateDoc, doc } from 'firebase/fire
 import { db } from '@/lib/firebase';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
 import { useLanguage } from '@/contexts/LanguageContext';
+import { TableSkeleton } from '@/components/ui/TableSkeleton';
+import { Skeleton } from '@/components/ui/skeleton';
 
 interface User {
   id: string;
@@ -30,6 +32,7 @@ const rolePermissions = {
 export function UsersView() {
   const { t } = useLanguage();
   const [users, setUsers] = useState<User[]>([]);
+  const [dataLoading, setDataLoading] = useState(true);
   const [filterRole, setFilterRole] = useState('all');
   const [filterStatus, setFilterStatus] = useState('all');
   const [modalOpen, setModalOpen] = useState(false);
@@ -42,8 +45,13 @@ export function UsersView() {
   // Fetch users from Firestore on mount
   React.useEffect(() => {
     const fetchUsers = async () => {
-      const usersData = await getUsers() as User[];
-      setUsers(usersData);
+      setDataLoading(true);
+      try {
+        const usersData = await getUsers() as User[];
+        setUsers(usersData);
+      } finally {
+        setDataLoading(false);
+      }
     };
     fetchUsers();
   }, []);
@@ -107,6 +115,24 @@ export function UsersView() {
     const usersData = await getUsers() as User[];
     setUsers(usersData);
   };
+
+  if (dataLoading) {
+    return (
+      <div className="p-4 md:p-4">
+        <div className="space-y-6">
+          <div className="flex flex-col md:flex-row md:justify-between md:items-center gap-4 mb-4">
+            <Skeleton className="h-9 w-64" />
+            <Skeleton className="h-10 w-32" />
+          </div>
+          <div className="flex gap-2 mb-4">
+            <Skeleton className="h-10 w-32" />
+            <Skeleton className="h-10 w-32" />
+          </div>
+          <TableSkeleton rows={5} columns={6} />
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="p-4 md:p-4">

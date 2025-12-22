@@ -7,6 +7,8 @@ import { db } from '../../lib/firebase';
 import { Loader2 } from 'lucide-react';
 import { motion } from 'framer-motion';
 import { useLanguage } from '@/contexts/LanguageContext';
+import { Skeleton } from '@/components/ui/skeleton';
+import { StatsCardsSkeleton } from '@/components/ui/StatsCardsSkeleton';
 
 interface Deal {
   id: string;
@@ -29,6 +31,7 @@ export function DashboardOverview() {
   const [deals, setDeals] = useState<Deal[]>([]);
   const [tasks, setTasks] = useState<any[]>([]);
   const [activities, setActivities] = useState<any[]>([]);
+  const [dataLoading, setDataLoading] = useState(true);
   const { t } = useLanguage();
 
   const pieColors = ['#22c55e', '#3b82f6', '#f59e42', '#eab308', '#a78bfa'];
@@ -44,6 +47,7 @@ export function DashboardOverview() {
 
   useEffect(() => {
     const fetchData = async () => {
+      setDataLoading(true);
       try {
         const leadsSnap = await getDocs(collection(db, 'leads'));
         setLeads(leadsSnap.docs.map(doc => ({ id: doc.id, ...doc.data() })));
@@ -79,6 +83,8 @@ export function DashboardOverview() {
         });
       } catch (error) {
         console.error('Error fetching dashboard data:', error);
+      } finally {
+        setDataLoading(false);
       }
     };
     fetchData();
@@ -149,6 +155,78 @@ export function DashboardOverview() {
     dealsWithClosedAt: deals.filter(d => d.closedAt).length,
     dealsWithValue: deals.filter(d => (d.value || 0) > 0).length
   });
+
+  if (dataLoading) {
+    return (
+      <motion.div
+        className="p-4 md:p-4"
+        initial={{ opacity: 0, y: 24 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ duration: 0.2, ease: 'easeOut' }}
+      >
+        <div className="space-y-6">
+          <Skeleton className="h-9 w-48" />
+          <StatsCardsSkeleton count={4} />
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+            <Card>
+              <CardHeader>
+                <Skeleton className="h-6 w-40" />
+              </CardHeader>
+              <CardContent style={{ height: 300 }}>
+                <Skeleton className="h-full w-full" />
+              </CardContent>
+            </Card>
+            <Card>
+              <CardHeader>
+                <Skeleton className="h-6 w-32" />
+              </CardHeader>
+              <CardContent style={{ height: 300 }}>
+                <Skeleton className="h-full w-full" />
+              </CardContent>
+            </Card>
+          </div>
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+            <Card>
+              <CardHeader>
+                <Skeleton className="h-6 w-36" />
+              </CardHeader>
+              <CardContent>
+                <div className="space-y-4">
+                  {Array.from({ length: 3 }).map((_, i) => (
+                    <div key={i} className="flex items-start space-x-3">
+                      <Skeleton className="w-2 h-2 rounded-full mt-2" />
+                      <div className="flex-1 space-y-2">
+                        <Skeleton className="h-4 w-full" />
+                        <Skeleton className="h-3 w-24" />
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </CardContent>
+            </Card>
+            <Card>
+              <CardHeader>
+                <Skeleton className="h-6 w-32" />
+              </CardHeader>
+              <CardContent>
+                <div className="space-y-4">
+                  {Array.from({ length: 3 }).map((_, i) => (
+                    <div key={i} className="flex items-center justify-between">
+                      <div className="flex-1 space-y-2">
+                        <Skeleton className="h-4 w-full" />
+                        <Skeleton className="h-3 w-32" />
+                      </div>
+                      <Skeleton className="w-3 h-3 rounded-full" />
+                    </div>
+                  ))}
+                </div>
+              </CardContent>
+            </Card>
+          </div>
+        </div>
+      </motion.div>
+    );
+  }
 
   return (
     <motion.div

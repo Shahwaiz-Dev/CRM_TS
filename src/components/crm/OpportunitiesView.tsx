@@ -8,6 +8,8 @@ import { useAuth } from '@/contexts/AuthContext';
 import { Navigate } from 'react-router-dom';
 import { motion } from 'framer-motion';
 import { useLanguage } from '@/contexts/LanguageContext';
+import { TableSkeleton } from '@/components/ui/TableSkeleton';
+import { Skeleton } from '@/components/ui/skeleton';
 
 const STAGES = [
   'Qualify',
@@ -105,6 +107,26 @@ export function OpportunitiesView() {
     o.companyName?.toLowerCase().includes(search.toLowerCase())
   );
 
+  if (dataLoading) {
+    return (
+      <motion.div
+        className="p-4 md:p-4"
+        initial={{ opacity: 0, y: 24 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ duration: 0.2, ease: 'easeOut' }}
+      >
+        <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4 mb-4">
+          <Skeleton className="h-8 w-48" />
+          <div className="flex gap-2 items-center">
+            <Skeleton className="h-10 w-64" />
+            <Skeleton className="h-10 w-24" />
+          </div>
+        </div>
+        <TableSkeleton rows={5} columns={9} />
+      </motion.div>
+    );
+  }
+
   return (
     <motion.div
       className="p-4 md:p-4"
@@ -140,9 +162,7 @@ export function OpportunitiesView() {
             </tr>
           </thead>
           <tbody>
-            {dataLoading ? (
-              null
-            ) : filtered.length === 0 ? (
+            {filtered.length === 0 ? (
               <tr><td colSpan={10} className="text-center py-8">{t('no_opportunities_found')}</td></tr>
             ) : (
               filtered.map((o, i) => (

@@ -11,6 +11,8 @@ import { Plus, Calendar, User, AlertCircle } from 'lucide-react';
 import { collection, getDocs, addDoc, updateDoc, deleteDoc, doc } from 'firebase/firestore';
 import { db } from '../../lib/firebase';
 import { useLanguage } from '@/contexts/LanguageContext';
+import { KanbanSkeleton } from '@/components/ui/KanbanSkeleton';
+import { Skeleton } from '@/components/ui/skeleton';
 
 interface Task {
   id: string;
@@ -26,6 +28,7 @@ interface Task {
 export function TasksView() {
   const { t } = useLanguage();
   const [tasks, setTasks] = useState<Task[]>([]);
+  const [dataLoading, setDataLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState('');
   const [isDialogOpen, setIsDialogOpen] = useState(false);
   const [newTask, setNewTask] = useState({
@@ -41,11 +44,14 @@ export function TasksView() {
 
   // Fetch tasks from Firestore
   const fetchTasks = async () => {
+    setDataLoading(true);
     try {
       const querySnapshot = await getDocs(collection(db, 'tasks'));
       setTasks(querySnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as Task)));
     } catch (e: any) {
       setError(e.message || 'Failed to fetch tasks');
+    } finally {
+      setDataLoading(false);
     }
   };
 
@@ -219,6 +225,18 @@ export function TasksView() {
       {columnTasks.map(task => <TaskCard key={task.id} task={task} />)}
     </div>
   );
+
+  if (dataLoading) {
+    return (
+      <div className="p-4 md:p-4">
+        <div className="flex justify-between items-center mb-6">
+          <Skeleton className="h-9 w-32" />
+          <Skeleton className="h-10 w-28" />
+        </div>
+        <KanbanSkeleton columns={3} cardsPerColumn={3} />
+      </div>
+    );
+  }
 
   return (
     <div className="p-4 md:p-4">

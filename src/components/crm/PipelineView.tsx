@@ -15,6 +15,8 @@ import { Navigate } from 'react-router-dom';
 import { Select, SelectTrigger, SelectValue, SelectContent, SelectItem } from '@/components/ui/select';
 import { motion } from 'framer-motion';
 import { useLanguage } from '@/contexts/LanguageContext';
+import { KanbanSkeleton } from '@/components/ui/KanbanSkeleton';
+import { Skeleton } from '@/components/ui/skeleton';
 
 interface Deal {
   id: string;
@@ -222,6 +224,27 @@ export function PipelineView() {
     }
     setDataLoading(false);
   };
+
+  if (dataLoading) {
+    return (
+      <motion.div
+        className="p-4 md:p-4"
+        initial={{ opacity: 0, y: 24 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ duration: 0.2, ease: 'easeOut' }}
+      >
+        <div className="flex items-center justify-between mb-4">
+          <Skeleton className="h-9 w-48" />
+          <Skeleton className="h-7 w-32" />
+        </div>
+        <div className="flex gap-2 mb-6">
+          <Skeleton className="h-10 w-32" />
+          <Skeleton className="h-10 w-24" />
+        </div>
+        <KanbanSkeleton columns={6} cardsPerColumn={3} />
+      </motion.div>
+    );
+  }
 
   return (
     <motion.div

@@ -7,6 +7,7 @@ import { useLanguage } from '@/contexts/LanguageContext';
 import { updateUser, deleteUser } from '@/lib/firebase';
 import { X } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
+import { Skeleton } from '@/components/ui/skeleton';
 
 export default function Settings() {
   const { user, setUser, loading } = useAuth();
@@ -61,7 +62,53 @@ export default function Settings() {
     setDeleting(false);
   };
 
-  if (loading) return <div className="p-8 text-center text-gray-500">{t('loading')}</div>;
+  if (loading) {
+    return (
+      <div className="p-4 md:p-4 flex justify-center">
+        <div className="w-full max-w-2xl space-y-6">
+          <div className="flex items-center justify-between mb-4">
+            <Skeleton className="h-8 w-32" />
+            <Skeleton className="h-10 w-10 rounded" />
+          </div>
+          <section className="bg-white rounded-lg shadow p-6 space-y-4">
+            <Skeleton className="h-6 w-24 mb-4" />
+            <div className="flex items-center gap-4">
+              <Skeleton className="w-16 h-16 rounded-full" />
+              <div className="space-y-2">
+                <Skeleton className="h-5 w-32" />
+                <Skeleton className="h-4 w-48" />
+              </div>
+            </div>
+            <Skeleton className="h-10 w-32" />
+          </section>
+          <section className="bg-white rounded-lg shadow p-6 space-y-4">
+            <Skeleton className="h-6 w-24 mb-4" />
+            <div className="space-y-4">
+              <div>
+                <Skeleton className="h-4 w-32 mb-2" />
+                <Skeleton className="h-10 w-full" />
+              </div>
+              <div>
+                <Skeleton className="h-4 w-48 mb-2" />
+                <Skeleton className="h-10 w-32" />
+              </div>
+            </div>
+          </section>
+          <section className="bg-white rounded-lg shadow p-6 space-y-4">
+            <Skeleton className="h-6 w-32 mb-4" />
+            <div className="space-y-4">
+              <Skeleton className="h-10 w-full" />
+              <Skeleton className="h-6 w-48" />
+            </div>
+          </section>
+          <section className="bg-white rounded-lg shadow p-6 space-y-4">
+            <Skeleton className="h-6 w-48 mb-4" />
+            <Skeleton className="h-10 w-40" />
+          </section>
+        </div>
+      </div>
+    );
+  }
   if (!user) return <div className="p-8 text-center text-gray-500">{t('no_user_found')}</div>;
 
   return (

@@ -10,6 +10,9 @@ import { useAuth } from '@/contexts/AuthContext';
 import { Navigate } from 'react-router-dom';
 import { motion } from 'framer-motion';
 import { useLanguage } from '@/contexts/LanguageContext';
+import { TableSkeleton } from '@/components/ui/TableSkeleton';
+import { StatsCardsSkeleton } from '@/components/ui/StatsCardsSkeleton';
+import { Skeleton } from '@/components/ui/skeleton';
 
 function toCSV(rows) {
   const header = ['Name','Employee ID','Position','Department','Base Salary','Overtime','Bonuses','Deductions','Net Pay','Status'];
@@ -46,6 +49,7 @@ export default function Payroll() {
   // Remove useAuth and Navigate imports and any role-checking logic at the top of the component.
 
   const [payroll, setPayroll] = useState([]);
+  const [dataLoading, setDataLoading] = useState(true);
   const [error, setError] = useState("");
   const [newPayroll, setNewPayroll] = useState({ 
     employeeId: "", 
@@ -76,6 +80,7 @@ export default function Payroll() {
 
   const fetchPayroll = async () => {
     setError("");
+    setDataLoading(true);
     try {
       const payrollData = await getPayroll();
       console.log("Payroll data:", payrollData); // Debug log
@@ -84,7 +89,7 @@ export default function Payroll() {
       console.error("Error fetching payroll:", e);
       setError("Failed to fetch payroll");
     } finally {
-      // setLoading(false); // Removed
+      setDataLoading(false);
     }
   };
 
@@ -97,8 +102,6 @@ export default function Payroll() {
     } catch (e) {
       console.error("Error fetching employees:", e);
       setError("Failed to fetch employees");
-    } finally {
-      // setLoading(false); // Removed
     }
   };
 
@@ -332,6 +335,43 @@ export default function Payroll() {
       )
     );
   });
+
+  if (dataLoading) {
+    return (
+      <motion.div
+        className="p-4 md:p-4"
+        initial={{ opacity: 0, y: 24 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ duration: 0.2, ease: 'easeOut' }}
+      >
+        <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4 mb-6">
+          <div>
+            <Skeleton className="h-9 w-64 mb-2" />
+            <Skeleton className="h-4 w-80" />
+          </div>
+          <div className="flex gap-2">
+            <Skeleton className="h-10 w-32" />
+            <Skeleton className="h-10 w-32" />
+            <Skeleton className="h-10 w-36" />
+          </div>
+        </div>
+        <StatsCardsSkeleton count={4} />
+        <div className="bg-white rounded-xl border p-6">
+          <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4 mb-4">
+            <div>
+              <Skeleton className="h-6 w-48 mb-2" />
+              <Skeleton className="h-4 w-64" />
+            </div>
+            <div className="flex gap-2">
+              <Skeleton className="h-10 w-64" />
+              <Skeleton className="h-10 w-24" />
+            </div>
+          </div>
+          <TableSkeleton rows={5} columns={9} />
+        </div>
+      </motion.div>
+    );
+  }
 
   return (
     <motion.div

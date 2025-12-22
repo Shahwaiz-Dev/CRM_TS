@@ -9,6 +9,7 @@ import { AlertTriangle, ExternalLink, Building, Phone, Globe } from 'lucide-reac
 import { useNavigate } from 'react-router-dom';
 import { motion } from 'framer-motion';
 import { useLanguage } from '@/contexts/LanguageContext';
+import { Skeleton } from '@/components/ui/skeleton';
 
 const ACCOUNT_TYPES = ['Prospect', 'Customer', 'Partner', 'Competitor'];
 const INDUSTRIES = ['Technology', 'Healthcare', 'Finance', 'Manufacturing', 'Retail', 'Education', 'Other'];
@@ -141,7 +142,36 @@ export function AccountsView() {
     }
   }
 
-  // Remove the early return for loading state
+  if (dataLoading) {
+    return (
+      <motion.div
+        className="p-4 md:p-4"
+        initial={{ opacity: 0, y: 24 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ duration: 0.2, ease: 'easeOut' }}
+      >
+        <div className="flex items-center justify-between mb-6">
+          <div className="flex items-center gap-4">
+            <Skeleton className="h-10 w-64" />
+            <Skeleton className="h-5 w-24" />
+          </div>
+          <Skeleton className="h-10 w-32" />
+        </div>
+        <div className="bg-white rounded-lg border p-6 space-y-6">
+          <div className="space-y-4">
+            <Skeleton className="h-8 w-48" />
+            <div className="grid grid-cols-2 gap-4">
+              <Skeleton className="h-10 w-full" />
+              <Skeleton className="h-10 w-full" />
+              <Skeleton className="h-10 w-full" />
+              <Skeleton className="h-10 w-full" />
+            </div>
+            <Skeleton className="h-32 w-full" />
+          </div>
+        </div>
+      </motion.div>
+    );
+  }
 
   return (
     <motion.div

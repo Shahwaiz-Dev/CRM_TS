@@ -16,6 +16,8 @@ import { motion } from 'framer-motion';
 import { addNotification } from '@/lib/firebase';
 import { useLanguage } from '@/contexts/LanguageContext';
 import { cn } from '@/lib/utils';
+import { TableSkeleton } from '@/components/ui/TableSkeleton';
+import { Skeleton } from '@/components/ui/skeleton';
 
 interface Contact {
   id: string;
@@ -266,6 +268,27 @@ export function ContactsView() {
   const getInitials = (firstName: string, lastName: string) => {
     return `${firstName?.charAt(0) || ''}${lastName?.charAt(0) || ''}`.toUpperCase();
   };
+
+  if (dataLoading) {
+    return (
+      <motion.div
+        className="p-4 md:p-4"
+        initial={{ opacity: 0, y: 24 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ duration: 0.2, ease: 'easeOut' }}
+      >
+        <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4 mb-6">
+          <Skeleton className="h-8 w-32" />
+          <div className="flex gap-2 items-center">
+            <Skeleton className="h-10 w-64" />
+            <Skeleton className="h-10 w-48" />
+            <Skeleton className="h-10 w-32" />
+          </div>
+        </div>
+        <TableSkeleton rows={5} columns={7} showAvatar={true} />
+      </motion.div>
+    );
+  }
 
   return (
     <motion.div

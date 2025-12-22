@@ -11,6 +11,8 @@ import { useToast } from '@/hooks/use-toast';
 import { motion } from 'framer-motion';
 import { addNotification } from '@/lib/firebase';
 import { useLanguage } from '@/contexts/LanguageContext';
+import { TableSkeleton } from '@/components/ui/TableSkeleton';
+import { Skeleton } from '@/components/ui/skeleton';
 
 interface Case {
   id: string;
@@ -205,7 +207,28 @@ export function CasesView() {
     return <Icon className="w-4 h-4" />;
   };
 
-  // Remove the early return for loading state
+  if (dataLoading) {
+    return (
+      <motion.div
+        className="p-4 md:p-4"
+        initial={{ opacity: 0, y: 24 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ duration: 0.2, ease: 'easeOut' }}
+      >
+        <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4 mb-6">
+          <Skeleton className="h-8 w-32" />
+          <div className="flex gap-2 items-center">
+            <Skeleton className="h-10 w-64" />
+            <Skeleton className="h-10 w-32" />
+            <Skeleton className="h-10 w-32" />
+            <Skeleton className="h-10 w-32" />
+            <Skeleton className="h-10 w-28" />
+          </div>
+        </div>
+        <TableSkeleton rows={5} columns={6} />
+      </motion.div>
+    );
+  }
 
   return (
     <motion.div

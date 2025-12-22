@@ -12,6 +12,8 @@ import { useToast } from '@/hooks/use-toast';
 import { motion } from 'framer-motion';
 import { addNotification } from '@/lib/firebase';
 import { useLanguage } from '@/contexts/LanguageContext';
+import { TableSkeleton } from '@/components/ui/TableSkeleton';
+import { Skeleton } from '@/components/ui/skeleton';
 
 interface Deal {
   id: string;
@@ -310,7 +312,27 @@ export function DealsView() {
   const wonValue = deals.filter(d => d.stage === 'Won').reduce((sum, deal) => sum + (deal.value || 0), 0);
   const activeDeals = deals.filter(d => d.stage !== 'Won' && d.stage !== 'Lost').length;
 
-  // Remove the early return for loading state
+  if (dataLoading) {
+    return (
+      <motion.div
+        className="p-4 md:p-4"
+        initial={{ opacity: 0, y: 24 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ duration: 0.2, ease: 'easeOut' }}
+      >
+        <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4 mb-6">
+          <Skeleton className="h-8 w-48" />
+          <div className="flex gap-2 items-center">
+            <Skeleton className="h-10 w-64" />
+            <Skeleton className="h-10 w-32" />
+            <Skeleton className="h-10 w-32" />
+            <Skeleton className="h-10 w-28" />
+          </div>
+        </div>
+        <TableSkeleton rows={5} columns={8} />
+      </motion.div>
+    );
+  }
 
   return (
     <motion.div

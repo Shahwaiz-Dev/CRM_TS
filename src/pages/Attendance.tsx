@@ -12,12 +12,16 @@ import { Navigate } from 'react-router-dom';
 import { motion } from 'framer-motion';
 import { DateRange } from 'react-day-picker';
 import { useLanguage } from '@/contexts/LanguageContext';
+import { TableSkeleton } from '@/components/ui/TableSkeleton';
+import { StatsCardsSkeleton } from '@/components/ui/StatsCardsSkeleton';
+import { Skeleton } from '@/components/ui/skeleton';
 
 const today = new Date();
 
 export default function Attendance() {
   const { user, loading } = useAuth();
   const [attendance, setAttendance] = useState([]);
+  const [dataLoading, setDataLoading] = useState(true);
   const [error, setError] = useState("");
   const [newAttendance, setNewAttendance] = useState({ employeeId: "", date: "", status: "Present" });
   const [editId, setEditId] = useState(null);
@@ -48,10 +52,13 @@ export default function Attendance() {
   };
 
   const fetchAttendance = async () => {
+    setDataLoading(true);
     try {
       setAttendance(await getAttendance());
     } catch (e) {
       setError("Failed to fetch attendance");
+    } finally {
+      setDataLoading(false);
     }
   };
 
@@ -177,6 +184,49 @@ export default function Attendance() {
   const absentToday = attendance.filter(a => a.status === 'Absent').length;
   const lateToday = attendance.filter(a => a.status === 'Late').length;
   const attendanceRate = attendance.length ? ((presentToday / attendance.length) * 100).toFixed(1) : '0.0';
+
+  if (dataLoading) {
+    return (
+      <motion.div
+        className="p-4 md:p-4"
+        initial={{ opacity: 0, y: 24 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ duration: 0.2, ease: 'easeOut' }}
+      >
+        <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4 mb-6">
+          <div>
+            <Skeleton className="h-9 w-64 mb-2" />
+            <Skeleton className="h-4 w-80" />
+          </div>
+          <div className="flex gap-2">
+            <Skeleton className="h-10 w-40" />
+            <Skeleton className="h-10 w-44" />
+          </div>
+        </div>
+        <StatsCardsSkeleton count={4} />
+        <div className="flex flex-col lg:flex-row gap-6">
+          <div className="bg-white rounded-xl border p-6 flex-1 min-w-0">
+            <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4 mb-4">
+              <div>
+                <Skeleton className="h-6 w-48 mb-2" />
+                <Skeleton className="h-4 w-64" />
+              </div>
+              <div className="flex gap-2">
+                <Skeleton className="h-10 w-64" />
+                <Skeleton className="h-10 w-24" />
+              </div>
+            </div>
+            <TableSkeleton rows={5} columns={5} />
+          </div>
+          <div className="bg-white rounded-xl border p-6 w-full lg:w-[340px] flex-shrink-0">
+            <Skeleton className="h-6 w-32 mb-4" />
+            <Skeleton className="h-4 w-48 mb-4" />
+            <Skeleton className="h-[300px] w-full" />
+          </div>
+        </div>
+      </motion.div>
+    );
+  }
 
   return (
     <motion.div
