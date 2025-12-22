@@ -10,7 +10,7 @@ const translations: Record<string, Record<string, string>> = {
 interface LanguageContextType {
   language: string;
   setLanguage: (lang: string) => void;
-  t: (key: string) => string;
+  t: (key: string, params?: Record<string, string | number>) => string;
 }
 
 const LanguageContext = createContext<LanguageContextType | undefined>(undefined);
@@ -32,8 +32,20 @@ export const LanguageProvider = ({ children }: { children: ReactNode }) => {
     }
   };
 
-  const t = (key: string) => {
-    return translations[language][key] || key;
+  const t = (key: string, params?: Record<string, string | number>) => {
+    let translation = translations[language][key] || key;
+    
+    if (params) {
+      Object.keys(params).forEach((paramKey) => {
+        const value = params[paramKey];
+        translation = translation.replace(
+          new RegExp(`\\{\\{${paramKey}\\}\\}`, 'g'),
+          String(value)
+        );
+      });
+    }
+    
+    return translation;
   };
 
   return (

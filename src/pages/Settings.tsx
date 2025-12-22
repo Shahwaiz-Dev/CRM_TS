@@ -3,12 +3,14 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '@/components/ui/dialog';
 import { useAuth } from '@/contexts/AuthContext';
+import { useLanguage } from '@/contexts/LanguageContext';
 import { updateUser, deleteUser } from '@/lib/firebase';
 import { X } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 
 export default function Settings() {
   const { user, setUser, loading } = useAuth();
+  const { t } = useLanguage();
   const navigate = useNavigate();
   console.log('Settings user:', user, 'loading:', loading);
   const [editMode, setEditMode] = useState(false);
@@ -59,14 +61,14 @@ export default function Settings() {
     setDeleting(false);
   };
 
-  if (loading) return <div className="p-8 text-center text-gray-500">Loading...</div>;
-  if (!user) return <div className="p-8 text-center text-gray-500">No user found.</div>;
+  if (loading) return <div className="p-8 text-center text-gray-500">{t('loading')}</div>;
+  if (!user) return <div className="p-8 text-center text-gray-500">{t('no_user_found')}</div>;
 
   return (
     <div className="p-4 md:p-4 flex justify-center">
       <div className="w-full max-w-2xl space-y-6">
         <div className="flex items-center justify-between mb-4">
-          <h1 className="text-2xl font-bold">Settings</h1>
+          <h1 className="text-2xl font-bold">{t('settings')}</h1>
           <Button
             variant="ghost"
             size="sm"
@@ -79,7 +81,7 @@ export default function Settings() {
 
         {/* Profile Section */}
         <section className="bg-white rounded-lg shadow p-6 space-y-4">
-          <h2 className="text-lg font-semibold mb-2">Profile</h2>
+          <h2 className="text-lg font-semibold mb-2">{t('profile')}</h2>
           <div className="flex items-center gap-4">
             <div className="w-16 h-16 rounded-full bg-gray-200 flex items-center justify-center text-2xl font-bold border">
               {user.name?.[0]?.toUpperCase() || '?'}
@@ -94,40 +96,40 @@ export default function Settings() {
               <Input
                 value={name}
                 onChange={e => setName(e.target.value)}
-                placeholder="Name"
+                placeholder={t('name')}
               />
               <div className="flex gap-2">
-                <Button onClick={handleSaveProfile} disabled={saving}>{saving ? 'Saving...' : 'Save'}</Button>
-                <Button variant="outline" onClick={() => setEditMode(false)} disabled={saving}>Cancel</Button>
+                <Button onClick={handleSaveProfile} disabled={saving}>{saving ? t('saving') : t('save')}</Button>
+                <Button variant="outline" onClick={() => setEditMode(false)} disabled={saving}>{t('cancel')}</Button>
               </div>
             </div>
           ) : (
-            <Button onClick={() => setEditMode(true)} variant="outline">Edit Profile</Button>
+            <Button onClick={() => setEditMode(true)} variant="outline">{t('edit_profile')}</Button>
           )}
         </section>
 
         {/* Security Section */}
         <section className="bg-white rounded-lg shadow p-6 space-y-4">
-          <h2 className="text-lg font-semibold mb-2">Security</h2>
+          <h2 className="text-lg font-semibold mb-2">{t('security')}</h2>
           <div className="space-y-2">
             <div>
-              <label className="block text-sm font-medium">Change Password</label>
+              <label className="block text-sm font-medium">{t('change_password')}</label>
               <div className="flex gap-2 mt-1">
                 <Input
                   type="password"
-                  placeholder="New password"
+                  placeholder={t('new_password')}
                   value={password}
                   onChange={e => setPassword(e.target.value)}
                   disabled
                 />
-                <Button onClick={handleChangePassword} disabled>Change</Button>
+                <Button onClick={handleChangePassword} disabled>{t('change')}</Button>
               </div>
               {passwordChangeMsg && <div className="text-xs text-gray-500 mt-1">{passwordChangeMsg}</div>}
             </div>
             <div>
-              <label className="block text-sm font-medium">Two-Factor Authentication</label>
+              <label className="block text-sm font-medium">{t('two_factor_authentication')}</label>
               <Button onClick={handleSetup2FA} variant="outline" size="sm" disabled>
-                Set up 2FA (coming soon)
+                {t('set_up_2fa')}
               </Button>
             </div>
           </div>
@@ -135,18 +137,18 @@ export default function Settings() {
 
         {/* Preferences Section */}
         <section className="bg-white rounded-lg shadow p-6 space-y-4">
-          <h2 className="text-lg font-semibold mb-2">Preferences</h2>
+          <h2 className="text-lg font-semibold mb-2">{t('preferences')}</h2>
           <div className="flex flex-col gap-4">
             <div>
-              <label className="block text-sm font-medium mb-1">Theme</label>
+              <label className="block text-sm font-medium mb-1">{t('theme')}</label>
               <select
                 className="border rounded px-2 py-1"
                 value={theme}
                 onChange={e => setTheme(e.target.value)}
               >
-                <option value="auto">Auto</option>
-                <option value="light">Light</option>
-                <option value="dark">Dark</option>
+                <option value="auto">{t('auto')}</option>
+                <option value="light">{t('light')}</option>
+                <option value="dark">{t('dark')}</option>
               </select>
             </div>
             <div className="flex items-center gap-2">
@@ -156,16 +158,16 @@ export default function Settings() {
                 onChange={e => setNotifications(e.target.checked)}
                 id="notifications"
               />
-              <label htmlFor="notifications" className="text-sm">Enable notifications</label>
+              <label htmlFor="notifications" className="text-sm">{t('enable_notifications')}</label>
             </div>
           </div>
         </section>
 
         {/* Account Management Section */}
         <section className="bg-white rounded-lg shadow p-6 space-y-4">
-          <h2 className="text-lg font-semibold mb-2">Account Management</h2>
+          <h2 className="text-lg font-semibold mb-2">{t('account_management')}</h2>
           <Button variant="destructive" onClick={() => setShowDeleteDialog(true)}>
-            Delete Account
+            {t('delete_account')}
           </Button>
         </section>
 
@@ -173,19 +175,19 @@ export default function Settings() {
         <Dialog open={showDeleteDialog} onOpenChange={setShowDeleteDialog}>
           <DialogContent>
             <DialogHeader>
-              <DialogTitle>Delete Account</DialogTitle>
+              <DialogTitle>{t('delete_account')}</DialogTitle>
             </DialogHeader>
             <div className="py-2">
               <p className="text-sm text-gray-700">
-                Are you sure you want to delete your account? This action cannot be undone and all your data will be permanently removed.
+                {t('delete_account_confirm')}
               </p>
             </div>
             <DialogFooter>
               <Button variant="destructive" onClick={handleDeleteAccount} disabled={deleting}>
-                {deleting ? 'Deleting...' : 'Yes, Delete My Account'}
+                {deleting ? t('deleting') : t('yes_delete_my_account')}
               </Button>
               <Button variant="outline" onClick={() => setShowDeleteDialog(false)} disabled={deleting}>
-                Cancel
+                {t('cancel')}
               </Button>
             </DialogFooter>
           </DialogContent>

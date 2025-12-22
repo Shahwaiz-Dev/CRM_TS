@@ -253,4 +253,29 @@ export const deleteNotification = async (id: string) => {
     console.error('Error deleting notification:', error);
     throw error;
   }
-}; 
+};
+
+// Projects CRUD
+export async function addProject(project) {
+  return await addDoc(collection(db, 'projects'), {
+    ...project,
+    createdAt: new Date(),
+    updatedAt: new Date()
+  });
+}
+
+export async function getProjects() {
+  const snapshot = await getDocs(collection(db, 'projects'));
+  return snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+}
+
+export async function updateProject(id, data) {
+  return await updateDoc(doc(db, 'projects', id), {
+    ...data,
+    updatedAt: new Date()
+  });
+}
+
+export async function deleteProject(id) {
+  return await deleteDoc(doc(db, 'projects', id));
+} 

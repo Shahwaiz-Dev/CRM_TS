@@ -154,7 +154,7 @@ export function OpportunitiesView() {
                   <td className="px-4 py-2">{o.companyBillingAddress}</td>
                   <td className="px-4 py-2">${o.amount?.toLocaleString()}</td>
                   <td className="px-4 py-2">{o.closeDate}</td>
-                  <td className="px-4 py-2">{o.stage}</td>
+                  <td className="px-4 py-2">{o.stage ? t(`stage_${o.stage.toLowerCase().replace(/ /g, '_')}`) : o.stage}</td>
                   <td className="px-4 py-2 text-blue-700 font-medium cursor-pointer hover:underline">{o.owner}</td>
                   <td className="px-4 py-2 flex gap-2">
                     <Button size="sm" variant="outline" onClick={() => openEdit(o)}>{t('edit')}</Button>

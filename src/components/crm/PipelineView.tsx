@@ -121,8 +121,14 @@ export function PipelineView() {
   const onDragEnd = async (result: DropResult) => {
     const { destination, source, draggableId } = result;
     
-    // If dropped outside or no destination, do nothing
+    // If dropped outside or no destination, the library will automatically revert
+    // the visual position, so we just return without any state changes
     if (!destination) {
+      return;
+    }
+    
+    // Same position, no change needed
+    if (destination.droppableId === source.droppableId && destination.index === source.index) {
       return;
     }
     
@@ -152,7 +158,7 @@ export function PipelineView() {
         await updateDoc(doc(db, 'deals', deal.id), { stage: destination.droppableId });
       } catch (e: any) {
         setError(e.message || 'Failed to update deal');
-        // Revert on error
+        // Revert on error by refetching
         fetchDeals();
       } finally {
         setLoadingDealId(null);
@@ -424,7 +430,7 @@ export function PipelineView() {
                     <div
                       ref={provided.innerRef}
                       {...provided.droppableProps}
-                      className={`flex-1 bg-white rounded-b-lg border border-t-0 transition-colors duration-200 ${snapshot.isDraggingOver ? 'bg-blue-50 ring-2 ring-blue-400' : ''}`}
+                      className={`flex-1 bg-white rounded-b-lg border border-t-0 transition-colors duration-200 min-h-[400px] ${snapshot.isDraggingOver ? 'bg-blue-50 ring-2 ring-blue-400' : ''}`}
                     >
                       <div className="p-2 h-full overflow-y-auto">
                         <div className="flex flex-col gap-3 min-h-full">
@@ -435,15 +441,12 @@ export function PipelineView() {
                                   ref={provided.innerRef}
                                   {...provided.draggableProps}
                                   {...provided.dragHandleProps}
-                                  className={`relative bg-white rounded-lg border p-4 shadow-sm hover:shadow-md transition-all duration-200 cursor-grab active:cursor-grabbing group ${
-                                    snapshot.isDragging ? 'shadow-lg transform rotate-2 z-50' : ''
+                                  className={`relative bg-white rounded-lg border p-4 shadow-sm hover:shadow-md transition-shadow duration-200 cursor-grab active:cursor-grabbing group ${
+                                    snapshot.isDragging ? 'shadow-2xl ring-2 ring-blue-400 ring-opacity-50' : ''
                                   }`}
                                   style={{
                                     ...provided.draggableProps.style,
                                     minHeight: 120,
-                                    transform: snapshot.isDragging 
-                                      ? `${provided.draggableProps.style?.transform} rotate(5deg)` 
-                                      : provided.draggableProps.style?.transform
                                   }}
                                 >
                                   <div className="flex items-center justify-between mb-1">

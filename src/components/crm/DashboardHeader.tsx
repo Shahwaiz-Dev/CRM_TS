@@ -131,7 +131,7 @@ export function DashboardHeader() {
       <div className="flex items-center gap-2 md:gap-4 w-full md:w-auto">
         <SidebarTrigger />
         <Input 
-          placeholder="Search customers, deals, tasks..." 
+          placeholder={t('search_placeholder')}
           className="w-full md:w-80 min-w-0"
         />
       </div>
@@ -221,7 +221,7 @@ export function DashboardHeader() {
                         handleDeleteNotification(notif.id);
                       }}
                       className="p-1 text-gray-400 hover:text-red-500 transition-colors"
-                      title="Delete notification"
+                      title={t('delete_notification')}
                     >
                       <Trash2 className="w-3 h-3" />
                     </button>

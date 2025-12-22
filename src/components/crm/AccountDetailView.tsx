@@ -94,8 +94,8 @@ export function AccountDetailView({ account, onUpdate }) {
       ]);
       
       // Filter contacts and cases for this account
-      const accountContacts = contactsData.filter(contact => contact.accountId === account.id);
-      const accountCases = casesData.filter(caseItem => caseItem.accountId === account.id);
+      const accountContacts = (contactsData as Array<{ id: string; accountId?: string }>).filter(contact => contact.accountId === account.id);
+      const accountCases = (casesData as Array<{ id: string; accountId?: string }>).filter(caseItem => caseItem.accountId === account.id);
       
       setRelatedContacts(accountContacts);
       setRelatedCases(accountCases);
@@ -719,6 +719,8 @@ export function AccountDetailView({ account, onUpdate }) {
 }
 
 function Field({ label, value, onEdit, editing, editValue, setEditValue, onSave, onCancel }: any) {
+  const { t } = useLanguage();
+  
   if (editing) {
     return (
       <div>

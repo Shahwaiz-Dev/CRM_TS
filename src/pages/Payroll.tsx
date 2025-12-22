@@ -429,12 +429,12 @@ export default function Payroll() {
 
         {filteredPayroll.length === 0 ? (
           <div className="text-center py-8 text-gray-500">
-            <p>No payroll records found.</p>
+            <p>{t('no_payroll_records_found')}</p>
             <button 
               onClick={openAddModal}
               className="mt-2 text-blue-600 hover:text-blue-800"
             >
-              Add your first payroll record
+              {t('add_your_first_payroll_record')}
             </button>
           </div>
         ) : (
@@ -465,7 +465,7 @@ export default function Payroll() {
                           {initials}
                         </div>
                         <div>
-                          <div className="font-semibold">{employee?.name || 'Unknown Employee'}</div>
+                          <div className="font-semibold">{employee?.name || t('unknown_employee')}</div>
                           <div className="text-xs text-gray-500">{employee?.department || 'N/A'}</div>
                         </div>
                       </td>

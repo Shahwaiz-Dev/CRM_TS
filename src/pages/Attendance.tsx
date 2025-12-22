@@ -235,7 +235,7 @@ export default function Attendance() {
         <div className="bg-white rounded-xl border p-6 flex-1 min-w-0">
           <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4 mb-4">
             <div>
-              <h2 className="text-xl font-bold">Daily Attendance</h2>
+              <h2 className="text-xl font-bold">{t('daily_attendance')}</h2>
               <p className="text-gray-500 text-sm">{t('employee_checkin_checkout')}</p>
             </div>
             <div className="flex gap-2 w-full md:w-auto">
@@ -256,11 +256,11 @@ export default function Attendance() {
             <table className="min-w-full text-sm">
               <thead>
                 <tr className="border-b">
-                  <th className="py-2 px-3 text-left font-semibold text-gray-700">Employee</th>
-                  <th className="py-2 px-3 text-left font-semibold text-gray-700">Check In</th>
-                  <th className="py-2 px-3 text-left font-semibold text-gray-700">Check Out</th>
-                  <th className="py-2 px-3 text-left font-semibold text-gray-700">Total Hours</th>
-                  <th className="py-2 px-3 text-left font-semibold text-gray-700">Status</th>
+                  <th className="py-2 px-3 text-left font-semibold text-gray-700">{t('employee_name')}</th>
+                  <th className="py-2 px-3 text-left font-semibold text-gray-700">{t('check_in')}</th>
+                  <th className="py-2 px-3 text-left font-semibold text-gray-700">{t('check_out')}</th>
+                  <th className="py-2 px-3 text-left font-semibold text-gray-700">{t('total_hours')}</th>
+                  <th className="py-2 px-3 text-left font-semibold text-gray-700">{t('status')}</th>
                 </tr>
               </thead>
               <tbody>
@@ -271,7 +271,7 @@ export default function Attendance() {
                       <td className="py-3 px-3 flex items-center gap-3 min-w-[200px]">
                         <div className="h-10 w-10 rounded-full bg-gray-200 flex items-center justify-center font-bold text-gray-700">{employee ? (employee.name?.split(' ').map(n => n[0]).join('').toUpperCase()) : '?'}</div>
                         <div>
-                          <div className="font-semibold">{employee ? employee.name : 'Unknown'}</div>
+                          <div className="font-semibold">{employee ? employee.name : t('unknown')}</div>
                           <div className="text-xs text-gray-500">{employee ? employee.department : ''}</div>
                         </div>
                       </td>
@@ -292,7 +292,7 @@ export default function Attendance() {
         </div>
         {/* Calendar Card */}
         <div className="bg-white rounded-xl border p-6 w-full lg:w-[340px] flex-shrink-0">
-          <h2 className="text-xl font-bold mb-1">Calendar</h2>
+          <h2 className="text-xl font-bold mb-1">{t('calendar')}</h2>
           <p className="text-gray-500 text-sm mb-4">{t('select_date_to_view_attendance')}</p>
           <div className="flex flex-col items-center">
             <Calendar
@@ -310,13 +310,13 @@ export default function Attendance() {
       {/* Leave Requests Section */}
       <div className="mt-8">
         <div className="bg-white rounded-xl border p-6">
-          <h2 className="text-xl font-bold mb-1">Leave Requests</h2>
+          <h2 className="text-xl font-bold mb-1">{t('leave_requests')}</h2>
           <p className="text-gray-500 text-sm mb-4">{t('pending_and_recent_leave_requests')}</p>
           <div className="space-y-4">
             {leaveRequests.map(req => (
               <div key={req.id} className="flex flex-col md:flex-row md:items-center md:justify-between gap-2 border rounded-lg p-4">
                 <div>
-                  <div className="font-semibold text-lg">{employees.find(e => e.id === req.employeeId)?.name || 'Unknown'}</div>
+                  <div className="font-semibold text-lg">{employees.find(e => e.id === req.employeeId)?.name || t('unknown')}</div>
                   <div className="text-gray-500 text-sm">{req.type}</div>
                 </div>
                 <div className="flex flex-col md:items-end md:flex-row md:gap-4 gap-1">
@@ -409,11 +409,11 @@ export default function Attendance() {
                 <option key={e.id} value={e.id}>{e.name}</option>
               ))}
             </select>
-            <input placeholder="Type (e.g. Sick, Vacation)" value={newLeave.type} onChange={e => setNewLeave({ ...newLeave, type: e.target.value })} className="border p-1 rounded" />
+            <input placeholder={t('type_example')} value={newLeave.type} onChange={e => setNewLeave({ ...newLeave, type: e.target.value })} className="border p-1 rounded" />
                          <div className="space-y-3">
                <div>
-                 <label className="block text-sm font-medium mb-2">Select Leave Date Range</label>
-                 <p className="text-xs text-gray-500 mb-3">Click on a start date, then click on an end date to select your leave period</p>
+                 <label className="block text-sm font-medium mb-2">{t('select_leave_date_range')}</label>
+                 <p className="text-xs text-gray-500 mb-3">{t('click_to_select_leave_dates')}</p>
                </div>
                                 <div className="flex justify-center">
                    <Calendar
@@ -438,25 +438,25 @@ export default function Attendance() {
                  </div>
                {!leaveDateRange?.from && !leaveDateRange?.to && (
                  <div className="text-center text-xs text-gray-500 bg-blue-50 px-3 py-2 rounded-md">
-                   👆 Click to select your leave dates
+                   👆 {t('click_to_select_leave_dates')}
                  </div>
                )}
                {leaveDateRange?.from && !leaveDateRange?.to && (
                  <div className="text-center text-sm font-medium text-blue-700 bg-blue-50 px-3 py-2 rounded-md">
-                   ✅ Start date selected: {leaveDateRange.from.toLocaleDateString()}
+                   ✅ {t('start_date_selected')}: {leaveDateRange.from.toLocaleDateString()}
                    <br />
-                   <span className="text-xs">Now click on your end date</span>
+                   <span className="text-xs">{t('now_click_end_date')}</span>
                  </div>
                )}
                {leaveDateRange?.from && leaveDateRange?.to && (
                  <div className="text-center text-sm font-medium text-green-700 bg-green-50 px-3 py-2 rounded-md border border-green-200">
-                   ✅ Leave period selected: {leaveDateRange.from.toLocaleDateString()} – {leaveDateRange.to.toLocaleDateString()}
+                   ✅ {t('leave_period_selected')}: {leaveDateRange.from.toLocaleDateString()} – {leaveDateRange.to.toLocaleDateString()}
                    <br />
-                   <span className="text-xs font-normal">({Math.ceil((leaveDateRange.to.getTime() - leaveDateRange.from.getTime()) / (1000 * 60 * 60 * 24))} days)</span>
+                   <span className="text-xs font-normal">({Math.ceil((leaveDateRange.to.getTime() - leaveDateRange.from.getTime()) / (1000 * 60 * 60 * 24))} {t('days')})</span>
                  </div>
                )}
              </div>
-            <input placeholder="Reason" value={newLeave.reason} onChange={e => setNewLeave({ ...newLeave, reason: e.target.value })} className="border p-1 rounded" />
+            <input placeholder={t('reason')} value={newLeave.reason} onChange={e => setNewLeave({ ...newLeave, reason: e.target.value })} className="border p-1 rounded" />
             <div className="flex gap-2 mt-2">
               <Button onClick={handleAddLeave} disabled={leaveSaving}>
                 {leaveSaving ? (
