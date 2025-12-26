@@ -18,6 +18,7 @@ import { useLanguage } from '@/contexts/LanguageContext';
 import { cn } from '@/lib/utils';
 import { TableSkeleton } from '@/components/ui/TableSkeleton';
 import { Skeleton } from '@/components/ui/skeleton';
+import { AddressAutocomplete } from '@/components/AddressAutocomplete';
 
 interface Contact {
   id: string;
@@ -197,16 +198,16 @@ export function ContactsView() {
         });
       } else {
         await addContact(form);
-        
+
         // Create notification for new contact
         await addNotification({
           title: 'New Contact Added',
           body: `${form.firstName} ${form.lastName} has been added as a new contact`,
           type: 'general'
         });
-        
+
         toast({
-          title: "Success", 
+          title: "Success",
           description: "Contact created successfully"
         });
       }
@@ -241,7 +242,7 @@ export function ContactsView() {
   }
 
   const filteredContacts = contacts.filter(contact => {
-    const matchesSearch = 
+    const matchesSearch =
       contact.firstName?.toLowerCase().includes(search.toLowerCase()) ||
       contact.lastName?.toLowerCase().includes(search.toLowerCase()) ||
       contact.email?.toLowerCase().includes(search.toLowerCase()) ||
@@ -250,10 +251,11 @@ export function ContactsView() {
       contact.phone2?.toLowerCase().includes(search.toLowerCase()) ||
       contact.title?.toLowerCase().includes(search.toLowerCase()) ||
       contact.accountName?.toLowerCase().includes(search.toLowerCase()) ||
-      contact.projectName?.toLowerCase().includes(search.toLowerCase());
-    
+      contact.projectName?.toLowerCase().includes(search.toLowerCase()) ||
+      contact.address?.toLowerCase().includes(search.toLowerCase());
+
     const matchesAccount = filterAccount === 'all' || contact.accountId === filterAccount;
-    
+
     return matchesSearch && matchesAccount;
   });
 
@@ -331,7 +333,7 @@ export function ContactsView() {
           <User className="w-12 h-12 text-gray-400 mx-auto mb-4" />
           <h3 className="text-lg font-semibold text-gray-900 mb-2">{t('no_contacts_found')}</h3>
           <p className="text-gray-500 mb-4">
-            {search || filterAccount !== 'all' 
+            {search || filterAccount !== 'all'
               ? t('try_adjusting_search_or_filters')
               : t('create_first_contact_to_get_started')
             }
@@ -536,8 +538,8 @@ export function ContactsView() {
               value={form.title}
               onChange={e => setForm(f => ({ ...f, title: e.target.value }))}
             />
-            <Select 
-              value={form.language} 
+            <Select
+              value={form.language}
               onValueChange={val => setForm(f => ({ ...f, language: val }))}
             >
               <SelectTrigger>
@@ -550,13 +552,12 @@ export function ContactsView() {
                 <SelectItem value="Greek">Greek</SelectItem>
               </SelectContent>
             </Select>
-            <Textarea
+            <AddressAutocomplete
               placeholder={t('full_address')}
               value={form.address}
-              onChange={e => setForm(f => ({ ...f, address: e.target.value }))}
-              rows={3}
+              onChange={val => setForm(f => ({ ...f, address: val }))}
             />
-            
+
             {/* Searchable Account Selector */}
             <Popover open={accountOpen} onOpenChange={setAccountOpen}>
               <PopoverTrigger asChild>
@@ -572,8 +573,8 @@ export function ContactsView() {
               </PopoverTrigger>
               <PopoverContent className="w-[400px] p-0" align="start">
                 <Command shouldFilter={false}>
-                  <CommandInput 
-                    placeholder={t('search_accounts')} 
+                  <CommandInput
+                    placeholder={t('search_accounts')}
                     value={accountSearch}
                     onValueChange={setAccountSearch}
                   />
@@ -581,7 +582,7 @@ export function ContactsView() {
                     <CommandEmpty>{t('no_accounts_found')}</CommandEmpty>
                     <CommandGroup>
                       {accounts
-                        .filter(account => 
+                        .filter(account =>
                           account.accountName.toLowerCase().includes(accountSearch.toLowerCase())
                         )
                         .map((account) => (
@@ -615,12 +616,12 @@ export function ContactsView() {
 
             {/* Project Selector with Create Option */}
             <div className="flex gap-2">
-              <Select 
-                value={form.projectId} 
+              <Select
+                value={form.projectId}
                 onValueChange={(value) => {
                   const project = projects.find(p => p.id === value);
-                  setForm(f => ({ 
-                    ...f, 
+                  setForm(f => ({
+                    ...f,
                     projectId: value,
                     projectName: project?.name || ''
                   }));
@@ -686,8 +687,8 @@ export function ContactsView() {
               }}
             />
             <DialogFooter>
-              <Button 
-                onClick={handleCreateProject} 
+              <Button
+                onClick={handleCreateProject}
                 disabled={projectSubmitting}
               >
                 {projectSubmitting ? (
@@ -716,8 +717,8 @@ export function ContactsView() {
           <div className="space-y-4">
             <p>{t('are_you_sure_delete_contact')}</p>
             <DialogFooter>
-              <Button 
-                variant="destructive" 
+              <Button
+                variant="destructive"
                 onClick={() => deleteId && handleDelete(deleteId)}
               >
                 {t('delete')}

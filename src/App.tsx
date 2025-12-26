@@ -13,6 +13,7 @@ import { useEffect, useState } from "react";
 import { PageLoader } from "@/components/ui/PageLoader";
 import { AuthProvider } from "./contexts/AuthContext";
 import { LanguageProvider } from "./contexts/LanguageContext";
+import { GoogleMapsLoader } from "./components/GoogleMapsLoader";
 
 const queryClient = new QueryClient();
 
@@ -46,19 +47,21 @@ function AppRoutes() {
 }
 
 const App = () => (
-  <LanguageProvider>
-    <AuthProvider>
-      <QueryClientProvider client={queryClient}>
-        <TooltipProvider>
-          <Toaster />
-          <Sonner />
-          <BrowserRouter>
-            <AppRoutes />
-          </BrowserRouter>
-        </TooltipProvider>
-      </QueryClientProvider>
-    </AuthProvider>
-  </LanguageProvider>
+  <GoogleMapsLoader>
+    <LanguageProvider>
+      <AuthProvider>
+        <QueryClientProvider client={queryClient}>
+          <TooltipProvider>
+            <Toaster />
+            <Sonner />
+            <BrowserRouter>
+              <AppRoutes />
+            </BrowserRouter>
+          </TooltipProvider>
+        </QueryClientProvider>
+      </AuthProvider>
+    </LanguageProvider>
+  </GoogleMapsLoader>
 );
 
 export default App;

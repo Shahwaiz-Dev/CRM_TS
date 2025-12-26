@@ -12,6 +12,7 @@ import { Select, SelectTrigger, SelectValue, SelectContent, SelectItem } from '@
 import { Textarea } from '@/components/ui/textarea';
 import { addContact, addCase, getContacts, getCases } from '@/lib/firebase';
 import { useLanguage } from '@/contexts/LanguageContext';
+import { AddressAutocomplete } from '@/components/AddressAutocomplete';
 
 const priorityColors = {
   Low: 'bg-green-100 text-green-800',
@@ -56,7 +57,7 @@ export function AccountDetailView({ account, onUpdate }) {
   const [activityInput, setActivityInput] = useState('');
   const [modal, setModal] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
-  
+
   // Modal form states
   const [contactForm, setContactForm] = useState({ firstName: '', lastName: '', email: '', phone: '', title: '' });
   const [caseForm, setCaseForm] = useState({ subject: '', description: '', priority: 'Medium', status: 'New' });
@@ -92,11 +93,11 @@ export function AccountDetailView({ account, onUpdate }) {
         getContacts(),
         getCases()
       ]);
-      
+
       // Filter contacts and cases for this account
       const accountContacts = (contactsData as Array<{ id: string; accountId?: string }>).filter(contact => contact.accountId === account.id);
       const accountCases = (casesData as Array<{ id: string; accountId?: string }>).filter(caseItem => caseItem.accountId === account.id);
-      
+
       setRelatedContacts(accountContacts);
       setRelatedCases(accountCases);
     } catch (error) {
@@ -141,7 +142,7 @@ export function AccountDetailView({ account, onUpdate }) {
 
   const handleNewContact = async () => {
     if (!contactForm.firstName || !contactForm.lastName) return;
-    
+
     setLoading(true);
     try {
       const contactData = {
@@ -149,14 +150,14 @@ export function AccountDetailView({ account, onUpdate }) {
         accountId: account.id,
         accountName: account.accountName
       };
-      
+
       await addContact(contactData);
       console.log('Contact created successfully');
-      
+
       // Reset form and close modal
       setContactForm({ firstName: '', lastName: '', email: '', phone: '', title: '' });
       setModal(null);
-      
+
       // Optionally refresh account data or show success message
       if (onUpdate) onUpdate();
     } catch (error) {
@@ -169,7 +170,7 @@ export function AccountDetailView({ account, onUpdate }) {
 
   const handleNewCase = async () => {
     if (!caseForm.subject || !caseForm.description) return;
-    
+
     setLoading(true);
     try {
       const caseData = {
@@ -177,14 +178,14 @@ export function AccountDetailView({ account, onUpdate }) {
         accountId: account.id,
         accountName: account.accountName
       };
-      
+
       await addCase(caseData);
       console.log('Case created successfully');
-      
+
       // Reset form and close modal
       setCaseForm({ subject: '', description: '', priority: 'Medium', status: 'New' });
       setModal(null);
-      
+
       // Optionally refresh account data or show success message
       if (onUpdate) onUpdate();
     } catch (error) {
@@ -311,25 +312,25 @@ export function AccountDetailView({ account, onUpdate }) {
           <div className="grid grid-cols-1 md:grid-cols-2 gap-x-8 gap-y-4">
             {/* Left column */}
             <div className="space-y-4">
-              <Field label={t('account_owner')} value={details.owner} onEdit={() => handleEdit('owner', details.owner)} editing={editField==='owner'} editValue={editValue} setEditValue={setEditValue} onSave={handleEditSave} onCancel={()=>setEditField(null)} />
-              <Field label={t('account_name')} value={details.accountName} onEdit={() => handleEdit('accountName', details.accountName)} editing={editField==='accountName'} editValue={editValue} setEditValue={setEditValue} onSave={handleEditSave} onCancel={()=>setEditField(null)} />
-              <Field label={t('parent_account')} value={details.parentAccount} onEdit={() => handleEdit('parentAccount', details.parentAccount)} editing={editField==='parentAccount'} editValue={editValue} setEditValue={setEditValue} onSave={handleEditSave} onCancel={()=>setEditField(null)} />
-              <Field label={t('account_number')} value={details.accountNumber} onEdit={() => handleEdit('accountNumber', details.accountNumber)} editing={editField==='accountNumber'} editValue={editValue} setEditValue={setEditValue} onSave={handleEditSave} onCancel={()=>setEditField(null)} />
-              <Field label={t('type')} value={details.type} onEdit={() => handleEdit('type', details.type)} editing={editField==='type'} editValue={editValue} setEditValue={setEditValue} onSave={handleEditSave} onCancel={()=>setEditField(null)} />
-              <Field label={t('industry')} value={details.industry} onEdit={() => handleEdit('industry', details.industry)} editing={editField==='industry'} editValue={editValue} setEditValue={setEditValue} onSave={handleEditSave} onCancel={()=>setEditField(null)} />
-              <Field label={t('annual_revenue')} value={details.annualRevenue} onEdit={() => handleEdit('annualRevenue', details.annualRevenue)} editing={editField==='annualRevenue'} editValue={editValue} setEditValue={setEditValue} onSave={handleEditSave} onCancel={()=>setEditField(null)} />
-              <Field label={t('billing_address')} value={details.billingAddress} onEdit={() => handleEdit('billingAddress', details.billingAddress)} editing={editField==='billingAddress'} editValue={editValue} setEditValue={setEditValue} onSave={handleEditSave} onCancel={()=>setEditField(null)} />
+              <Field label={t('account_owner')} value={details.owner} onEdit={() => handleEdit('owner', details.owner)} editing={editField === 'owner'} editValue={editValue} setEditValue={setEditValue} onSave={handleEditSave} onCancel={() => setEditField(null)} />
+              <Field label={t('account_name')} value={details.accountName} onEdit={() => handleEdit('accountName', details.accountName)} editing={editField === 'accountName'} editValue={editValue} setEditValue={setEditValue} onSave={handleEditSave} onCancel={() => setEditField(null)} />
+              <Field label={t('parent_account')} value={details.parentAccount} onEdit={() => handleEdit('parentAccount', details.parentAccount)} editing={editField === 'parentAccount'} editValue={editValue} setEditValue={setEditValue} onSave={handleEditSave} onCancel={() => setEditField(null)} />
+              <Field label={t('account_number')} value={details.accountNumber} onEdit={() => handleEdit('accountNumber', details.accountNumber)} editing={editField === 'accountNumber'} editValue={editValue} setEditValue={setEditValue} onSave={handleEditSave} onCancel={() => setEditField(null)} />
+              <Field label={t('type')} value={details.type} onEdit={() => handleEdit('type', details.type)} editing={editField === 'type'} editValue={editValue} setEditValue={setEditValue} onSave={handleEditSave} onCancel={() => setEditField(null)} />
+              <Field label={t('industry')} value={details.industry} onEdit={() => handleEdit('industry', details.industry)} editing={editField === 'industry'} editValue={editValue} setEditValue={setEditValue} onSave={handleEditSave} onCancel={() => setEditField(null)} />
+              <Field label={t('annual_revenue')} value={details.annualRevenue} onEdit={() => handleEdit('annualRevenue', details.annualRevenue)} editing={editField === 'annualRevenue'} editValue={editValue} setEditValue={setEditValue} onSave={handleEditSave} onCancel={() => setEditField(null)} />
+              <Field label={t('billing_address')} value={details.billingAddress} onEdit={() => handleEdit('billingAddress', details.billingAddress)} editing={editField === 'billingAddress'} editValue={editValue} setEditValue={setEditValue} onSave={handleEditSave} onCancel={() => setEditField(null)} isAddress />
             </div>
             {/* Right column */}
             <div className="space-y-4">
-              <Field label={t('phone')} value={details.phone} onEdit={() => handleEdit('phone', details.phone)} editing={editField==='phone'} editValue={editValue} setEditValue={setEditValue} onSave={handleEditSave} onCancel={()=>setEditField(null)} />
-              <Field label={t('fax')} value={details.fax} onEdit={() => handleEdit('fax', details.fax)} editing={editField==='fax'} editValue={editValue} setEditValue={setEditValue} onSave={handleEditSave} onCancel={()=>setEditField(null)} />
-              <Field label={t('website')} value={details.website} onEdit={() => handleEdit('website', details.website)} editing={editField==='website'} editValue={editValue} setEditValue={setEditValue} onSave={handleEditSave} onCancel={()=>setEditField(null)} />
-              <Field label={t('ticker_symbol')} value={details.tickerSymbol} onEdit={() => handleEdit('tickerSymbol', details.tickerSymbol)} editing={editField==='tickerSymbol'} editValue={editValue} setEditValue={setEditValue} onSave={handleEditSave} onCancel={()=>setEditField(null)} />
-              <Field label={t('ownership')} value={details.ownership} onEdit={() => handleEdit('ownership', details.ownership)} editing={editField==='ownership'} editValue={editValue} setEditValue={setEditValue} onSave={handleEditSave} onCancel={()=>setEditField(null)} />
-              <Field label={t('number_of_locations')} value={details.numberOfLocations} onEdit={() => handleEdit('numberOfLocations', details.numberOfLocations)} editing={editField==='numberOfLocations'} editValue={editValue} setEditValue={setEditValue} onSave={handleEditSave} onCancel={()=>setEditField(null)} />
-              <Field label={t('employees')} value={details.employees} onEdit={() => handleEdit('employees', details.employees)} editing={editField==='employees'} editValue={editValue} setEditValue={setEditValue} onSave={handleEditSave} onCancel={()=>setEditField(null)} />
-              <Field label={t('shipping_address')} value={details.shippingAddress} onEdit={() => handleEdit('shippingAddress', details.shippingAddress)} editing={editField==='shippingAddress'} editValue={editValue} setEditValue={setEditValue} onSave={handleEditSave} onCancel={()=>setEditField(null)} />
+              <Field label={t('phone')} value={details.phone} onEdit={() => handleEdit('phone', details.phone)} editing={editField === 'phone'} editValue={editValue} setEditValue={setEditValue} onSave={handleEditSave} onCancel={() => setEditField(null)} />
+              <Field label={t('fax')} value={details.fax} onEdit={() => handleEdit('fax', details.fax)} editing={editField === 'fax'} editValue={editValue} setEditValue={setEditValue} onSave={handleEditSave} onCancel={() => setEditField(null)} />
+              <Field label={t('website')} value={details.website} onEdit={() => handleEdit('website', details.website)} editing={editField === 'website'} editValue={editValue} setEditValue={setEditValue} onSave={handleEditSave} onCancel={() => setEditField(null)} />
+              <Field label={t('ticker_symbol')} value={details.tickerSymbol} onEdit={() => handleEdit('tickerSymbol', details.tickerSymbol)} editing={editField === 'tickerSymbol'} editValue={editValue} setEditValue={setEditValue} onSave={handleEditSave} onCancel={() => setEditField(null)} />
+              <Field label={t('ownership')} value={details.ownership} onEdit={() => handleEdit('ownership', details.ownership)} editing={editField === 'ownership'} editValue={editValue} setEditValue={setEditValue} onSave={handleEditSave} onCancel={() => setEditField(null)} />
+              <Field label={t('number_of_locations')} value={details.numberOfLocations} onEdit={() => handleEdit('numberOfLocations', details.numberOfLocations)} editing={editField === 'numberOfLocations'} editValue={editValue} setEditValue={setEditValue} onSave={handleEditSave} onCancel={() => setEditField(null)} />
+              <Field label={t('employees')} value={details.employees} onEdit={() => handleEdit('employees', details.employees)} editing={editField === 'employees'} editValue={editValue} setEditValue={setEditValue} onSave={handleEditSave} onCancel={() => setEditField(null)} />
+              <Field label={t('shipping_address')} value={details.shippingAddress} onEdit={() => handleEdit('shippingAddress', details.shippingAddress)} editing={editField === 'shippingAddress'} editValue={editValue} setEditValue={setEditValue} onSave={handleEditSave} onCancel={() => setEditField(null)} isAddress />
             </div>
           </div>
         </TabsContent>
@@ -718,19 +719,27 @@ export function AccountDetailView({ account, onUpdate }) {
   );
 }
 
-function Field({ label, value, onEdit, editing, editValue, setEditValue, onSave, onCancel }: any) {
+function Field({ label, value, onEdit, editing, editValue, setEditValue, onSave, onCancel, isAddress }: any) {
   const { t } = useLanguage();
-  
+
   if (editing) {
     return (
       <div>
         <label className="text-xs text-gray-500">{label}</label>
         <div className="flex gap-2 mt-1">
-          <Input
-            value={editValue}
-            onChange={e => setEditValue(e.target.value)}
-            className="flex-1"
-          />
+          {isAddress ? (
+            <AddressAutocomplete
+              value={editValue}
+              onChange={setEditValue}
+              className="flex-1"
+            />
+          ) : (
+            <Input
+              value={editValue}
+              onChange={e => setEditValue(e.target.value)}
+              className="flex-1"
+            />
+          )}
           <Button size="sm" onClick={onSave}>{t('save')}</Button>
           <Button size="sm" variant="outline" onClick={onCancel}>{t('cancel')}</Button>
         </div>
