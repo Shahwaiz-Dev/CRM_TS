@@ -274,6 +274,22 @@ export function ContactsView() {
     return `${firstName?.charAt(0) || ''}${lastName?.charAt(0) || ''}`.toUpperCase();
   };
 
+  function handleEmailAll() {
+    const emails = filteredContacts
+      .flatMap(c => [c.email, c.email2].filter(Boolean))
+      .join(',');
+
+    if (emails) {
+      window.location.href = `mailto:${emails}`;
+    } else {
+      toast({
+        title: "No Emails",
+        description: "No contacts have email addresses",
+        variant: "destructive"
+      });
+    }
+  }
+
   if (dataLoading) {
     return (
       <motion.div
@@ -324,6 +340,9 @@ export function ContactsView() {
               ))}
             </SelectContent>
           </Select>
+          <Button onClick={handleEmailAll} size="sm" variant="outline" className="gap-1" disabled={filteredContacts.length === 0}>
+            <Mail className="w-4 h-4" /> Email All
+          </Button>
           <Button onClick={openAdd} size="sm" className="gap-1"><Plus className="w-4 h-4" /> {t('add_contact')}</Button>
         </div>
       </div>
