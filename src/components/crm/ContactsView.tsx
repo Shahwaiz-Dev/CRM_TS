@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import { useState, useEffect, type FormEvent } from 'react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
@@ -9,16 +9,18 @@ import { Command, CommandInput, CommandList, CommandEmpty, CommandGroup, Command
 import { Badge } from '@/components/ui/badge';
 import { Avatar, AvatarFallback } from '@/components/ui/avatar';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
-import { User, Search, Plus, Edit, Trash2, Phone, Mail, Building, Loader2, MapPin, Check, ChevronsUpDown, FolderPlus } from 'lucide-react';
+import { User, Search, Plus, Edit, Trash2, Phone, Mail, Building, Loader2, MapPin, Check, ChevronsUpDown, FolderPlus, MessageSquare } from 'lucide-react';
 import { addContact, getContacts, updateContact, deleteContact, getAccounts, getProjects, addProject } from '@/lib/firebase';
 import { useToast } from '@/hooks/use-toast';
 import { motion } from 'framer-motion';
 import { addNotification } from '@/lib/firebase';
+import { sendSms } from '@/lib/spryng';
 import { useLanguage } from '@/contexts/LanguageContext';
 import { cn } from '@/lib/utils';
 import { TableSkeleton } from '@/components/ui/TableSkeleton';
 import { Skeleton } from '@/components/ui/skeleton';
 import { AddressAutocomplete } from '@/components/AddressAutocomplete';
+import { Checkbox } from '@/components/ui/checkbox';
 
 interface Contact {
   id: string;
@@ -84,6 +86,10 @@ export function ContactsView() {
   const [accountSearch, setAccountSearch] = useState('');
   const [currentPage, setCurrentPage] = useState(1);
   const contactsPerPage = 10;
+  const [selectedContacts, setSelectedContacts] = useState<Set<string>>(new Set());
+  const [smsModalOpen, setSmsModalOpen] = useState(false);
+  const [smsForm, setSmsForm] = useState({ subject: '', body: '' });
+  const [sendingSms, setSendingSms] = useState(false);
   const { toast } = useToast();
   const { t } = useLanguage();
 
@@ -177,7 +183,7 @@ export function ContactsView() {
     setProjectSubmitting(false);
   }
 
-  async function handleSubmit(e: React.FormEvent) {
+  async function handleSubmit(e: FormEvent) {
     e.preventDefault();
     if (!form.firstName || !form.lastName) {
       toast({
@@ -290,6 +296,109 @@ export function ContactsView() {
     }
   }
 
+  function toggleSelectContact(contactId: string) {
+    setSelectedContacts(prev => {
+      const newSet = new Set(prev);
+      if (newSet.has(contactId)) {
+        newSet.delete(contactId);
+      } else {
+        newSet.add(contactId);
+      }
+      return newSet;
+    });
+  }
+
+  function toggleSelectAll() {
+    const allPageContactsSelected = paginatedContacts.every(c => selectedContacts.has(c.id));
+    if (allPageContactsSelected) {
+      // Deselect all contacts on current page
+      setSelectedContacts(prev => {
+        const newSet = new Set(prev);
+        paginatedContacts.forEach(c => newSet.delete(c.id));
+        return newSet;
+      });
+    } else {
+      // Select all contacts on current page
+      setSelectedContacts(prev => {
+        const newSet = new Set(prev);
+        paginatedContacts.forEach(c => newSet.add(c.id));
+        return newSet;
+      });
+    }
+  }
+
+  function openSmsModal() {
+    if (selectedContacts.size === 0) {
+      toast({
+        title: "No Contacts Selected",
+        description: "Please select at least one contact to send SMS",
+        variant: "destructive"
+      });
+      return;
+    }
+    setSmsForm({ subject: '', body: '' });
+    setSmsModalOpen(true);
+  }
+
+  function closeSmsModal() {
+    setSmsModalOpen(false);
+    setSmsForm({ subject: '', body: '' });
+  }
+
+  async function handleSendSms() {
+    if (!smsForm.subject.trim() || !smsForm.body.trim()) {
+      toast({
+        title: "Validation Error",
+        description: "Subject and message body are required",
+        variant: "destructive"
+      });
+      return;
+    }
+
+    const selectedContactsData = contacts.filter(c => selectedContacts.has(c.id));
+    const contactsWithPhone = selectedContactsData.filter(c => c.phone || c.phone2);
+
+    if (contactsWithPhone.length === 0) {
+      toast({
+        title: "No Phone Numbers",
+        description: "Selected contacts don't have phone numbers",
+        variant: "destructive"
+      });
+      return;
+    }
+
+    setSendingSms(true);
+    try {
+      const phoneNumbers = contactsWithPhone
+        .flatMap(c => [c.phone, c.phone2].filter(Boolean)) as string[];
+
+      // Call Spryng SMS API
+      const result = await sendSms({
+        recipients: phoneNumbers,
+        body: smsForm.body,
+        originator: 'CRM' // Could be customizable in the future
+      });
+
+      if (result.success) {
+        toast({
+          title: "SMS Sent",
+          description: `SMS sent to ${phoneNumbers.length} recipients`
+        });
+        closeSmsModal();
+        setSelectedContacts(new Set());
+      } else {
+        throw new Error(result.error);
+      }
+    } catch (error) {
+      toast({
+        title: "Error",
+        description: error instanceof Error ? error.message : "Failed to send SMS",
+        variant: "destructive"
+      });
+    }
+    setSendingSms(false);
+  }
+
   if (dataLoading) {
     return (
       <motion.div
@@ -340,6 +449,15 @@ export function ContactsView() {
               ))}
             </SelectContent>
           </Select>
+          <Button
+            onClick={openSmsModal}
+            size="sm"
+            variant="outline"
+            className="gap-1"
+            disabled={selectedContacts.size === 0}
+          >
+            <MessageSquare className="w-4 h-4" /> Send SMS ({selectedContacts.size})
+          </Button>
           <Button onClick={handleEmailAll} size="sm" variant="outline" className="gap-1" disabled={filteredContacts.length === 0}>
             <Mail className="w-4 h-4" /> Email All
           </Button>
@@ -367,6 +485,12 @@ export function ContactsView() {
             <Table>
               <TableHeader>
                 <TableRow>
+                  <TableHead className="w-[50px]">
+                    <Checkbox
+                      checked={paginatedContacts.length > 0 && paginatedContacts.every(c => selectedContacts.has(c.id))}
+                      onCheckedChange={toggleSelectAll}
+                    />
+                  </TableHead>
                   <TableHead className="w-[50px]"></TableHead>
                   <TableHead>{t('name')}</TableHead>
                   <TableHead>{t('title')}</TableHead>
@@ -381,6 +505,12 @@ export function ContactsView() {
               <TableBody>
                 {paginatedContacts.map((contact) => (
                   <TableRow key={contact.id}>
+                    <TableCell>
+                      <Checkbox
+                        checked={selectedContacts.has(contact.id)}
+                        onCheckedChange={() => toggleSelectContact(contact.id)}
+                      />
+                    </TableCell>
                     <TableCell>
                       <Avatar className="h-8 w-8">
                         <AvatarFallback className="bg-blue-100 text-blue-600 text-xs">
@@ -744,6 +874,74 @@ export function ContactsView() {
               </Button>
               <DialogClose asChild>
                 <Button variant="outline">{t('cancel')}</Button>
+              </DialogClose>
+            </DialogFooter>
+          </div>
+        </DialogContent>
+      </Dialog>
+
+      {/* Send SMS Dialog */}
+      <Dialog open={smsModalOpen} onOpenChange={setSmsModalOpen}>
+        <DialogContent className="max-w-2xl">
+          <DialogHeader>
+            <DialogTitle>Send SMS to {selectedContacts.size} Contact(s)</DialogTitle>
+          </DialogHeader>
+          <div className="space-y-4">
+            <div>
+              <label className="text-sm font-medium mb-2 block">Selected Contacts:</label>
+              <div className="max-h-32 overflow-y-auto p-2 bg-gray-50 rounded-md">
+                <div className="flex flex-wrap gap-2">
+                  {contacts
+                    .filter(c => selectedContacts.has(c.id))
+                    .map(contact => (
+                      <Badge key={contact.id} variant="secondary" className="gap-1">
+                        {contact.firstName} {contact.lastName}
+                        {(contact.phone || contact.phone2) && (
+                          <Phone className="w-3 h-3" />
+                        )}
+                      </Badge>
+                    ))}
+                </div>
+              </div>
+            </div>
+            <div>
+              <label className="text-sm font-medium mb-2 block">Subject:</label>
+              <Input
+                placeholder="SMS Subject"
+                value={smsForm.subject}
+                onChange={e => setSmsForm(f => ({ ...f, subject: e.target.value }))}
+              />
+            </div>
+            <div>
+              <label className="text-sm font-medium mb-2 block">Message:</label>
+              <Textarea
+                placeholder="Enter your message here..."
+                value={smsForm.body}
+                onChange={e => setSmsForm(f => ({ ...f, body: e.target.value }))}
+                rows={6}
+              />
+            </div>
+            <DialogFooter>
+              <Button
+                onClick={handleSendSms}
+                disabled={sendingSms || !smsForm.subject.trim() || !smsForm.body.trim()}
+              >
+                {sendingSms ? (
+                  <>
+                    <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                    Sending...
+                  </>
+                ) : (
+                  <>
+                    <MessageSquare className="w-4 h-4 mr-2" />
+                    Send SMS
+                  </>
+                )}
+              </Button>
+              <DialogClose asChild>
+                <Button type="button" variant="outline" onClick={closeSmsModal}>
+                  Cancel
+                </Button>
               </DialogClose>
             </DialogFooter>
           </div>

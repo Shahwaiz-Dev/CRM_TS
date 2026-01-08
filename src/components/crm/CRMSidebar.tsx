@@ -47,7 +47,7 @@ export function CRMSidebar() {
   const isActive = (path) => currentPath === path;
 
   const getLinkClassName = (path, hasPermission = true) => {
-    const baseClasses = "relative flex items-center gap-3 w-full p-2.5 rounded-xl transition-all duration-300 group overflow-hidden";
+    const baseClasses = "flex items-center gap-3 w-full p-2 rounded-md transition-all duration-200";
     const isCurrentlyActive = isActive(path);
 
     if (!hasPermission) {
@@ -55,29 +55,14 @@ export function CRMSidebar() {
     }
 
     if (isCurrentlyActive) {
-      return `${baseClasses} bg-gradient-to-r from-blue-600 to-blue-500 text-white shadow-lg shadow-blue-500/25`;
+      return `${baseClasses} bg-blue-600 text-white `;
     }
 
-    return `${baseClasses} text-gray-600 hover:bg-blue-50/80 hover:text-blue-600 hover:shadow-sm`;
+    return `hover:bg-white-600 text-gray-700 ${baseClasses}`;
   };
 
   const getIconClassName = (path, hasPermission = true) => {
-    const baseClasses = "h-5 w-5 flex-shrink-0 transition-all duration-300";
-    const isCurrentlyActive = isActive(path);
-
-    if (!hasPermission) {
-      return `${baseClasses} text-gray-400`;
-    }
-
-    if (isCurrentlyActive) {
-      return `${baseClasses} text-white scale-110`;
-    }
-
-    return `${baseClasses} text-gray-400 group-hover:text-blue-600 group-hover:scale-110`;
-  };
-
-  const getTextClassName = (path, hasPermission = true) => {
-    const baseClasses = `text-[15px] font-medium tracking-wide transition-all duration-300 ${collapsed ? 'opacity-0 w-0 translate-x-4' : 'opacity-100 translate-x-0'}`;
+    const baseClasses = "h-5 w-5 flex-shrink-0 transition-colors duration-200";
     const isCurrentlyActive = isActive(path);
 
     if (!hasPermission) {
@@ -88,7 +73,22 @@ export function CRMSidebar() {
       return `${baseClasses} text-white`;
     }
 
-    return `${baseClasses} text-gray-600 group-hover:text-blue-700`;
+    return `${baseClasses} text-gray-500`;
+  };
+
+  const getTextClassName = (path, hasPermission = true) => {
+    const baseClasses = `text-[16px] transition-colors duration-200 ${collapsed ? 'opacity-0 hidden' : 'opacity-100'}`;
+    const isCurrentlyActive = isActive(path);
+
+    if (!hasPermission) {
+      return `${baseClasses} text-gray-400`;
+    }
+
+    if (isCurrentlyActive) {
+      return `${baseClasses} text-white`;
+    }
+
+    return `${baseClasses} text-gray-700`;
   };
 
   const renderNavigationItem = (item) => {
@@ -96,15 +96,12 @@ export function CRMSidebar() {
 
     if (hasPermission) {
       return (
-        <SidebarMenuItem key={item.title} className="mb-1">
+        <SidebarMenuItem key={item.title}>
           <NavLink to={item.url} end className={getLinkClassName(item.url, true)}>
             <item.icon className={getIconClassName(item.url, true)} />
             <span className={getTextClassName(item.url, true)}>
               {item.title}
             </span>
-            {isActive(item.url) && !collapsed && (
-              <div className="absolute right-2 w-1.5 h-1.5 rounded-full bg-white/50 animate-pulse" />
-            )}
           </NavLink>
         </SidebarMenuItem>
       );
@@ -113,7 +110,7 @@ export function CRMSidebar() {
         <TooltipProvider key={item.title}>
           <Tooltip>
             <TooltipTrigger asChild>
-              <SidebarMenuItem className="mb-1">
+              <SidebarMenuItem>
                 <div className={getLinkClassName(item.url, false)}>
                   <item.icon className={getIconClassName(item.url, false)} />
                   <span className={getTextClassName(item.url, false)}>
@@ -122,9 +119,9 @@ export function CRMSidebar() {
                 </div>
               </SidebarMenuItem>
             </TooltipTrigger>
-            <TooltipContent side="right" className="bg-white/90 backdrop-blur-sm border-blue-100 text-blue-900">
+            <TooltipContent>
               <div className="flex items-center gap-2">
-                <Shield className="w-4 h-4 text-blue-500" />
+                <Shield className="w-4 h-4" />
                 <span>{t('requires')}: {item.roles.map(r => t(r.replace(/ /g, '_'))).join(', ')}</span>
               </div>
             </TooltipContent>
@@ -135,38 +132,26 @@ export function CRMSidebar() {
   };
 
   return (
-    <Sidebar
-      className="border-r border-white/20 bg-white/80 backdrop-blur-xl shadow-2xl transition-all duration-500"
-      collapsible="icon"
-    >
-      <div className="absolute inset-0 bg-gradient-to-b from-white/50 to-transparent pointer-events-none" />
-      <SidebarTrigger className="m-3 self-end text-gray-500 hover:text-blue-600 hover:bg-blue-50 rounded-full transition-colors z-10" />
-      <SidebarContent className="bg-transparent px-3 py-2">
-        <div className={`mb-8 px-2 transition-all duration-500 ${collapsed ? 'opacity-0 hidden' : 'opacity-100'}`}>
-          <h2 className="font-bold text-2xl bg-gradient-to-r from-blue-700 to-blue-500 bg-clip-text text-transparent tracking-tight">
-            CRM Pro
-          </h2>
-          <p className="text-xs text-gray-400 font-medium tracking-widest uppercase mt-1">Enterprise Edition</p>
+    <Sidebar className="border-r bg-white" collapsible="icon">
+      <SidebarTrigger className="m-2 self-end bg-white" />
+      <SidebarContent className="bg-white">
+        <div className="p-4 bg-white">
+          <h2 className={`font-bold text-2xl text-gray-800 transition-opacity duration-200 ${collapsed ? 'opacity-0 hidden' : 'opacity-100'}`}>CRM Pro</h2>
         </div>
-
-        {/* NAVIGATION section */}
+        {/* NAVIGATION section - show all items but disable unauthorized ones */}
         <SidebarGroup>
-          <SidebarGroupLabel className={`text-xs font-bold text-gray-400 uppercase tracking-wider mb-3 px-2 ${collapsed ? 'hidden' : 'block'}`}>
-            {t('navigation')}
-          </SidebarGroupLabel>
-          <SidebarGroupContent>
+          <SidebarGroupLabel className="text-blue-600 text-lg font-semibold pb-1">{t('navigation')}</SidebarGroupLabel>
+          <SidebarGroupContent className="bg-white">
             <SidebarMenu>
               {navigationItems.map(renderNavigationItem)}
             </SidebarMenu>
           </SidebarGroupContent>
         </SidebarGroup>
 
-        {/* HR MANAGEMENT section */}
-        <SidebarGroup className="mt-4">
-          <SidebarGroupLabel className={`text-xs font-bold text-gray-400 uppercase tracking-wider mb-3 px-2 ${collapsed ? 'hidden' : 'block'}`}>
-            {t('hr_management')}
-          </SidebarGroupLabel>
-          <SidebarGroupContent>
+        {/* HR MANAGEMENT section - show all items but disable unauthorized ones */}
+        <SidebarGroup>
+          <SidebarGroupLabel className="text-blue-600 text-lg font-semibold pb-1">{t('hr_management')}</SidebarGroupLabel>
+          <SidebarGroupContent className="bg-white">
             <SidebarMenu>
               {hrNavigationItems.map(renderNavigationItem)}
             </SidebarMenu>
