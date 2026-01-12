@@ -9,7 +9,7 @@ import { Command, CommandInput, CommandList, CommandEmpty, CommandGroup, Command
 import { Badge } from '@/components/ui/badge';
 import { Avatar, AvatarFallback } from '@/components/ui/avatar';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
-import { User, Search, Plus, Edit, Trash2, Phone, Mail, Building, Loader2, MapPin, Check, ChevronsUpDown, FolderPlus, MessageSquare } from 'lucide-react';
+import { User, Search, Plus, Edit, Trash2, Phone, Mail, Building, Loader2, MapPin, Check, ChevronsUpDown, FolderPlus, MessageSquare, X } from 'lucide-react';
 import { addContact, getContacts, updateContact, deleteContact, getAccounts, getProjects, addProject } from '@/lib/firebase';
 import { useToast } from '@/hooks/use-toast';
 import { motion } from 'framer-motion';
@@ -94,6 +94,8 @@ export function ContactsView() {
 
   const [emailModalOpen, setEmailModalOpen] = useState(false);
   const [emailForm, setEmailForm] = useState({ subject: '', body: '' });
+  const [emailRecipients, setEmailRecipients] = useState<Contact[]>([]);
+  const [emailSearch, setEmailSearch] = useState('');
   const [sendingEmail, setSendingEmail] = useState(false);
   const { toast } = useToast();
   const { t } = useLanguage();
@@ -286,7 +288,9 @@ export function ContactsView() {
   };
 
   function openEmailModal() {
-    if (filteredContacts.length === 0) {
+    const contactsWithEmail = filteredContacts.filter(c => c.email || c.email2);
+
+    if (contactsWithEmail.length === 0) {
       toast({
         title: "No Contacts",
         description: "No contacts available to email",
@@ -294,13 +298,21 @@ export function ContactsView() {
       });
       return;
     }
+    setEmailRecipients(contactsWithEmail);
     setEmailForm({ subject: '', body: '' });
+    setEmailSearch('');
     setEmailModalOpen(true);
   }
 
   function closeEmailModal() {
     setEmailModalOpen(false);
     setEmailForm({ subject: '', body: '' });
+    setEmailRecipients([]);
+    setEmailSearch('');
+  }
+
+  function removeEmailRecipient(contactId: string) {
+    setEmailRecipients(prev => prev.filter(c => c.id !== contactId));
   }
 
   async function handleSendEmail() {
@@ -313,12 +325,10 @@ export function ContactsView() {
       return;
     }
 
-    const contactsWithEmail = filteredContacts.filter(c => c.email || c.email2);
-
-    if (contactsWithEmail.length === 0) {
+    if (emailRecipients.length === 0) {
       toast({
-        title: "No Emails",
-        description: "Filtered contacts don't have email addresses",
+        title: "No Recipients",
+        description: "Please select at least one recipient",
         variant: "destructive"
       });
       return;
@@ -326,7 +336,7 @@ export function ContactsView() {
 
     setSendingEmail(true);
     try {
-      const emails = contactsWithEmail
+      const emails = emailRecipients
         .flatMap(c => [c.email, c.email2].filter(Boolean)) as string[];
 
       // Unique emails
@@ -1014,28 +1024,50 @@ export function ContactsView() {
       <Dialog open={emailModalOpen} onOpenChange={setEmailModalOpen}>
         <DialogContent className="max-w-2xl">
           <DialogHeader>
-            <DialogTitle>Send Email to {filteredContacts.length} Contact(s)</DialogTitle>
+            <DialogTitle>Send Email to {emailRecipients.length} Contact(s)</DialogTitle>
           </DialogHeader>
           <div className="space-y-4">
             <div className="bg-blue-50 p-3 rounded-md text-sm text-blue-700">
-              <p>You are about to send an email to {filteredContacts.length} filtered contacts.</p>
+              <p>You are about to send an email to {emailRecipients.length} recipients.</p>
             </div>
-            {/* We could show a list of recipients here, but if it's "All" it might be large. 
-                Let's show a preview of a few. */}
+
             <div>
-              <label className="text-sm font-medium mb-2 block">Recipients (Preview):</label>
+              <div className="flex justify-between items-center mb-2">
+                <label className="text-sm font-medium">Recipients:</label>
+                <div className="relative w-1/2">
+                  <Search className="absolute left-2 top-2.5 h-4 w-4 text-muted-foreground" />
+                  <Input
+                    placeholder="Search recipients..."
+                    value={emailSearch}
+                    onChange={(e) => setEmailSearch(e.target.value)}
+                    className="pl-8 h-9"
+                  />
+                </div>
+              </div>
               <div className="max-h-32 overflow-y-auto p-2 bg-gray-50 rounded-md">
                 <div className="flex flex-wrap gap-2">
-                  {filteredContacts.slice(0, 20).map(contact => (
-                    (contact.email || contact.email2) && (
-                      <Badge key={contact.id} variant="secondary" className="gap-1">
-                        {contact.firstName} {contact.lastName}
-                        <Mail className="w-3 h-3" />
-                      </Badge>
+                  {emailRecipients
+                    .filter(c =>
+                      c.firstName.toLowerCase().includes(emailSearch.toLowerCase()) ||
+                      c.lastName.toLowerCase().includes(emailSearch.toLowerCase()) ||
+                      (c.email && c.email.toLowerCase().includes(emailSearch.toLowerCase()))
                     )
-                  ))}
-                  {filteredContacts.length > 20 && (
-                    <Badge variant="outline">+{filteredContacts.length - 20} more</Badge>
+                    .map(contact => (
+                      <Badge key={contact.id} variant="secondary" className="gap-1 pr-1">
+                        {contact.firstName} {contact.lastName}
+                        <button
+                          onClick={() => removeEmailRecipient(contact.id)}
+                          className="ml-1 hover:bg-gray-200 rounded-full p-0.5 transition-colors"
+                        >
+                          <X className="w-3 h-3" />
+                        </button>
+                      </Badge>
+                    ))}
+                  {emailRecipients.length === 0 && (
+                    <span className="text-sm text-gray-400 italic">No recipients selected</span>
+                  )}
+                  {emailRecipients.length > 0 && emailRecipients.filter(c => c.firstName.toLowerCase().includes(emailSearch.toLowerCase()) || c.lastName.toLowerCase().includes(emailSearch.toLowerCase()) || (c.email && c.email.toLowerCase().includes(emailSearch.toLowerCase()))).length === 0 && (
+                    <span className="text-sm text-gray-400 italic">No recipients match your search</span>
                   )}
                 </div>
               </div>
