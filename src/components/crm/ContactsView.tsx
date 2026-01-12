@@ -15,6 +15,7 @@ import { useToast } from '@/hooks/use-toast';
 import { motion } from 'framer-motion';
 import { addNotification } from '@/lib/firebase';
 import { sendSms } from '@/lib/spryng';
+import { sendEmail } from '@/lib/sendgrid';
 import { useLanguage } from '@/contexts/LanguageContext';
 import { cn } from '@/lib/utils';
 import { TableSkeleton } from '@/components/ui/TableSkeleton';
@@ -90,6 +91,10 @@ export function ContactsView() {
   const [smsModalOpen, setSmsModalOpen] = useState(false);
   const [smsForm, setSmsForm] = useState({ subject: '', body: '' });
   const [sendingSms, setSendingSms] = useState(false);
+
+  const [emailModalOpen, setEmailModalOpen] = useState(false);
+  const [emailForm, setEmailForm] = useState({ subject: '', body: '' });
+  const [sendingEmail, setSendingEmail] = useState(false);
   const { toast } = useToast();
   const { t } = useLanguage();
 
@@ -280,20 +285,77 @@ export function ContactsView() {
     return `${firstName?.charAt(0) || ''}${lastName?.charAt(0) || ''}`.toUpperCase();
   };
 
-  function handleEmailAll() {
-    const emails = filteredContacts
-      .flatMap(c => [c.email, c.email2].filter(Boolean))
-      .join(',');
+  function openEmailModal() {
+    if (filteredContacts.length === 0) {
+      toast({
+        title: "No Contacts",
+        description: "No contacts available to email",
+        variant: "destructive"
+      });
+      return;
+    }
+    setEmailForm({ subject: '', body: '' });
+    setEmailModalOpen(true);
+  }
 
-    if (emails) {
-      window.location.href = `mailto:${emails}`;
-    } else {
+  function closeEmailModal() {
+    setEmailModalOpen(false);
+    setEmailForm({ subject: '', body: '' });
+  }
+
+  async function handleSendEmail() {
+    if (!emailForm.subject.trim() || !emailForm.body.trim()) {
+      toast({
+        title: "Validation Error",
+        description: "Subject and message body are required",
+        variant: "destructive"
+      });
+      return;
+    }
+
+    const contactsWithEmail = filteredContacts.filter(c => c.email || c.email2);
+
+    if (contactsWithEmail.length === 0) {
       toast({
         title: "No Emails",
-        description: "No contacts have email addresses",
+        description: "Filtered contacts don't have email addresses",
+        variant: "destructive"
+      });
+      return;
+    }
+
+    setSendingEmail(true);
+    try {
+      const emails = contactsWithEmail
+        .flatMap(c => [c.email, c.email2].filter(Boolean)) as string[];
+
+      // Unique emails
+      const uniqueEmails = [...new Set(emails)];
+
+      const result = await sendEmail({
+        to: uniqueEmails,
+        subject: emailForm.subject,
+        text: emailForm.body,
+        // html: emailForm.body.replace(/\n/g, '<br>') 
+      });
+
+      if (result.success) {
+        toast({
+          title: "Email Sent",
+          description: `Email sent to ${uniqueEmails.length} recipients`
+        });
+        closeEmailModal();
+      } else {
+        throw new Error(result.error);
+      }
+    } catch (error) {
+      toast({
+        title: "Error",
+        description: error instanceof Error ? error.message : "Failed to send email",
         variant: "destructive"
       });
     }
+    setSendingEmail(false);
   }
 
   function toggleSelectContact(contactId: string) {
@@ -458,7 +520,7 @@ export function ContactsView() {
           >
             <MessageSquare className="w-4 h-4" /> Send SMS ({selectedContacts.size})
           </Button>
-          <Button onClick={handleEmailAll} size="sm" variant="outline" className="gap-1" disabled={filteredContacts.length === 0}>
+          <Button onClick={openEmailModal} size="sm" variant="outline" className="gap-1" disabled={filteredContacts.length === 0}>
             <Mail className="w-4 h-4" /> Email All
           </Button>
           <Button onClick={openAdd} size="sm" className="gap-1"><Plus className="w-4 h-4" /> {t('add_contact')}</Button>
@@ -940,6 +1002,81 @@ export function ContactsView() {
               </Button>
               <DialogClose asChild>
                 <Button type="button" variant="outline" onClick={closeSmsModal}>
+                  Cancel
+                </Button>
+              </DialogClose>
+            </DialogFooter>
+          </div>
+        </DialogContent>
+      </Dialog>
+
+      {/* Send Email Dialog */}
+      <Dialog open={emailModalOpen} onOpenChange={setEmailModalOpen}>
+        <DialogContent className="max-w-2xl">
+          <DialogHeader>
+            <DialogTitle>Send Email to {filteredContacts.length} Contact(s)</DialogTitle>
+          </DialogHeader>
+          <div className="space-y-4">
+            <div className="bg-blue-50 p-3 rounded-md text-sm text-blue-700">
+              <p>You are about to send an email to {filteredContacts.length} filtered contacts.</p>
+            </div>
+            {/* We could show a list of recipients here, but if it's "All" it might be large. 
+                Let's show a preview of a few. */}
+            <div>
+              <label className="text-sm font-medium mb-2 block">Recipients (Preview):</label>
+              <div className="max-h-32 overflow-y-auto p-2 bg-gray-50 rounded-md">
+                <div className="flex flex-wrap gap-2">
+                  {filteredContacts.slice(0, 20).map(contact => (
+                    (contact.email || contact.email2) && (
+                      <Badge key={contact.id} variant="secondary" className="gap-1">
+                        {contact.firstName} {contact.lastName}
+                        <Mail className="w-3 h-3" />
+                      </Badge>
+                    )
+                  ))}
+                  {filteredContacts.length > 20 && (
+                    <Badge variant="outline">+{filteredContacts.length - 20} more</Badge>
+                  )}
+                </div>
+              </div>
+            </div>
+
+            <div>
+              <label className="text-sm font-medium mb-2 block">Subject:</label>
+              <Input
+                placeholder="Email Subject"
+                value={emailForm.subject}
+                onChange={e => setEmailForm(f => ({ ...f, subject: e.target.value }))}
+              />
+            </div>
+            <div>
+              <label className="text-sm font-medium mb-2 block">Message:</label>
+              <Textarea
+                placeholder="Type your email message here..."
+                value={emailForm.body}
+                onChange={e => setEmailForm(f => ({ ...f, body: e.target.value }))}
+                rows={10}
+              />
+            </div>
+            <DialogFooter>
+              <Button
+                onClick={handleSendEmail}
+                disabled={sendingEmail || !emailForm.subject.trim() || !emailForm.body.trim()}
+              >
+                {sendingEmail ? (
+                  <>
+                    <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                    Sending...
+                  </>
+                ) : (
+                  <>
+                    <Mail className="w-4 h-4 mr-2" />
+                    Send Email
+                  </>
+                )}
+              </Button>
+              <DialogClose asChild>
+                <Button type="button" variant="outline" onClick={closeEmailModal}>
                   Cancel
                 </Button>
               </DialogClose>
