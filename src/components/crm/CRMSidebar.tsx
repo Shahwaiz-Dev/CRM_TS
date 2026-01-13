@@ -1,6 +1,6 @@
 import React from 'react';
 import { NavLink, useLocation } from 'react-router-dom';
-import { Users, User, List, Calendar, Trophy, Briefcase, DollarSign, Clock, AlertCircle, Shield } from 'lucide-react';
+import { Users, User, List, Calendar, Trophy, Briefcase, DollarSign, Clock, AlertCircle, Shield, Layers } from 'lucide-react';
 import {
   Sidebar,
   SidebarContent,
@@ -35,6 +35,7 @@ export function CRMSidebar() {
     { title: t('opportunities'), url: '/opportunities', icon: Trophy, roles: ['admin', 'sales', 'new user'] },
     { title: t('sales_pipeline'), url: '/pipeline', icon: List, roles: ['admin', 'sales', 'new user'] },
     { title: t('tasks'), url: '/tasks', icon: List, roles: ['admin', 'sales', 'new user'] },
+    { title: 'Sprints', url: '/sprints', icon: Layers, roles: ['admin', 'sales', 'hr', 'employee', 'new user'] },
     { title: t('users_roles'), url: '/users', icon: User, roles: ['admin'] },
   ];
 

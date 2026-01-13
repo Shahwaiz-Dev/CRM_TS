@@ -2,7 +2,7 @@ import { initializeApp } from "firebase/app";
 import { getFirestore } from "firebase/firestore";
 import { getAuth } from "firebase/auth";
 import { getAnalytics } from "firebase/analytics";
-import { collection, getDocs, addDoc, updateDoc, deleteDoc, doc, query, where } from 'firebase/firestore';
+import { collection, getDocs, addDoc, updateDoc, deleteDoc, doc, query, where, increment } from 'firebase/firestore';
 
 const firebaseConfig = {
   apiKey: "AIzaSyDy6Fqr8L-3PYEFeh0OWtux-xEFpDbj9XY",
@@ -278,4 +278,84 @@ export async function updateProject(id, data) {
 
 export async function deleteProject(id) {
   return await deleteDoc(doc(db, 'projects', id));
-} 
+}
+
+// Sprints CRUD
+export async function addSprint(sprint) {
+  return await addDoc(collection(db, 'sprints'), {
+    ...sprint,
+    createdAt: new Date(),
+    updatedAt: new Date()
+  });
+}
+
+export async function getSprints() {
+  const snapshot = await getDocs(collection(db, 'sprints'));
+  return snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+}
+
+export async function updateSprint(id, data) {
+  return await updateDoc(doc(db, 'sprints', id), {
+    ...data,
+    updatedAt: new Date()
+  });
+}
+
+export async function deleteSprint(id) {
+  return await deleteDoc(doc(db, 'sprints', id));
+}
+
+// Tickets CRUD
+export async function addTicket(ticket) {
+  return await addDoc(collection(db, 'tickets'), {
+    ...ticket,
+    createdAt: new Date(),
+    updatedAt: new Date()
+  });
+}
+
+export async function getTickets(sprintId) {
+  const q = sprintId
+    ? query(collection(db, 'tickets'), where("sprintId", "==", sprintId))
+    : collection(db, 'tickets');
+  const snapshot = await getDocs(q);
+  return snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+}
+
+export async function updateTicket(id, data) {
+  return await updateDoc(doc(db, 'tickets', id), {
+    ...data,
+    updatedAt: new Date()
+  });
+}
+
+export async function deleteTicket(id) {
+  return await deleteDoc(doc(db, 'tickets', id));
+}
+
+// Comments CRUD
+export async function addComment(comment) {
+  const commentRef = await addDoc(collection(db, 'comments'), {
+    ...comment,
+    createdAt: new Date(),
+    updatedAt: new Date()
+  });
+
+  // Increment comment count on ticket
+  if (comment.ticketId) {
+    await updateDoc(doc(db, 'tickets', comment.ticketId), {
+      commentCount: increment(1)
+    });
+  }
+
+  return commentRef;
+}
+
+export async function getComments(ticketId) {
+  const q = query(collection(db, 'comments'), where("ticketId", "==", ticketId));
+  const snapshot = await getDocs(q);
+  // Client-side sorting might be needed if index is missing
+  return snapshot.docs
+    .map(doc => ({ id: doc.id, ...doc.data() }))
+    .sort((a: any, b: any) => a.createdAt?.seconds - b.createdAt?.seconds);
+}
