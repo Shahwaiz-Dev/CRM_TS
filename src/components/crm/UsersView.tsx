@@ -4,18 +4,18 @@ import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { getUsers, addUser, updateUser, deleteUser } from '@/lib/firebase';
-import { collection, query, where, getDocs, updateDoc, doc } from 'firebase/firestore';
-import { db } from '@/lib/firebase';
+import { getUsers, addUser, updateUser, deleteUser, getFileUrl } from '@/lib/firebase';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
-import { useLanguage } from '@/contexts/LanguageContext';
 import { TableSkeleton } from '@/components/ui/TableSkeleton';
 import { Skeleton } from '@/components/ui/skeleton';
+import { useAppSelector } from "@/store/hooks";
+import { useTranslation } from "@/store/slices/languageSlice";
 
 interface User {
   id: string;
   name: string;
   email: string;
+  photoURL?: string;
   role: 'admin' | 'sales' | 'hr';
   department: string;
   status: 'Active' | 'Inactive';
@@ -30,16 +30,16 @@ const rolePermissions = {
 };
 
 export function UsersView() {
-  const { t } = useLanguage();
+  const { t } = useTranslation();
   const [users, setUsers] = useState<User[]>([]);
   const [dataLoading, setDataLoading] = useState(true);
   const [filterRole, setFilterRole] = useState('all');
   const [filterStatus, setFilterStatus] = useState('all');
   const [modalOpen, setModalOpen] = useState(false);
-  const [modalMode, setModalMode] = useState<'add'|'edit'>('add');
+  const [modalMode, setModalMode] = useState<'add' | 'edit'>('add');
   const [editUser, setEditUser] = useState<User | null>(null);
   const [newUser, setNewUser] = useState<User>({
-    id: '', name: '', email: '', role: 'sales', department: '', status: 'Active', lastLogin: '', permissions: rolePermissions['sales']
+    id: '', name: '', email: '', photoURL: '', role: 'sales', department: '', status: 'Active', lastLogin: '', permissions: rolePermissions['sales']
   });
 
   // Fetch users from Firestore on mount
@@ -64,18 +64,18 @@ export function UsersView() {
 
   const getRoleColor = (role: string) => {
     switch (role) {
-      case 'admin': return 'bg-purple-100 text-purple-800';
-      case 'sales': return 'bg-blue-100 text-blue-800';
-      case 'hr': return 'bg-green-100 text-green-800';
-      default: return 'bg-gray-100 text-gray-800';
+      case 'admin': return 'bg-purple-500/10 text-purple-600 border-purple-200/20';
+      case 'sales': return 'bg-blue-500/10 text-blue-600 border-blue-200/20';
+      case 'hr': return 'bg-green-500/10 text-green-600 border-green-200/20';
+      default: return 'bg-muted text-muted-foreground';
     }
   };
 
   const getStatusColor = (status: string) => {
     switch (status) {
-      case 'Active': return 'bg-green-100 text-green-800';
-      case 'Inactive': return 'bg-red-100 text-red-800';
-      default: return 'bg-gray-100 text-gray-800';
+      case 'Active': return 'bg-green-500/10 text-green-600 border-green-200/20';
+      case 'Inactive': return 'bg-red-500/10 text-red-600 border-red-200/20';
+      default: return 'bg-muted text-muted-foreground';
     }
   };
 
@@ -98,7 +98,7 @@ export function UsersView() {
     const usersData = await getUsers() as User[];
     setUsers(usersData);
     setModalOpen(false);
-    setNewUser({ id: '', name: '', email: '', role: 'sales', department: '', status: 'Active', lastLogin: '', permissions: rolePermissions['sales'] });
+    setNewUser({ id: '', name: '', email: '', photoURL: '', role: 'sales', department: '', status: 'Active', lastLogin: '', permissions: rolePermissions['sales'] });
   };
   // Edit user
   const handleEditUser = async () => {
@@ -150,6 +150,7 @@ export function UsersView() {
               <div className="flex flex-col gap-2">
                 <input placeholder={t('name')} value={modalMode === 'add' ? newUser.name : editUser?.name || ''} onChange={e => modalMode === 'add' ? setNewUser({ ...newUser, name: e.target.value }) : setEditUser(editUser && { ...editUser, name: e.target.value })} className="border p-1 rounded" />
                 <input placeholder={t('email')} value={modalMode === 'add' ? newUser.email : editUser?.email || ''} onChange={e => modalMode === 'add' ? setNewUser({ ...newUser, email: e.target.value }) : setEditUser(editUser && { ...editUser, email: e.target.value })} className="border p-1 rounded" />
+                <input placeholder={t('profile_picture_url')} value={modalMode === 'add' ? newUser.photoURL : editUser?.photoURL || ''} onChange={e => modalMode === 'add' ? setNewUser({ ...newUser, photoURL: e.target.value }) : setEditUser(editUser && { ...editUser, photoURL: e.target.value })} className="border p-1 rounded" />
                 <input placeholder={t('department')} value={modalMode === 'add' ? newUser.department : editUser?.department || ''} onChange={e => modalMode === 'add' ? setNewUser({ ...newUser, department: e.target.value }) : setEditUser(editUser && { ...editUser, department: e.target.value })} className="border p-1 rounded" />
                 <select value={modalMode === 'add' ? newUser.role : editUser?.role || 'sales'} onChange={e => modalMode === 'add' ? setNewUser({ ...newUser, role: e.target.value as any }) : setEditUser(editUser && { ...editUser, role: e.target.value as any })} className="border p-1 rounded">
                   <option value="admin">{t('admin')}</option>
@@ -172,16 +173,16 @@ export function UsersView() {
         <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mb-4">
           <Card>
             <CardHeader className="pb-2">
-              <CardTitle className="text-sm font-medium text-gray-600">{t('totalUsers')}</CardTitle>
+              <CardTitle className="text-sm font-medium text-muted-foreground">{t('totalUsers')}</CardTitle>
             </CardHeader>
             <CardContent>
               <div className="text-2xl font-bold">{users.length}</div>
             </CardContent>
           </Card>
-          
+
           <Card>
             <CardHeader className="pb-2">
-              <CardTitle className="text-sm font-medium text-gray-600">{t('activeUsers')}</CardTitle>
+              <CardTitle className="text-sm font-medium text-muted-foreground">{t('activeUsers')}</CardTitle>
             </CardHeader>
             <CardContent>
               <div className="text-2xl font-bold text-green-600">
@@ -189,10 +190,10 @@ export function UsersView() {
               </div>
             </CardContent>
           </Card>
-          
+
           <Card>
             <CardHeader className="pb-2">
-              <CardTitle className="text-sm font-medium text-gray-600">{t('salesTeam')}</CardTitle>
+              <CardTitle className="text-sm font-medium text-muted-foreground">{t('salesTeam')}</CardTitle>
             </CardHeader>
             <CardContent>
               <div className="text-2xl font-bold text-blue-600">
@@ -200,10 +201,10 @@ export function UsersView() {
               </div>
             </CardContent>
           </Card>
-          
+
           <Card>
             <CardHeader className="pb-2">
-              <CardTitle className="text-sm font-medium text-gray-600">{t('admins')}</CardTitle>
+              <CardTitle className="text-sm font-medium text-muted-foreground">{t('admins')}</CardTitle>
             </CardHeader>
             <CardContent>
               <div className="text-2xl font-bold text-purple-600">
@@ -253,6 +254,7 @@ export function UsersView() {
               <Table className="min-w-[700px]">
                 <TableHeader>
                   <TableRow>
+                    <TableHead className="w-[50px]"></TableHead>
                     <TableHead>{t('name')}</TableHead>
                     <TableHead>{t('email')}</TableHead>
                     <TableHead>{t('role')}</TableHead>
@@ -265,6 +267,15 @@ export function UsersView() {
                 <TableBody>
                   {filteredUsers.map((user) => (
                     <TableRow key={user.id}>
+                      <TableCell>
+                        {user.photoURL ? (
+                          <img src={getFileUrl(user.photoURL)} alt={user.name} className="w-8 h-8 rounded-full object-cover border" />
+                        ) : (
+                          <div className="w-8 h-8 rounded-full bg-muted flex items-center justify-center text-xs font-bold border text-muted-foreground">
+                            {user.name?.[0]?.toUpperCase() || '?'}
+                          </div>
+                        )}
+                      </TableCell>
                       <TableCell>{user.name}</TableCell>
                       <TableCell>{user.email}</TableCell>
                       <TableCell>

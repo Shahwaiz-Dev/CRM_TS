@@ -4,12 +4,13 @@ import { Input } from '@/components/ui/input';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger, DialogFooter, DialogClose } from '@/components/ui/dialog';
 import { Select, SelectTrigger, SelectValue, SelectContent, SelectItem } from '@/components/ui/select';
 import { getOpportunities, addOpportunity, updateOpportunity, deleteOpportunity } from '@/lib/firebase';
-import { useAuth } from '@/contexts/AuthContext';
-import { Navigate } from 'react-router-dom';
+import { useToast } from '@/hooks/use-toast';
 import { motion } from 'framer-motion';
-import { useLanguage } from '@/contexts/LanguageContext';
 import { TableSkeleton } from '@/components/ui/TableSkeleton';
 import { Skeleton } from '@/components/ui/skeleton';
+import { useAppSelector, useAppDispatch } from "@/store/hooks";
+import { useTranslation } from "@/store/slices/languageSlice";
+import { fetchOpportunities, createNewOpportunity, modifyOpportunity, removeOpportunity } from "@/store/slices/opportunitiesSlice";
 
 const STAGES = [
   'Qualify',
@@ -32,27 +33,28 @@ const initialForm = {
 };
 
 export function OpportunitiesView() {
-  const { user, loading } = useAuth();
-  const [search, setSearch] = useState('');
-  const [opportunities, setOpportunities] = useState([]);
-  const [dataLoading, setDataLoading] = useState(true);
+  const dispatch = useAppDispatch();
+  const opportunities = useAppSelector((state) => state.opportunities.opportunities);
+  const dataLoading = useAppSelector((state) => state.opportunities.loading);
+  const slicesError = useAppSelector((state) => state.opportunities.error);
+
   const [modalOpen, setModalOpen] = useState(false);
+  const [editId, setEditId] = useState<string | null>(null);
   const [form, setForm] = useState(initialForm);
-  const [editId, setEditId] = useState(null);
   const [submitting, setSubmitting] = useState(false);
-  const [deleteId, setDeleteId] = useState(null);
-  const { t } = useLanguage();
+  const [deleteId, setDeleteId] = useState<string | null>(null);
+  const [search, setSearch] = useState('');
+  const [filterStage, setFilterStage] = useState('all');
+  const { toast } = useToast();
+  const { t } = useTranslation();
 
   useEffect(() => {
-    fetchOpportunities();
-  }, []);
+    dispatch(fetchOpportunities());
+  }, [dispatch]);
 
-  async function fetchOpportunities() {
-    setDataLoading(true);
-    const data = await getOpportunities();
-    setOpportunities(data);
-    setDataLoading(false);
-  }
+  const fetchOpportunitiesData = async () => {
+    dispatch(fetchOpportunities());
+  };
 
   function openAdd() {
     setForm(initialForm);
@@ -78,26 +80,52 @@ export function OpportunitiesView() {
     setForm(initialForm);
     setEditId(null);
   }
-  async function handleSubmit(e) {
+  async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
     setSubmitting(true);
-    const payload = {
-      ...form,
-      amount: Number(form.amount),
-    };
-    if (editId) {
-      await updateOpportunity(editId, payload);
-    } else {
-      await addOpportunity(payload);
+    try {
+      const payload = {
+        ...form,
+        amount: Number(form.amount),
+      };
+      if (editId) {
+        await dispatch(modifyOpportunity({ id: editId, data: payload })).unwrap();
+        toast({
+          title: t('success'),
+          description: t('opportunity_updated_successfully')
+        });
+      } else {
+        await dispatch(createNewOpportunity(payload)).unwrap();
+        toast({
+          title: t('success'),
+          description: t('opportunity_created_successfully')
+        });
+      }
+      closeModal();
+    } catch (error: any) {
+      toast({
+        title: t('error'),
+        description: error.message || (editId ? t('failed_to_update_opportunity') : t('failed_to_create_opportunity')),
+        variant: "destructive"
+      });
     }
     setSubmitting(false);
-    closeModal();
-    fetchOpportunities();
   }
   async function handleDelete(id) {
-    await deleteOpportunity(id);
+    try {
+      await dispatch(removeOpportunity(id)).unwrap();
+      toast({
+        title: t('success'),
+        description: t('opportunity_deleted_successfully')
+      });
+    } catch (error: any) {
+      toast({
+        title: t('error'),
+        description: error.message || t('failed_to_delete_opportunity'),
+        variant: "destructive"
+      });
+    }
     setDeleteId(null);
-    fetchOpportunities();
   }
 
   const filtered = opportunities.filter(o =>
@@ -146,9 +174,9 @@ export function OpportunitiesView() {
           <Button onClick={openAdd}>{t('new')}</Button>
         </div>
       </div>
-      <div className="overflow-x-auto rounded-lg border bg-white">
+      <div className="overflow-x-auto rounded-lg border bg-card">
         <table className="min-w-full text-sm">
-          <thead className="bg-gray-50 border-b">
+          <thead className="bg-muted/50 border-b">
             <tr>
               <th className="px-4 py-2 text-left font-semibold">{t('opportunity_name')}</th>
               <th className="px-4 py-2 text-left font-semibold">{t('account_name')}</th>
@@ -166,16 +194,16 @@ export function OpportunitiesView() {
               <tr><td colSpan={10} className="text-center py-8">{t('no_opportunities_found')}</td></tr>
             ) : (
               filtered.map((o, i) => (
-                <tr key={o.id || o.name} className="border-b hover:bg-gray-50">
+                <tr key={o.id || o.name} className="border-b hover:bg-muted/50">
                   <td className="px-4 py-2">{i + 1}</td>
-                  <td className="px-4 py-2 text-blue-700 font-medium cursor-pointer hover:underline">{o.name}</td>
+                  <td className="px-4 py-2 text-primary font-medium cursor-pointer hover:underline">{o.name}</td>
                   <td className="px-4 py-2">{o.account}</td>
                   <td className="px-4 py-2">{o.companyName}</td>
                   <td className="px-4 py-2">{o.companyBillingAddress}</td>
                   <td className="px-4 py-2">${o.amount?.toLocaleString()}</td>
                   <td className="px-4 py-2">{o.closeDate}</td>
                   <td className="px-4 py-2">{o.stage ? t(`stage_${o.stage.toLowerCase().replace(/ /g, '_')}`) : o.stage}</td>
-                  <td className="px-4 py-2 text-blue-700 font-medium cursor-pointer hover:underline">{o.owner}</td>
+                  <td className="px-4 py-2 text-primary font-medium cursor-pointer hover:underline">{o.owner}</td>
                   <td className="px-4 py-2 flex gap-2">
                     <Button size="sm" variant="outline" onClick={() => openEdit(o)}>{t('edit')}</Button>
                     <Button size="sm" variant="destructive" onClick={() => setDeleteId(o.id)}>{t('delete')}</Button>

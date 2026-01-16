@@ -6,38 +6,39 @@ import { Select, SelectTrigger, SelectValue, SelectContent, SelectItem } from '@
 import { Badge } from '@/components/ui/badge';
 import { Avatar, AvatarFallback } from '@/components/ui/avatar';
 import { Search, Plus, Edit, Trash2, DollarSign, Calendar, Building, User, Loader2, CheckCircle, XCircle } from 'lucide-react';
-import { addDoc, getDocs, updateDoc, deleteDoc, doc, collection } from 'firebase/firestore';
-import { db } from '@/lib/firebase';
+import { addDeal, getDeals, updateDeal, deleteDeal } from '@/lib/firebase';
+import { addNotification } from '@/lib/firebase';
 import { useToast } from '@/hooks/use-toast';
 import { motion } from 'framer-motion';
-import { addNotification } from '@/lib/firebase';
-import { useLanguage } from '@/contexts/LanguageContext';
 import { TableSkeleton } from '@/components/ui/TableSkeleton';
 import { Skeleton } from '@/components/ui/skeleton';
+import { useAppSelector, useAppDispatch } from "@/store/hooks";
+import { useTranslation } from "@/store/slices/languageSlice";
+import { fetchDeals, createDeal, modifyDeal, removeDeal } from "@/store/slices/dealsSlice";
 
 interface Deal {
   id: string;
-  title: string;
-  company: string;
-  value: number;
-  stage: 'New' | 'Qualified' | 'Proposition' | 'Negotiation' | 'Won' | 'Lost';
+  name: string;
+  companyName: string;
+  amount: number;
+  stage: string;
   priority: 1 | 2 | 3;
-  assignee: string;
+  owner: string;
   type: string;
   description: string;
-  closeDate: string;
+  closeDate?: string;
   closedAt?: Date;
   createdAt: Date;
   updatedAt: Date;
 }
 
 const initialForm = {
-  title: '',
-  company: '',
-  value: 0,
+  name: '',
+  companyName: '',
+  amount: 0,
   stage: 'New',
   priority: 1,
-  assignee: '',
+  owner: '',
   type: '',
   description: '',
   closeDate: ''
@@ -45,7 +46,7 @@ const initialForm = {
 
 const priorityLabels = {
   1: 'Low',
-  2: 'Medium', 
+  2: 'Medium',
   3: 'High'
 };
 
@@ -65,8 +66,11 @@ const stageColors = {
 };
 
 export function DealsView() {
-  const [deals, setDeals] = useState<Deal[]>([]);
-  const [dataLoading, setDataLoading] = useState(true);
+  const dispatch = useAppDispatch();
+  const deals = useAppSelector((state) => state.deals.deals);
+  const dataLoading = useAppSelector((state) => state.deals.loading);
+  const slicesError = useAppSelector((state) => state.deals.error);
+
   const [modalOpen, setModalOpen] = useState(false);
   const [editId, setEditId] = useState<string | null>(null);
   const [form, setForm] = useState(initialForm);
@@ -76,29 +80,14 @@ export function DealsView() {
   const [filterStage, setFilterStage] = useState('all');
   const [filterPriority, setFilterPriority] = useState('all');
   const { toast } = useToast();
-  const { t } = useLanguage();
+  const { t } = useTranslation();
 
   useEffect(() => {
-    fetchDeals();
-  }, []);
+    dispatch(fetchDeals());
+  }, [dispatch]);
 
-  async function fetchDeals() {
-    setDataLoading(true);
-    try {
-      const querySnapshot = await getDocs(collection(db, 'deals'));
-      const dealsData = querySnapshot.docs.map(doc => ({ 
-        id: doc.id, 
-        ...doc.data() 
-      })) as Deal[];
-      setDeals(dealsData);
-    } catch (error) {
-      toast({
-        title: t('error'),
-        description: t('failed_to_load_deals'),
-        variant: "destructive"
-      });
-    }
-    setDataLoading(false);
+  async function fetchDealsData() {
+    dispatch(fetchDeals());
   }
 
   function openAdd() {
@@ -109,12 +98,12 @@ export function DealsView() {
 
   function openEdit(deal: Deal) {
     setForm({
-      title: deal.title || '',
-      company: deal.company || '',
-      value: deal.value || 0,
+      name: deal.name || '',
+      companyName: deal.companyName || '',
+      amount: deal.amount || 0,
       stage: deal.stage || 'New',
       priority: deal.priority || 1,
-      assignee: deal.assignee || '',
+      owner: deal.owner || '',
       type: deal.type || '',
       description: deal.description || '',
       closeDate: deal.closeDate || ''
@@ -131,7 +120,7 @@ export function DealsView() {
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
-    if (!form.title || !form.company) {
+    if (!form.name || !form.companyName) {
       toast({
         title: t('validation_error'),
         description: t('title_and_company_required'),
@@ -141,40 +130,26 @@ export function DealsView() {
     }
 
     setSubmitting(true);
+    setSubmitting(true);
     try {
-      const dealData = {
-        ...form,
-        updatedAt: new Date()
-      };
-
       if (editId) {
-        await updateDoc(doc(db, 'deals', editId), dealData);
+        await dispatch(modifyDeal({ id: editId, data: form })).unwrap();
         toast({
           title: t('success'),
           description: t('deal_updated_successfully')
         });
       } else {
-        dealData.createdAt = new Date();
-        await addDoc(collection(db, 'deals'), dealData);
-        
-        // Create notification for new deal
-        await addNotification({
-          title: t('new_deal_created'),
-          body: `${t('new_deal')} "${form.title}" ${t('worth')} $${form.value?.toLocaleString()} ${t('has_been_created_for')} ${form.company}`,
-          type: 'deal'
-        });
-        
+        await dispatch(createDeal(form)).unwrap();
         toast({
           title: t('success'),
           description: t('deal_created_successfully')
         });
       }
       closeModal();
-      fetchDeals();
-    } catch (error) {
+    } catch (error: any) {
       toast({
         title: t('error'),
-        description: editId ? t('failed_to_update_deal') : t('failed_to_create_deal'),
+        description: error || (editId ? t('failed_to_update_deal') : t('failed_to_create_deal')),
         variant: "destructive"
       });
     }
@@ -183,31 +158,15 @@ export function DealsView() {
 
   async function handleCloseDeal(dealId: string, stage: 'Won' | 'Lost') {
     try {
-      await updateDoc(doc(db, 'deals', dealId), {
-        stage,
-        closedAt: new Date(),
-        updatedAt: new Date()
-      });
-      
-      // Create notification for deal closure
-      const deal = deals.find(d => d.id === dealId);
-      if (deal) {
-        await addNotification({
-          title: `${t('deal')} ${stage}`,
-          body: `${t('deal')} "${deal.title}" ${t('has_been')} ${stage.toLowerCase()}!`,
-          type: 'deal'
-        });
-      }
-      
+      await dispatch(modifyDeal({ id: dealId, data: { stage, closedAt: new Date() } })).unwrap();
       toast({
         title: t('success'),
         description: `${t('deal_marked_as')} ${stage.toLowerCase()}`
       });
-      fetchDeals();
-    } catch (error) {
+    } catch (error: any) {
       toast({
         title: t('error'),
-        description: t('failed_to_close_deal'),
+        description: error || t('failed_to_close_deal'),
         variant: "destructive"
       });
     }
@@ -215,17 +174,16 @@ export function DealsView() {
 
   async function handleDelete(id: string) {
     try {
-      await deleteDoc(doc(db, 'deals', id));
+      await dispatch(removeDeal(id)).unwrap();
       toast({
         title: t('success'),
         description: t('deal_deleted_successfully')
       });
       setDeleteId(null);
-      fetchDeals();
-    } catch (error) {
+    } catch (error: any) {
       toast({
         title: t('error'),
-        description: t('failed_to_delete_deal'),
+        description: error || t('failed_to_delete_deal'),
         variant: "destructive"
       });
     }
@@ -234,62 +192,53 @@ export function DealsView() {
   async function createSampleData() {
     const sampleDeals = [
       {
-        title: t('enterprise_software_license'),
-        company: t('tech_corp'),
-        value: 50000,
-        stage: "Won" as const,
-        priority: 2 as const,
-        assignee: t('john_doe'),
+        name: t('enterprise_software_license'),
+        companyName: t('tech_corp'),
+        amount: 50000,
+        stage: "Won",
+        priority: 2,
+        owner: t('john_doe'),
         type: t('software'),
         description: t('annual_enterprise_software_license'),
         closeDate: new Date().toISOString().split('T')[0],
-        closedAt: new Date(),
-        createdAt: new Date(),
-        updatedAt: new Date()
       },
       {
-        title: t('consulting_services'),
-        company: t('global_solutions'),
-        value: 25000,
-        stage: "Won" as const,
-        priority: 1 as const,
-        assignee: t('jane_smith'),
+        name: t('consulting_services'),
+        companyName: t('global_solutions'),
+        amount: 25000,
+        stage: "Won",
+        priority: 1,
+        owner: t('jane_smith'),
         type: t('services'),
         description: t('3_month_consulting_engagement'),
         closeDate: new Date(Date.now() - 30 * 24 * 60 * 60 * 1000).toISOString().split('T')[0],
-        closedAt: new Date(Date.now() - 30 * 24 * 60 * 60 * 1000),
-        createdAt: new Date(),
-        updatedAt: new Date()
       },
       {
-        title: t('hardware_implementation'),
-        company: t('manufacturing_inc'),
-        value: 75000,
-        stage: "Negotiation" as const,
-        priority: 3 as const,
-        assignee: t('mike_johnson'),
+        name: t('hardware_implementation'),
+        companyName: t('manufacturing_inc'),
+        amount: 75000,
+        stage: "Negotiation",
+        priority: 3,
+        owner: t('mike_johnson'),
         type: t('hardware'),
         description: t('complete_hardware_infrastructure_setup'),
         closeDate: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString().split('T')[0],
-        createdAt: new Date(),
-        updatedAt: new Date()
       }
     ];
 
     setSubmitting(true);
     try {
       for (const deal of sampleDeals) {
-        await addDoc(collection(db, 'deals'), deal);
+        await dispatch(createDeal(deal)).unwrap();
       }
       toast({
         title: t('success'),
         description: t('sample_deals_created_successfully')
       });
-      fetchDeals();
-    } catch (error) {
+    } catch (error: any) {
       toast({
         title: t('error'),
-        description: t('failed_to_create_sample_deals'),
+        description: error || t('failed_to_create_sample_deals'),
         variant: "destructive"
       });
     }
@@ -297,19 +246,19 @@ export function DealsView() {
   }
 
   const filteredDeals = deals.filter(deal => {
-    const matchesSearch = 
-      deal.title?.toLowerCase().includes(search.toLowerCase()) ||
-      deal.company?.toLowerCase().includes(search.toLowerCase()) ||
-      deal.assignee?.toLowerCase().includes(search.toLowerCase());
-    
+    const matchesSearch =
+      deal.name?.toLowerCase().includes(search.toLowerCase()) ||
+      deal.companyName?.toLowerCase().includes(search.toLowerCase()) ||
+      deal.owner?.toLowerCase().includes(search.toLowerCase());
+
     const matchesStage = filterStage === 'all' || deal.stage === filterStage;
     const matchesPriority = filterPriority === 'all' || deal.priority.toString() === filterPriority;
-    
+
     return matchesSearch && matchesStage && matchesPriority;
   });
 
-  const totalValue = deals.reduce((sum, deal) => sum + (deal.value || 0), 0);
-  const wonValue = deals.filter(d => d.stage === 'Won').reduce((sum, deal) => sum + (deal.value || 0), 0);
+  const totalValue = deals.reduce((sum, deal) => sum + (deal.amount || 0), 0);
+  const wonValue = deals.filter(d => d.stage === 'Won').reduce((sum, deal) => sum + (deal.amount || 0), 0);
   const activeDeals = deals.filter(d => d.stage !== 'Won' && d.stage !== 'Lost').length;
 
   if (dataLoading) {
@@ -396,30 +345,30 @@ export function DealsView() {
 
       {/* Summary Cards */}
       <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mb-6">
-        <div className="bg-white rounded-lg border p-4">
+        <div className="bg-card rounded-lg border p-4">
           <div className="flex items-center gap-2 mb-2">
-            <DollarSign className="w-5 h-5 text-green-600" />
+            <DollarSign className="w-5 h-5 text-primary" />
             <h3 className="font-semibold">{t('total_value')}</h3>
           </div>
           <p className="text-2xl font-bold">${totalValue.toLocaleString()}</p>
         </div>
-        <div className="bg-white rounded-lg border p-4">
+        <div className="bg-card rounded-lg border p-4">
           <div className="flex items-center gap-2 mb-2">
-            <CheckCircle className="w-5 h-5 text-green-600" />
+            <CheckCircle className="w-5 h-5 text-primary" />
             <h3 className="font-semibold">{t('won_value')}</h3>
           </div>
           <p className="text-2xl font-bold">${wonValue.toLocaleString()}</p>
         </div>
-        <div className="bg-white rounded-lg border p-4">
+        <div className="bg-card rounded-lg border p-4">
           <div className="flex items-center gap-2 mb-2">
-            <Building className="w-5 h-5 text-blue-600" />
+            <Building className="w-5 h-5 text-primary" />
             <h3 className="font-semibold">{t('active_deals')}</h3>
           </div>
           <p className="text-2xl font-bold">{activeDeals}</p>
         </div>
-        <div className="bg-white rounded-lg border p-4">
+        <div className="bg-card rounded-lg border p-4">
           <div className="flex items-center gap-2 mb-2">
-            <User className="w-5 h-5 text-purple-600" />
+            <User className="w-5 h-5 text-primary" />
             <h3 className="font-semibold">{t('total_deals')}</h3>
           </div>
           <p className="text-2xl font-bold">{deals.length}</p>
@@ -429,9 +378,9 @@ export function DealsView() {
       <div className="space-y-4">
         {filteredDeals.length === 0 ? (
           <div className="text-center py-12">
-            <DollarSign className="w-12 h-12 text-gray-400 mx-auto mb-4" />
-            <h3 className="text-lg font-semibold text-gray-900 mb-2">{t('no_deals_found')}</h3>
-            <p className="text-gray-500 mb-4">
+            <DollarSign className="w-12 h-12 text-muted-foreground mx-auto mb-4" />
+            <h3 className="text-lg font-semibold text-foreground mb-2">{t('no_deals_found')}</h3>
+            <p className="text-muted-foreground mb-4">
               {search || filterStage !== 'all' || filterPriority !== 'all'
                 ? t('try_adjusting_search_or_filters')
                 : t('create_your_first_deal_to_get_started')
@@ -443,33 +392,33 @@ export function DealsView() {
           </div>
         ) : (
           filteredDeals.map((deal) => (
-            <div key={deal.id} className="bg-white rounded-lg border shadow-sm hover:shadow-md transition-shadow">
+            <div key={deal.id} className="bg-card rounded-lg border shadow-sm hover:shadow-md transition-shadow">
               <div className="p-4">
                 <div className="flex items-start justify-between mb-3">
                   <div className="flex-1">
                     <div className="flex items-center gap-3 mb-2">
-                      <h3 className="font-semibold text-gray-900">{deal.title}</h3>
-                      <Badge className={priorityColors[deal.priority]}>
-                        {t(priorityLabels[deal.priority].toLowerCase())}
+                      <h3 className="font-semibold text-foreground">{deal.name}</h3>
+                      <Badge className={priorityColors[deal.priority as keyof typeof priorityColors]}>
+                        {t(priorityLabels[deal.priority as keyof typeof priorityLabels].toLowerCase())}
                       </Badge>
                       <Badge className={stageColors[deal.stage]}>
                         {t(`stage_${deal.stage.toLowerCase()}`)}
                       </Badge>
                     </div>
-                    <div className="flex items-center gap-4 text-sm text-gray-500 mb-2">
+                    <div className="flex items-center gap-4 text-sm text-muted-foreground mb-2">
                       <div className="flex items-center gap-1">
                         <Building className="w-4 h-4" />
-                        <span>{deal.company}</span>
+                        <span>{deal.companyName}</span>
                       </div>
-                      {deal.assignee && (
+                      {deal.owner && (
                         <div className="flex items-center gap-1">
                           <User className="w-4 h-4" />
-                          <span>{deal.assignee}</span>
+                          <span>{deal.owner}</span>
                         </div>
                       )}
                       <div className="flex items-center gap-1">
                         <DollarSign className="w-4 h-4" />
-                        <span>${deal.value?.toLocaleString()}</span>
+                        <span>${deal.amount?.toLocaleString()}</span>
                       </div>
                       {deal.closeDate && (
                         <div className="flex items-center gap-1">
@@ -479,7 +428,7 @@ export function DealsView() {
                       )}
                     </div>
                     {deal.description && (
-                      <p className="text-sm text-gray-600 line-clamp-2">{deal.description}</p>
+                      <p className="text-sm text-muted-foreground line-clamp-2">{deal.description}</p>
                     )}
                   </div>
                   <div className="flex gap-1 ml-4">
@@ -534,22 +483,22 @@ export function DealsView() {
           <form onSubmit={handleSubmit} className="space-y-4">
             <Input
               placeholder={t('deal_title')}
-              value={form.title}
-              onChange={e => setForm(f => ({ ...f, title: e.target.value }))}
+              value={form.name}
+              onChange={e => setForm(f => ({ ...f, name: e.target.value }))}
               required
             />
             <Input
               placeholder={t('company')}
-              value={form.company}
-              onChange={e => setForm(f => ({ ...f, company: e.target.value }))}
+              value={form.companyName}
+              onChange={e => setForm(f => ({ ...f, companyName: e.target.value }))}
               required
             />
             <div className="grid grid-cols-2 gap-4">
               <Input
                 placeholder={t('value_dollar')}
                 type="number"
-                value={form.value}
-                onChange={e => setForm(f => ({ ...f, value: parseFloat(e.target.value) || 0 }))}
+                value={form.amount}
+                onChange={e => setForm(f => ({ ...f, amount: parseFloat(e.target.value) || 0 }))}
               />
               <Input
                 placeholder={t('close_date')}
@@ -585,8 +534,8 @@ export function DealsView() {
             </div>
             <Input
               placeholder={t('assignee')}
-              value={form.assignee}
-              onChange={e => setForm(f => ({ ...f, assignee: e.target.value }))}
+              value={form.owner}
+              onChange={e => setForm(f => ({ ...f, owner: e.target.value }))}
             />
             <Input
               placeholder={t('type')}
@@ -628,8 +577,8 @@ export function DealsView() {
           <div className="space-y-4">
             <p>{t('are_you_sure_you_want_to_delete_this_deal')}</p>
             <DialogFooter>
-              <Button 
-                variant="destructive" 
+              <Button
+                variant="destructive"
                 onClick={() => deleteId && handleDelete(deleteId)}
               >
                 {t('delete')}

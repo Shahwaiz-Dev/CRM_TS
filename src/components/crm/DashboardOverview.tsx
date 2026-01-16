@@ -1,14 +1,15 @@
 import React, { useEffect, useState } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { ChartContainer } from '@/components/ui/chart';
-import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, PieChart, Pie, Cell, Legend, ResponsiveContainer } from 'recharts';
-import { collection, getDocs, query, where, orderBy, limit } from 'firebase/firestore';
-import { db } from '../../lib/firebase';
+import { ResponsiveContainer, AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip, PieChart, Pie, Cell, Legend, LineChart, Line } from 'recharts';
+import { useTranslation } from '@/store/slices/languageSlice';
+import { getLeads, getDeals, getTasks } from '@/lib/firebase';
 import { Loader2 } from 'lucide-react';
 import { motion } from 'framer-motion';
-import { useLanguage } from '@/contexts/LanguageContext';
 import { Skeleton } from '@/components/ui/skeleton';
 import { StatsCardsSkeleton } from '@/components/ui/StatsCardsSkeleton';
+import { useAppSelector } from "@/store/hooks";
+import { selectTranslation } from "@/store/slices/languageSlice";
 
 interface Deal {
   id: string;
@@ -32,7 +33,7 @@ export function DashboardOverview() {
   const [tasks, setTasks] = useState<any[]>([]);
   const [activities, setActivities] = useState<any[]>([]);
   const [dataLoading, setDataLoading] = useState(true);
-  const { t } = useLanguage();
+  const { t } = useTranslation();
 
   const pieColors = ['#22c55e', '#3b82f6', '#f59e42', '#eab308', '#a78bfa'];
   const activityColors: Record<string, string> = {
@@ -49,23 +50,21 @@ export function DashboardOverview() {
     const fetchData = async () => {
       setDataLoading(true);
       try {
-        const leadsSnap = await getDocs(collection(db, 'leads'));
-        setLeads(leadsSnap.docs.map(doc => ({ id: doc.id, ...doc.data() })));
-        
-        const dealsSnap = await getDocs(collection(db, 'deals'));
-        const dealsData = dealsSnap.docs.map(doc => ({ 
-          id: doc.id, 
-          ...doc.data(),
-          // Convert Firestore timestamps to Date objects
-          createdAt: doc.data().createdAt?.toDate?.() || doc.data().createdAt,
-          updatedAt: doc.data().updatedAt?.toDate?.() || doc.data().updatedAt,
-          closedAt: doc.data().closedAt?.toDate?.() || doc.data().closedAt
+        const leadsData = await getLeads();
+        setLeads(leadsData);
+
+        const dealsDataRaw = await getDeals();
+        const dealsData = dealsDataRaw.map((d: any) => ({
+          ...d,
+          createdAt: d.createdAt ? new Date(d.createdAt) : undefined,
+          updatedAt: d.updatedAt ? new Date(d.updatedAt) : undefined,
+          closedAt: d.closedAt ? new Date(d.closedAt) : undefined
         })) as Deal[];
         setDeals(dealsData);
-        
-        const tasksSnap = await getDocs(query(collection(db, 'tasks'), orderBy('dueDate', 'asc')));
-        setTasks(tasksSnap.docs.map(doc => ({ id: doc.id, ...doc.data() })));
-        
+
+        const tasksData = await getTasks();
+        setTasks(tasksData);
+
         // Recent activities: last 3 deals or leads added/updated
         const recentDeals = dealsData
           .sort((a, b) => {
@@ -75,7 +74,7 @@ export function DashboardOverview() {
           })
           .slice(0, 3);
         setActivities(recentDeals);
-        
+
         console.log('Dashboard data loaded:', {
           dealsCount: dealsData.length,
           wonDeals: dealsData.filter(d => d.stage === 'Won').length,
@@ -119,14 +118,14 @@ export function DashboardOverview() {
   const now = new Date();
   const thisMonth = now.getMonth();
   const thisYear = now.getFullYear();
-  
+
   const revenueThisMonth = deals
     .filter(d => d.stage === 'Won' && isInCurrentMonth(d.closedAt))
     .reduce((sum, d) => sum + (d.value || 0), 0);
-  
+
   const wonDeals = deals.filter(d => d.stage === 'Won').length;
   const conversionRate = totalLeads ? ((wonDeals / totalLeads) * 100).toFixed(1) : '0.0';
-  
+
   // Revenue over time (last 6 months)
   const months = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
   const revenueData = Array.from({ length: 6 }, (_, i) => {
@@ -138,11 +137,11 @@ export function DashboardOverview() {
       .reduce((sum, d) => sum + (d.value || 0), 0);
     return { month: months[month], revenue };
   });
-  
+
   // Deals by stage
   const stageNames = ['New', 'Qualified', 'Proposition', 'Negotiation', 'Won'];
   const dealsData = stageNames.map(stage => ({ name: stage, value: deals.filter(d => d.stage === stage).length }));
-  
+
   // Upcoming tasks (next 3 by due date)
   const upcomingTasks = tasks.slice(0, 3);
 
@@ -237,49 +236,49 @@ export function DashboardOverview() {
     >
       <div className="space-y-6">
         <h1 className="text-3xl font-bold">{t('crm_dashboard')}</h1>
-        
+
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
           <Card>
             <CardHeader className="pb-2">
-              <CardTitle className="text-sm font-medium text-gray-600">{t('total_leads')}</CardTitle>
+              <CardTitle className="text-sm font-medium text-muted-foreground">{t('total_leads')}</CardTitle>
             </CardHeader>
             <CardContent>
-              <div className="text-2xl font-bold">{totalLeads}</div>
-              <p className="text-xs text-green-600">+12% {t('from_last_month')}</p>
+              <div className="text-2xl font-bold text-foreground">{totalLeads}</div>
+              <p className="text-xs text-green-500">+12% {t('from_last_month')}</p>
             </CardContent>
           </Card>
-          
+
           <Card>
             <CardHeader className="pb-2">
-              <CardTitle className="text-sm font-medium text-gray-600">{t('active_deals')}</CardTitle>
+              <CardTitle className="text-sm font-medium text-muted-foreground">{t('active_deals')}</CardTitle>
             </CardHeader>
             <CardContent>
-              <div className="text-2xl font-bold">{activeDeals}</div>
-              <p className="text-xs text-green-600">+8% {t('from_last_month')}</p>
+              <div className="text-2xl font-bold text-foreground">{activeDeals}</div>
+              <p className="text-xs text-green-500">+8% {t('from_last_month')}</p>
             </CardContent>
           </Card>
-          
+
           <Card>
             <CardHeader className="pb-2">
-              <CardTitle className="text-sm font-medium text-gray-600">{t('revenue_this_month')}</CardTitle>
+              <CardTitle className="text-sm font-medium text-muted-foreground">{t('revenue_this_month')}</CardTitle>
             </CardHeader>
             <CardContent>
-              <div className="text-2xl font-bold">${revenueThisMonth.toLocaleString()}</div>
-              <p className="text-xs text-green-600">+15% {t('from_last_month')}</p>
+              <div className="text-2xl font-bold text-foreground">${revenueThisMonth.toLocaleString()}</div>
+              <p className="text-xs text-green-500">+15% {t('from_last_month')}</p>
             </CardContent>
           </Card>
-          
+
           <Card>
             <CardHeader className="pb-2">
-              <CardTitle className="text-sm font-medium text-gray-600">{t('conversion_rate')}</CardTitle>
+              <CardTitle className="text-sm font-medium text-muted-foreground">{t('conversion_rate')}</CardTitle>
             </CardHeader>
             <CardContent>
-              <div className="text-2xl font-bold">{conversionRate}%</div>
-              <p className="text-xs text-red-600">-2% {t('from_last_month')}</p>
+              <div className="text-2xl font-bold text-foreground">{conversionRate}%</div>
+              <p className="text-xs text-destructive">-2% {t('from_last_month')}</p>
             </CardContent>
           </Card>
         </div>
-        
+
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
           <Card>
             <CardHeader>
@@ -338,8 +337,8 @@ export function DashboardOverview() {
                     <div key={idx} className="flex items-start space-x-3">
                       <div className={`w-2 h-2 ${color} rounded-full mt-2`}></div>
                       <div>
-                        <p className="text-sm">{activity.description || activity.title || 'Activity'}</p>
-                        <p className="text-xs text-gray-500">{timeAgo}</p>
+                        <p className="text-sm text-foreground">{activity.description || activity.title || 'Activity'}</p>
+                        <p className="text-xs text-muted-foreground">{timeAgo}</p>
                       </div>
                     </div>
                   );
@@ -356,8 +355,8 @@ export function DashboardOverview() {
                 {upcomingTasks.map((task, idx) => (
                   <div key={idx} className="flex items-center justify-between">
                     <div>
-                      <p className="text-sm font-medium">{task.title}</p>
-                      <p className="text-xs text-gray-500">{t('due')} {task.dueDate ? new Date(task.dueDate).toLocaleDateString() : ''}</p>
+                      <p className="text-sm font-medium text-foreground">{task.title}</p>
+                      <p className="text-xs text-muted-foreground">{t('due')} {task.dueDate ? new Date(task.dueDate).toLocaleDateString() : ''}</p>
                     </div>
                     <div className="w-3 h-3 bg-red-500 rounded-full"></div>
                   </div>

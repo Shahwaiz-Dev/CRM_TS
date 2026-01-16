@@ -6,12 +6,11 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Badge } from '@/components/ui/badge';
 import { Avatar, AvatarFallback } from '@/components/ui/avatar';
 import { User, Phone, Globe, MapPin, Edit, MoreHorizontal, Plus, Mail, FileText, MessageSquare, Calendar, Users, ChevronDown, RefreshCw, CheckCircle, X, Loader2, AlertCircle } from 'lucide-react';
-import { updateDoc, doc } from 'firebase/firestore';
-import { db } from '../../lib/firebase';
+import { updateAccount, addContact, addCase, getContacts, getCases } from '@/lib/firebase';
 import { Select, SelectTrigger, SelectValue, SelectContent, SelectItem } from '@/components/ui/select';
 import { Textarea } from '@/components/ui/textarea';
-import { addContact, addCase, getContacts, getCases } from '@/lib/firebase';
-import { useLanguage } from '@/contexts/LanguageContext';
+import { useAppSelector } from "@/store/hooks";
+import { useTranslation } from "@/store/slices/languageSlice";
 import { AddressAutocomplete } from '@/components/AddressAutocomplete';
 
 const priorityColors = {
@@ -70,7 +69,7 @@ export function AccountDetailView({ account, onUpdate }) {
   const [relatedCases, setRelatedCases] = useState([]);
   const [relatedLoading, setRelatedLoading] = useState(false);
 
-  const { t } = useLanguage();
+  const { t } = useTranslation();
 
   // Update details when account prop changes
   useEffect(() => {
@@ -119,7 +118,7 @@ export function AccountDetailView({ account, onUpdate }) {
       const updatedDetails = { ...details, [editField!]: editValue };
       setDetails(updatedDetails);
       setEditField(null);
-      await updateDoc(doc(db, 'accounts', account.id), updatedDetails);
+      await updateAccount(account.id, updatedDetails);
       if (onUpdate) onUpdate();
     } catch (e) {
       console.error('Failed to update account:', e);
@@ -250,21 +249,21 @@ export function AccountDetailView({ account, onUpdate }) {
   };
 
   return (
-    <div className="bg-white rounded-lg shadow p-4 sm:p-6 md:p-8">
+    <div className="bg-card rounded-lg shadow p-4 sm:p-6 md:p-8">
       {/* Header */}
       <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4 border-b pb-4">
         <div className="flex flex-col sm:flex-row items-start sm:items-center gap-4">
           <Avatar className="h-12 w-12">
-            <AvatarFallback className="bg-blue-100 text-blue-600 text-lg font-semibold">
+            <AvatarFallback className="bg-primary/10 text-primary text-lg font-semibold">
               <User className="h-6 w-6" />
             </AvatarFallback>
           </Avatar>
           <div>
             <div className="flex items-center gap-2">
-              <span className="uppercase text-xs text-gray-500 font-semibold tracking-widest">{t('account')}</span>
+              <span className="uppercase text-xs text-muted-foreground font-semibold tracking-widest">{t('account')}</span>
               <Badge variant="outline" className="ml-2">{t(details.type.toLowerCase())}</Badge>
             </div>
-            <h1 className="text-2xl font-bold text-gray-900 leading-tight">{details.accountName}</h1>
+            <h1 className="text-2xl font-bold text-foreground leading-tight">{details.accountName}</h1>
           </div>
         </div>
         <div className="flex flex-wrap gap-2 justify-start md:justify-end">
@@ -281,23 +280,23 @@ export function AccountDetailView({ account, onUpdate }) {
       {/* Info Row */}
       <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4 py-4 border-b">
         <div>
-          <div className="text-xs text-gray-500">{t('type')}</div>
+          <div className="text-xs text-muted-foreground">{t('type')}</div>
           <div className="font-medium">{t(details.type.toLowerCase())}</div>
         </div>
         <div>
-          <div className="text-xs text-gray-500">{t('phone')}</div>
+          <div className="text-xs text-muted-foreground">{t('phone')}</div>
           <div className="font-medium">{details.phone}</div>
         </div>
         <div>
-          <div className="text-xs text-gray-500">{t('website')}</div>
-          <div className="font-medium text-blue-600 underline cursor-pointer">{details.website}</div>
+          <div className="text-xs text-muted-foreground">{t('website')}</div>
+          <div className="font-medium text-primary underline cursor-pointer">{details.website}</div>
         </div>
         <div>
-          <div className="text-xs text-gray-500">{t('billing_address')}</div>
+          <div className="text-xs text-muted-foreground">{t('billing_address')}</div>
           <div className="font-medium">{details.billingAddress}</div>
         </div>
         <div>
-          <div className="text-xs text-gray-500">{t('open_opportunities_amount_lifetime')}</div>
+          <div className="text-xs text-muted-foreground">{t('open_opportunities_amount_lifetime')}</div>
           <div className="font-medium">$0.00</div>
         </div>
       </div>
@@ -350,28 +349,28 @@ export function AccountDetailView({ account, onUpdate }) {
                   <Loader2 className="w-6 h-6 animate-spin" />
                 </div>
               ) : relatedContacts.length === 0 ? (
-                <div className="text-center py-8 text-gray-500">
-                  <User className="w-8 h-8 mx-auto mb-2 text-gray-400" />
+                <div className="text-center py-8 text-muted-foreground">
+                  <User className="w-8 h-8 mx-auto mb-2 text-muted-foreground" />
                   <p>{t('no_contacts_found_for_this_account')}</p>
                 </div>
               ) : (
                 <div className="grid gap-3">
                   {relatedContacts.slice(0, 5).map((contact) => (
-                    <div key={contact.id} className="flex items-center justify-between p-3 bg-gray-50 rounded-lg">
+                    <div key={contact.id} className="flex items-center justify-between p-3 bg-muted/50 rounded-lg">
                       <div className="flex items-center gap-3">
                         <Avatar className="h-8 w-8">
-                          <AvatarFallback className="bg-blue-100 text-blue-600 text-sm">
+                          <AvatarFallback className="bg-primary/10 text-primary text-sm">
                             {contact.firstName?.charAt(0)}{contact.lastName?.charAt(0)}
                           </AvatarFallback>
                         </Avatar>
                         <div>
-                          <p className="font-medium text-sm">
+                          <p className="font-medium text-sm text-foreground">
                             {contact.firstName} {contact.lastName}
                           </p>
-                          <p className="text-xs text-gray-500">{contact.title}</p>
+                          <p className="text-xs text-muted-foreground">{contact.title}</p>
                         </div>
                       </div>
-                      <div className="flex items-center gap-2 text-xs text-gray-500">
+                      <div className="flex items-center gap-2 text-xs text-muted-foreground">
                         {contact.email && <Mail className="w-3 h-3" />}
                         {contact.phone && <Phone className="w-3 h-3" />}
                       </div>
@@ -402,14 +401,14 @@ export function AccountDetailView({ account, onUpdate }) {
                   <Loader2 className="w-6 h-6 animate-spin" />
                 </div>
               ) : relatedCases.length === 0 ? (
-                <div className="text-center py-8 text-gray-500">
-                  <AlertCircle className="w-8 h-8 mx-auto mb-2 text-gray-400" />
+                <div className="text-center py-8 text-muted-foreground">
+                  <AlertCircle className="w-8 h-8 mx-auto mb-2 text-muted-foreground" />
                   <p>{t('no_cases_found_for_this_account')}</p>
                 </div>
               ) : (
                 <div className="grid gap-3">
                   {relatedCases.slice(0, 5).map((caseItem) => (
-                    <div key={caseItem.id} className="p-3 bg-gray-50 rounded-lg">
+                    <div key={caseItem.id} className="p-3 bg-muted/50 rounded-lg">
                       <div className="flex items-start justify-between mb-2">
                         <h4 className="font-medium text-sm">{caseItem.subject}</h4>
                         <div className="flex gap-1">
@@ -437,7 +436,7 @@ export function AccountDetailView({ account, onUpdate }) {
           </div>
         </TabsContent>
         <TabsContent value="news">
-          <div className="text-gray-500 p-8 text-center">{t('news_coming_soon')}</div>
+          <div className="text-muted-foreground p-8 text-center">{t('news_coming_soon')}</div>
         </TabsContent>
       </Tabs>
       {/* Activity/Chatter */}
@@ -720,12 +719,12 @@ export function AccountDetailView({ account, onUpdate }) {
 }
 
 function Field({ label, value, onEdit, editing, editValue, setEditValue, onSave, onCancel, isAddress }: any) {
-  const { t } = useLanguage();
+  const { t } = useTranslation();
 
   if (editing) {
     return (
       <div>
-        <label className="text-xs text-gray-500">{label}</label>
+        <label className="text-xs text-muted-foreground">{label}</label>
         <div className="flex gap-2 mt-1">
           {isAddress ? (
             <AddressAutocomplete
@@ -748,9 +747,9 @@ function Field({ label, value, onEdit, editing, editValue, setEditValue, onSave,
   }
   return (
     <div>
-      <div className="text-xs text-gray-500">{label}</div>
+      <div className="text-xs text-muted-foreground">{label}</div>
       <div className="flex items-center justify-between group">
-        <div className="font-medium">{value || '-'}</div>
+        <div className="font-medium text-foreground">{value || '-'}</div>
         <Button
           size="sm"
           variant="ghost"

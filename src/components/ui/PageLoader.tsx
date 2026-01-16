@@ -1,45 +1,26 @@
-import { createContext, useContext, useState, useEffect } from 'react';
-import { Loader2 } from 'lucide-react';
+import React, { useEffect } from 'react';
 import NProgress from 'nprogress';
 import 'nprogress/nprogress.css';
+import { useAppSelector } from '@/store/hooks';
+import { RootState } from '@/store';
 
 export function PageLoader() {
-  return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-white/80">
-      <Loader2 className="w-16 h-16 text-blue-500 animate-spin" />
-    </div>
-  );
-}
+  const loading = useAppSelector((state: RootState) => state.ui.globalLoading);
 
-// BarLoader component for NProgress
-export function BarLoader() {
-  const { loading } = useLoading();
   useEffect(() => {
     if (loading) {
       NProgress.start();
     } else {
       NProgress.done();
     }
-    return () => {
-      NProgress.done();
-    };
   }, [loading]);
-  return null;
-}
 
-// Global Loading Context
-const LoadingContext = createContext({ loading: false, setLoading: (v: boolean) => {} });
+  if (!loading) return null;
 
-export function LoadingProvider({ children }: { children: React.ReactNode }) {
-  const [loading, setLoading] = useState(false);
   return (
-    <LoadingContext.Provider value={{ loading, setLoading }}>
-      {loading && <PageLoader />}
-      {children}
-    </LoadingContext.Provider>
+    <div className="fixed inset-0 z-[100] flex flex-col items-center justify-center bg-background/80 backdrop-blur-sm transition-colors duration-500">
+      <div className="h-12 w-12 animate-spin rounded-full border-4 border-primary border-t-transparent shadow-lg shadow-primary/20"></div>
+      <p className="mt-4 text-sm font-medium text-foreground animate-pulse">Loading amazing things...</p>
+    </div>
   );
 }
-
-export function useLoading() {
-  return useContext(LoadingContext);
-} 

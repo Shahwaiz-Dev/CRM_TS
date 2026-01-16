@@ -13,17 +13,17 @@ import {
   useSidebar,
 } from '@/components/ui/sidebar';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
-import { useAuth } from '@/contexts/AuthContext';
-import { useLanguage } from '@/contexts/LanguageContext';
+import { useAppDispatch, useAppSelector } from '@/store/hooks';
+import { useTranslation } from '@/store/slices/languageSlice';
 
 export function CRMSidebar() {
   const { state } = useSidebar();
   const location = useLocation();
   const currentPath = location.pathname;
   const collapsed = state === 'collapsed';
-  const { user } = useAuth();
+  const user = useAppSelector((state) => state.auth.user);
   const role = user?.role;
-  const { t } = useLanguage();
+  const { t } = useTranslation();
 
   // Move navigation items inside the component to use t()
   const navigationItems = [
@@ -59,7 +59,7 @@ export function CRMSidebar() {
       return `${baseClasses} bg-blue-600 text-white `;
     }
 
-    return `hover:bg-white-600 text-gray-700 ${baseClasses}`;
+    return `hover:bg-accent text-foreground ${baseClasses}`;
   };
 
   const getIconClassName = (path, hasPermission = true) => {
@@ -74,7 +74,7 @@ export function CRMSidebar() {
       return `${baseClasses} text-white`;
     }
 
-    return `${baseClasses} text-gray-500`;
+    return `${baseClasses} text-muted-foreground`;
   };
 
   const getTextClassName = (path, hasPermission = true) => {
@@ -89,7 +89,7 @@ export function CRMSidebar() {
       return `${baseClasses} text-white`;
     }
 
-    return `${baseClasses} text-gray-700`;
+    return `${baseClasses} text-foreground`;
   };
 
   const renderNavigationItem = (item) => {
@@ -133,16 +133,16 @@ export function CRMSidebar() {
   };
 
   return (
-    <Sidebar className="border-r bg-white" collapsible="icon">
-      <SidebarTrigger className="m-2 self-end bg-white" />
-      <SidebarContent className="bg-white">
-        <div className="p-4 bg-white">
-          <h2 className={`font-bold text-2xl text-gray-800 transition-opacity duration-200 ${collapsed ? 'opacity-0 hidden' : 'opacity-100'}`}>CRM Pro</h2>
+    <Sidebar className="border-r bg-background" collapsible="icon">
+      <SidebarTrigger className="m-2 self-end bg-background" />
+      <SidebarContent className="bg-background">
+        <div className="p-4 bg-background">
+          <h2 className={`font-bold text-2xl text-foreground transition-opacity duration-200 ${collapsed ? 'opacity-0 hidden' : 'opacity-100'}`}>CRM Pro</h2>
         </div>
         {/* NAVIGATION section - show all items but disable unauthorized ones */}
         <SidebarGroup>
-          <SidebarGroupLabel className="text-blue-600 text-lg font-semibold pb-1">{t('navigation')}</SidebarGroupLabel>
-          <SidebarGroupContent className="bg-white">
+          <SidebarGroupLabel className="text-primary text-lg font-semibold pb-1">{t('navigation')}</SidebarGroupLabel>
+          <SidebarGroupContent className="bg-background">
             <SidebarMenu>
               {navigationItems.map(renderNavigationItem)}
             </SidebarMenu>
@@ -151,8 +151,8 @@ export function CRMSidebar() {
 
         {/* HR MANAGEMENT section - show all items but disable unauthorized ones */}
         <SidebarGroup>
-          <SidebarGroupLabel className="text-blue-600 text-lg font-semibold pb-1">{t('hr_management')}</SidebarGroupLabel>
-          <SidebarGroupContent className="bg-white">
+          <SidebarGroupLabel className="text-primary text-lg font-semibold pb-1">{t('hr_management')}</SidebarGroupLabel>
+          <SidebarGroupContent className="bg-background">
             <SidebarMenu>
               {hrNavigationItems.map(renderNavigationItem)}
             </SidebarMenu>

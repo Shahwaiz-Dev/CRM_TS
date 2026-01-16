@@ -10,9 +10,11 @@ import { addCase, getCases, updateCase, deleteCase, getAccounts } from '@/lib/fi
 import { useToast } from '@/hooks/use-toast';
 import { motion } from 'framer-motion';
 import { addNotification } from '@/lib/firebase';
-import { useLanguage } from '@/contexts/LanguageContext';
 import { TableSkeleton } from '@/components/ui/TableSkeleton';
 import { Skeleton } from '@/components/ui/skeleton';
+import { useAppSelector, useAppDispatch } from "@/store/hooks";
+import { useTranslation } from "@/store/slices/languageSlice";
+import { fetchCases, createNewCase, modifyCase, removeCase } from "@/store/slices/casesSlice";
 
 interface Case {
   id: string;
@@ -41,17 +43,17 @@ const initialForm = {
 };
 
 const priorityColors = {
-  Low: 'bg-green-100 text-green-800',
-  Medium: 'bg-yellow-100 text-yellow-800',
-  High: 'bg-orange-100 text-orange-800',
-  Critical: 'bg-red-100 text-red-800'
+  Low: 'bg-green-500/10 text-green-600 border-green-200/20',
+  Medium: 'bg-yellow-500/10 text-yellow-600 border-yellow-200/20',
+  High: 'bg-orange-500/10 text-orange-600 border-orange-200/20',
+  Critical: 'bg-red-500/10 text-red-600 border-red-200/20'
 };
 
 const statusColors = {
-  New: 'bg-blue-100 text-blue-800',
-  Working: 'bg-yellow-100 text-yellow-800',
-  Escalated: 'bg-orange-100 text-orange-800',
-  Closed: 'bg-gray-100 text-gray-800'
+  New: 'bg-blue-500/10 text-blue-600 border-blue-200/20',
+  Working: 'bg-yellow-500/10 text-yellow-600 border-yellow-200/20',
+  Escalated: 'bg-orange-500/10 text-orange-600 border-orange-200/20',
+  Closed: 'bg-muted text-muted-foreground'
 };
 
 const statusIcons = {
@@ -62,9 +64,12 @@ const statusIcons = {
 };
 
 export function CasesView() {
-  const [cases, setCases] = useState<Case[]>([]);
+  const dispatch = useAppDispatch();
+  const cases = useAppSelector((state) => state.cases.cases);
+  const dataLoading = useAppSelector((state) => state.cases.loading);
+  const slicesError = useAppSelector((state) => state.cases.error);
+
   const [accounts, setAccounts] = useState<Account[]>([]);
-  const [dataLoading, setDataLoading] = useState(true);
   const [modalOpen, setModalOpen] = useState(false);
   const [editId, setEditId] = useState<string | null>(null);
   const [form, setForm] = useState(initialForm);
@@ -75,30 +80,25 @@ export function CasesView() {
   const [filterPriority, setFilterPriority] = useState('all');
   const [filterAccount, setFilterAccount] = useState('all');
   const { toast } = useToast();
-  const { t } = useLanguage();
+  const { t } = useTranslation();
 
   useEffect(() => {
-    fetchData();
-  }, []);
-
-  async function fetchData() {
-    setDataLoading(true);
-    try {
-      const [casesData, accountsData] = await Promise.all([
-        getCases(),
-        getAccounts()
-      ]);
-      setCases(casesData as Case[]);
-      setAccounts(accountsData as Account[]);
-    } catch (error) {
-      toast({
-        title: "Error",
-        description: "Failed to load cases",
-        variant: "destructive"
-      });
-    }
-    setDataLoading(false);
-  }
+    dispatch(fetchCases());
+    // Fetch accounts separately as they are not managed by casesSlice
+    const fetchAccountsData = async () => {
+      try {
+        const accountsData = await getAccounts();
+        setAccounts(accountsData as Account[]);
+      } catch (error) {
+        toast({
+          title: "Error",
+          description: "Failed to load accounts",
+          variant: "destructive"
+        });
+      }
+    };
+    fetchAccountsData();
+  }, [dispatch]);
 
   function openAdd() {
     setForm(initialForm);
@@ -139,32 +139,29 @@ export function CasesView() {
     setSubmitting(true);
     try {
       if (editId) {
-        await updateCase(editId, form);
+        await dispatch(modifyCase({ id: editId, data: form })).unwrap();
         toast({
-          title: "Success",
-          description: "Case updated successfully"
+          title: t('success'),
+          description: t('case_updated_successfully')
         });
       } else {
-        await addCase(form);
-        
-        // Create notification for new case
+        await dispatch(createNewCase(form)).unwrap();
+        // Create notification for new case (if still needed, consider moving to thunk)
         await addNotification({
           title: 'New Case Created',
           body: `A new case "${form.subject}" has been created`,
           type: 'task'
         });
-        
         toast({
-          title: "Success",
-          description: "Case created successfully"
+          title: t('success'),
+          description: t('case_created_successfully')
         });
       }
       closeModal();
-      fetchData();
-    } catch (error) {
+    } catch (error: any) {
       toast({
-        title: "Error",
-        description: editId ? "Failed to update case" : "Failed to create case",
+        title: t('error'),
+        description: error.message || (editId ? t('failed_to_update_case') : t('failed_to_create_case')),
         variant: "destructive"
       });
     }
@@ -173,32 +170,31 @@ export function CasesView() {
 
   async function handleDelete(id: string) {
     try {
-      await deleteCase(id);
+      await dispatch(removeCase(id)).unwrap();
       toast({
-        title: "Success",
-        description: "Case deleted successfully"
+        title: t('success'),
+        description: t('case_deleted_successfully')
       });
       setDeleteId(null);
-      fetchData();
-    } catch (error) {
+    } catch (error: any) {
       toast({
-        title: "Error",
-        description: "Failed to delete case",
+        title: t('error'),
+        description: error.message || t('failed_to_delete_case'),
         variant: "destructive"
       });
     }
   }
 
   const filteredCases = cases.filter(caseItem => {
-    const matchesSearch = 
+    const matchesSearch =
       caseItem.subject?.toLowerCase().includes(search.toLowerCase()) ||
       caseItem.description?.toLowerCase().includes(search.toLowerCase()) ||
       caseItem.accountName?.toLowerCase().includes(search.toLowerCase());
-    
+
     const matchesStatus = filterStatus === 'all' || caseItem.status === filterStatus;
     const matchesPriority = filterPriority === 'all' || caseItem.priority === filterPriority;
     const matchesAccount = filterAccount === 'all' || caseItem.accountId === filterAccount;
-    
+
     return matchesSearch && matchesStatus && matchesPriority && matchesAccount;
   });
 
@@ -240,12 +236,12 @@ export function CasesView() {
       <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4 mb-6">
         <h1 className="text-2xl font-bold">{t('all_cases')}</h1>
         <div className="flex gap-2 items-center">
-                      <Input
-              placeholder={t('search_cases')}
-              value={search}
-              onChange={e => setSearch(e.target.value)}
-              className="w-64"
-            />
+          <Input
+            placeholder={t('search_cases')}
+            value={search}
+            onChange={e => setSearch(e.target.value)}
+            className="w-64"
+          />
           <Select value={filterStatus} onValueChange={setFilterStatus}>
             <SelectTrigger className="w-32">
               <SelectValue placeholder={t('status')} />
@@ -293,9 +289,9 @@ export function CasesView() {
       <div className="space-y-4">
         {filteredCases.length === 0 ? (
           <div className="text-center py-12">
-            <AlertCircle className="w-12 h-12 text-gray-400 mx-auto mb-4" />
-            <h3 className="text-lg font-semibold text-gray-900 mb-2">{t('no_cases_found')}</h3>
-            <p className="text-gray-500 mb-4">
+            <AlertCircle className="w-12 h-12 text-muted-foreground mx-auto mb-4" />
+            <h3 className="text-lg font-semibold text-foreground mb-2">{t('no_cases_found')}</h3>
+            <p className="text-muted-foreground mb-4">
               {search || filterStatus !== 'all' || filterPriority !== 'all' || filterAccount !== 'all'
                 ? t('try_adjusting_search_or_filters')
                 : t('create_first_case_to_get_started')
@@ -307,16 +303,16 @@ export function CasesView() {
           </div>
         ) : (
           filteredCases.map((caseItem) => (
-            <div key={caseItem.id} className="bg-white rounded-lg border shadow-sm hover:shadow-md transition-shadow">
+            <div key={caseItem.id} className="bg-card rounded-lg border shadow-sm hover:shadow-md transition-shadow">
               <div className="p-4">
                 <div className="flex items-start justify-between mb-3">
                   <div className="flex-1">
                     <div className="flex items-center gap-3 mb-2">
-                      <h3 className="font-semibold text-gray-900">{caseItem.subject}</h3>
+                      <h3 className="font-semibold text-foreground">{caseItem.subject}</h3>
                       <Badge className={priorityColors[caseItem.priority]}>{t(caseItem.priority.toLowerCase())}</Badge>
                       <Badge className={statusColors[caseItem.status]}>{getStatusIcon(caseItem.status)}{t(caseItem.status.toLowerCase())}</Badge>
                     </div>
-                    <p className="text-sm text-gray-600 line-clamp-2">{caseItem.description}</p>
+                    <p className="text-sm text-muted-foreground line-clamp-2">{caseItem.description}</p>
                   </div>
                   <div className="flex gap-1 ml-4">
                     <Button
@@ -336,7 +332,7 @@ export function CasesView() {
                   </div>
                 </div>
 
-                <div className="flex items-center gap-4 text-sm text-gray-500">
+                <div className="flex items-center gap-4 text-sm text-muted-foreground">
                   {caseItem.accountName && (
                     <div className="flex items-center gap-1">
                       <Building className="w-4 h-4" />
@@ -397,12 +393,12 @@ export function CasesView() {
                 </SelectContent>
               </Select>
             </div>
-            <Select 
-              value={form.accountId} 
+            <Select
+              value={form.accountId}
               onValueChange={(value) => {
                 const account = accounts.find(a => a.id === value);
-                setForm(f => ({ 
-                  ...f, 
+                setForm(f => ({
+                  ...f,
                   accountId: value,
                   accountName: account?.accountName || ''
                 }));
@@ -447,8 +443,8 @@ export function CasesView() {
           <div className="space-y-4">
             <p>{t('are_you_sure_delete_case')}</p>
             <DialogFooter>
-              <Button 
-                variant="destructive" 
+              <Button
+                variant="destructive"
                 onClick={() => deleteId && handleDelete(deleteId)}
               >
                 {t('delete')}

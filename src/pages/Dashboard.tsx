@@ -17,21 +17,17 @@ import Employees from './Employees';
 import Payroll from './Payroll';
 import Attendance from './Attendance';
 import { AnimatePresence, motion } from 'framer-motion';
-import { collection, addDoc, getDocs, updateDoc, deleteDoc, doc } from "firebase/firestore";
-import { db } from "../lib/firebase";
-import { useLoading } from "@/components/ui/PageLoader";
 import { RequireRole } from '@/components/crm/RequireRole';
 
 const Dashboard = () => {
   const location = useLocation();
-  const { setLoading } = useLoading();
   return (
     <SidebarProvider>
-      <div className="min-h-screen flex flex-col md:flex-row w-full bg-white">
+      <div className="min-h-screen flex flex-col md:flex-row w-full bg-background">
         <CRMSidebar />
-        <div className="flex-1 flex flex-col min-w-0 bg-white">
+        <div className="flex-1 flex flex-col min-w-0 bg-background">
           <DashboardHeader />
-          <main className="flex-1 overflow-auto bg-gray-50 px-2 sm:px-3 md:px-4 lg:px-6 py-2 md:py-4">
+          <main className="flex-1 overflow-auto bg-muted/40 px-2 sm:px-3 md:px-4 lg:px-6 py-2 md:py-4">
             <AnimatePresence mode="wait">
               <motion.div
                 key={location.pathname}

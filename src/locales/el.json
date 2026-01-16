@@ -24,6 +24,7 @@
   "name": "Όνομα",
   "name_email_password_required": "Το όνομα, το email και ο κωδικός είναι υποχρεωτικά",
   "already_have_account": "Έχετε ήδη λογαριασμό;",
+  "dont_have_account": "Δεν έχετε λογαριασμό;",
   "login": "Σύνδεση",
   "crm_dashboard": "Πίνακας Ελέγχου CRM",
   "total_leads": "Συνολικοί Υποψήφιοι",
@@ -488,4 +489,4 @@
   "daily_attendance": "Ημερήσια Παρουσία",
   "calendar": "Ημερολόγιο",
   "change": "Αλλαγή"
-} 
+}

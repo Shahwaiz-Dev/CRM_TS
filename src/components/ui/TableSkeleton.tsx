@@ -9,7 +9,7 @@ interface TableSkeletonProps {
 
 export function TableSkeleton({ rows = 5, columns = 5, showAvatar = false }: TableSkeletonProps) {
   return (
-    <div className="bg-white rounded-lg border overflow-hidden">
+    <div className="bg-card rounded-lg border overflow-hidden">
       <Table>
         <TableHeader>
           <TableRow>

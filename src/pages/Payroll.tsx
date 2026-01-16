@@ -1,21 +1,20 @@
 import React, { useEffect, useState } from "react";
-import { getPayroll, addPayroll, updatePayroll, deletePayroll } from "@/lib/firebase";
+import { getPayroll, addPayroll, updatePayroll, deletePayroll, getEmployees } from "@/lib/firebase";
 import { Search, Filter, Download, Edit, Check, DollarSign, Plus, X } from 'lucide-react';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger, DialogDescription } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
-import { collection, getDocs } from 'firebase/firestore';
-import { db } from '../lib/firebase';
-import { useLoading } from "@/components/ui/PageLoader";
-import { useAuth } from '@/contexts/AuthContext';
 import { Navigate } from 'react-router-dom';
 import { motion } from 'framer-motion';
-import { useLanguage } from '@/contexts/LanguageContext';
 import { TableSkeleton } from '@/components/ui/TableSkeleton';
 import { StatsCardsSkeleton } from '@/components/ui/StatsCardsSkeleton';
 import { Skeleton } from '@/components/ui/skeleton';
+import { useAppDispatch, useAppSelector } from "@/store/hooks";
+import { useTranslation } from "@/store/slices/languageSlice";
+import { setPayrollRecords, setLoading as setPayrollLoading, setError as setPayrollError } from "@/store/slices/payrollSlice";
+import { setEmployees, setLoading as setEmployeesLoading } from "@/store/slices/employeesSlice";
 
 function toCSV(rows) {
-  const header = ['Name','Employee ID','Position','Department','Base Salary','Overtime','Bonuses','Deductions','Net Pay','Status'];
+  const header = ['Name', 'Employee ID', 'Position', 'Department', 'Base Salary', 'Overtime', 'Bonuses', 'Deductions', 'Net Pay', 'Status'];
   const csvRows = [header.join(',')];
   for (const row of rows) {
     csvRows.push([
@@ -45,63 +44,63 @@ function downloadCSV(csv, filename) {
 }
 
 export default function Payroll() {
-  const { user, loading } = useAuth();
-  // Remove useAuth and Navigate imports and any role-checking logic at the top of the component.
+  const dispatch = useAppDispatch();
+  const user = useAppSelector((state) => state.auth.user);
+  const authLoading = useAppSelector((state) => state.auth.loading);
+  const payroll = useAppSelector((state) => state.payroll.records);
+  const dataLoading = useAppSelector((state) => state.payroll.loading);
+  const employees = useAppSelector((state) => state.employees.employees);
 
-  const [payroll, setPayroll] = useState([]);
-  const [dataLoading, setDataLoading] = useState(true);
   const [error, setError] = useState("");
-  const [newPayroll, setNewPayroll] = useState({ 
-    employeeId: "", 
-    month: "", 
-    amount: 0, 
+  const [newPayroll, setNewPayroll] = useState({
+    employeeId: "",
+    month: "",
+    amount: 0,
     overtime: 0,
     bonuses: 0,
     deductions: 0,
-    status: "Pending" 
+    status: "Pending"
   });
   const [editId, setEditId] = useState(null);
-  const [editPayroll, setEditPayroll] = useState({ 
-    employeeId: "", 
-    month: "", 
-    amount: 0, 
+  const [editPayroll, setEditPayroll] = useState({
+    employeeId: "",
+    month: "",
+    amount: 0,
     overtime: 0,
     bonuses: 0,
     deductions: 0,
-    status: "Pending" 
+    status: "Pending"
   });
   const [filterModal, setFilterModal] = useState(false);
   const [filter, setFilter] = useState({ employee: '', month: '', status: '' });
   const [modalOpen, setModalOpen] = useState(false);
   const [modalMode, setModalMode] = useState('add');
-  const [employees, setEmployees] = useState([]);
   const [search, setSearch] = useState('');
-  const { t } = useLanguage();
+
+  const { t } = useTranslation();
 
   const fetchPayroll = async () => {
-    setError("");
-    setDataLoading(true);
+    dispatch(setPayrollError(""));
+    dispatch(setPayrollLoading(true));
     try {
       const payrollData = await getPayroll();
-      console.log("Payroll data:", payrollData); // Debug log
-      setPayroll(payrollData);
+      dispatch(setPayrollRecords(payrollData));
     } catch (e) {
-      console.error("Error fetching payroll:", e);
-      setError("Failed to fetch payroll");
+      dispatch(setPayrollError("Failed to fetch payroll"));
     } finally {
-      setDataLoading(false);
+      dispatch(setPayrollLoading(false));
     }
   };
 
   const fetchEmployees = async () => {
+    dispatch(setEmployeesLoading(true));
     try {
-      const snap = await getDocs(collection(db, 'employees'));
-      const employeesData = snap.docs.map(doc => ({ id: doc.id, ...doc.data() }));
-      console.log("Employees data:", employeesData); // Debug log
-      setEmployees(employeesData);
+      const employeesData = await getEmployees();
+      dispatch(setEmployees(employeesData));
     } catch (e) {
-      console.error("Error fetching employees:", e);
-      setError("Failed to fetch employees");
+      dispatch(setPayrollError("Failed to fetch employees"));
+    } finally {
+      dispatch(setEmployeesLoading(false));
     }
   };
 
@@ -126,16 +125,16 @@ export default function Payroll() {
         netPay: netPay,
         createdAt: new Date().toISOString()
       };
-      
+
       await addPayroll(payrollData);
-      setNewPayroll({ 
-        employeeId: "", 
-        month: "", 
-        amount: 0, 
+      setNewPayroll({
+        employeeId: "",
+        month: "",
+        amount: 0,
         overtime: 0,
         bonuses: 0,
         deductions: 0,
-        status: "Pending" 
+        status: "Pending"
       });
       setModalOpen(false);
       fetchPayroll();
@@ -178,7 +177,7 @@ export default function Payroll() {
         netPay: netPay,
         updatedAt: new Date().toISOString()
       };
-      
+
       await updatePayroll(editId, payrollData);
       setEditId(null);
       setModalOpen(false);
@@ -214,7 +213,7 @@ export default function Payroll() {
       alert("No payroll data to export");
       return;
     }
-    
+
     const enrichedPayroll = filteredPayroll.map(pay => {
       const employee = employees.find(e => e.id === pay.employeeId);
       return {
@@ -237,12 +236,12 @@ export default function Payroll() {
       alert('No pending payrolls to process!');
       return;
     }
-    
+
     if (window.confirm(`Process ${pendingPayrolls.length} pending payroll(s)?`)) {
       // Here you would typically process the payrolls
       // For now, we'll just mark them as processed
       Promise.all(
-        pendingPayrolls.map(p => 
+        pendingPayrolls.map(p =>
           updatePayroll(p.id, { ...p, status: 'Paid', processedAt: new Date().toISOString() })
         )
       ).then(() => {
@@ -276,7 +275,7 @@ export default function Payroll() {
       alert(`Payroll for this employee is already marked as paid.`);
       return;
     }
-    
+
     setError("");
     try {
       // setLoading(true); // Removed
@@ -292,14 +291,14 @@ export default function Payroll() {
 
   const openAddModal = () => {
     setModalMode('add');
-    setNewPayroll({ 
-      employeeId: "", 
-      month: "", 
-      amount: 0, 
+    setNewPayroll({
+      employeeId: "",
+      month: "",
+      amount: 0,
       overtime: 0,
       bonuses: 0,
       deductions: 0,
-      status: "Pending" 
+      status: "Pending"
     });
     setModalOpen(true);
   };
@@ -323,13 +322,13 @@ export default function Payroll() {
     const employee = employees.find(e => e.id === p.employeeId);
     const employeeName = employee?.name || '';
     const employeeId = employee?.employeeId || employee?.id || '';
-    
+
     return (
       (!filter.employee || employeeName.toLowerCase().includes(filter.employee.toLowerCase())) &&
       (!filter.month || (p.month && p.month === filter.month)) &&
       (!filter.status || (p.status && p.status === filter.status)) &&
-      (!search || 
-        employeeName.toLowerCase().includes(search.toLowerCase()) || 
+      (!search ||
+        employeeName.toLowerCase().includes(search.toLowerCase()) ||
         employeeId.toLowerCase().includes(search.toLowerCase()) ||
         (p.month && p.month.toLowerCase().includes(search.toLowerCase()))
       )
@@ -356,7 +355,7 @@ export default function Payroll() {
           </div>
         </div>
         <StatsCardsSkeleton count={4} />
-        <div className="bg-white rounded-xl border p-6">
+        <div className="bg-card rounded-xl border p-6">
           <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4 mb-4">
             <div>
               <Skeleton className="h-6 w-48 mb-2" />
@@ -391,24 +390,24 @@ export default function Payroll() {
 
       <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4 mb-6">
         <div>
-          <h1 className="text-3xl md:text-4xl font-extrabold">{t('payroll_management')}</h1>
-          <p className="text-gray-500 mt-1">{t('manage_employee_compensation')}</p>
+          <h1 className="text-3xl md:text-4xl font-extrabold text-foreground">{t('payroll_management')}</h1>
+          <p className="text-muted-foreground mt-1">{t('manage_employee_compensation')}</p>
         </div>
         <div className="flex gap-2 self-start md:self-auto">
-          <button 
-            onClick={handleExport} 
+          <button
+            onClick={handleExport}
             className="border rounded-lg px-4 py-2 flex items-center gap-2 text-gray-700 hover:bg-gray-100"
           >
             <Download className="h-4 w-4" /> {t('export_report')}
           </button>
-          <button 
+          <button
             onClick={openAddModal}
             className="bg-green-600 hover:bg-green-700 text-white font-semibold px-5 py-2 rounded-lg text-base flex items-center gap-2"
           >
             <Plus className="h-4 w-4" /> {t('add_payroll')}
           </button>
-          <button 
-            onClick={handleProcess} 
+          <button
+            onClick={handleProcess}
             className="bg-blue-600 hover:bg-blue-700 text-white font-semibold px-5 py-2 rounded-lg text-base flex items-center gap-2"
           >
             <DollarSign className="h-4 w-4" /> {t('process_payroll')}
@@ -418,34 +417,34 @@ export default function Payroll() {
 
       {/* Stats Cards */}
       <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-4 mb-8">
-        <div className="bg-white rounded-lg border p-5 flex flex-col">
-          <span className="text-gray-500 text-sm">{t('total_payroll')}</span>
-          <span className="text-3xl font-bold">${totalPayroll.toLocaleString()}</span>
-          <span className="text-green-600 text-xs mt-1">{t('current_period')}</span>
+        <div className="bg-card rounded-lg border p-5 flex flex-col">
+          <span className="text-muted-foreground text-sm">{t('total_payroll')}</span>
+          <span className="text-3xl font-bold text-foreground">${totalPayroll.toLocaleString()}</span>
+          <span className="text-green-500 text-xs mt-1">{t('current_period')}</span>
         </div>
-        <div className="bg-white rounded-lg border p-5 flex flex-col">
-          <span className="text-gray-500 text-sm">{t('average_salary')}</span>
-          <span className="text-3xl font-bold">${Math.round(averageSalary).toLocaleString()}</span>
-          <span className="text-gray-500 text-xs mt-1">{t('per_employee')}</span>
+        <div className="bg-card rounded-lg border p-5 flex flex-col">
+          <span className="text-muted-foreground text-sm">{t('average_salary')}</span>
+          <span className="text-3xl font-bold text-foreground">${Math.round(averageSalary).toLocaleString()}</span>
+          <span className="text-muted-foreground text-xs mt-1">{t('per_employee')}</span>
         </div>
-        <div className="bg-white rounded-lg border p-5 flex flex-col">
-          <span className="text-gray-500 text-sm">{t('total_overtime')}</span>
-          <span className="text-3xl font-bold">${totalOvertime.toLocaleString()}</span>
-          <span className="text-gray-500 text-xs mt-1">{t('this_pay_period')}</span>
+        <div className="bg-card rounded-lg border p-5 flex flex-col">
+          <span className="text-muted-foreground text-sm">{t('total_overtime')}</span>
+          <span className="text-3xl font-bold text-foreground">${totalOvertime.toLocaleString()}</span>
+          <span className="text-muted-foreground text-xs mt-1">{t('this_pay_period')}</span>
         </div>
-        <div className="bg-white rounded-lg border p-5 flex flex-col">
-          <span className="text-gray-500 text-sm">{t('total_bonuses')}</span>
-          <span className="text-3xl font-bold">${totalBonuses.toLocaleString()}</span>
-          <span className="text-gray-500 text-xs mt-1">{t('performance_bonuses')}</span>
+        <div className="bg-card rounded-lg border p-5 flex flex-col">
+          <span className="text-muted-foreground text-sm">{t('total_bonuses')}</span>
+          <span className="text-3xl font-bold text-foreground">${totalBonuses.toLocaleString()}</span>
+          <span className="text-muted-foreground text-xs mt-1">{t('performance_bonuses')}</span>
         </div>
       </div>
 
       {/* Payroll Records Card */}
-      <div className="bg-white rounded-xl border p-6">
+      <div className="bg-card rounded-xl border p-6">
         <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4 mb-4">
           <div>
-            <h2 className="text-xl font-bold">{t('payroll_records')}</h2>
-            <p className="text-gray-500 text-sm">{t('view_and_manage_payroll_info', { count: filteredPayroll.length })}</p>
+            <h2 className="text-xl font-bold text-foreground">{t('payroll_records')}</h2>
+            <p className="text-muted-foreground text-sm">{t('view_and_manage_payroll_info', { count: filteredPayroll.length })}</p>
           </div>
           <div className="flex gap-2 w-full md:w-auto">
             <div className="relative flex-1">
@@ -454,13 +453,13 @@ export default function Payroll() {
                 placeholder={t('search_payroll')}
                 value={search}
                 onChange={e => setSearch(e.target.value)}
-                className="pl-10 pr-3 py-2 border rounded-lg w-full focus:ring-2 focus:ring-blue-500 focus:outline-none text-sm"
+                className="pl-10 pr-3 py-2 border rounded-lg w-full bg-background text-foreground focus:ring-2 focus:ring-blue-500 focus:outline-none text-sm"
               />
-              <Search className="absolute left-3 top-2.5 h-4 w-4 text-gray-400" />
+              <Search className="absolute left-3 top-2.5 h-4 w-4 text-muted-foreground" />
             </div>
-            <button 
+            <button
               onClick={() => setFilterModal(true)}
-              className="border rounded-lg px-4 py-2 flex items-center gap-2 text-gray-700 hover:bg-gray-100"
+              className="border rounded-lg px-4 py-2 flex items-center gap-2 text-foreground hover:bg-muted transition-colors"
             >
               <Filter className="h-4 w-4" /> {t('filter')}
             </button>
@@ -468,11 +467,11 @@ export default function Payroll() {
         </div>
 
         {filteredPayroll.length === 0 ? (
-          <div className="text-center py-8 text-gray-500">
+          <div className="text-center py-8 text-muted-foreground">
             <p>{t('no_payroll_records_found')}</p>
-            <button 
+            <button
               onClick={openAddModal}
-              className="mt-2 text-blue-600 hover:text-blue-800"
+              className="mt-2 text-primary hover:underline"
             >
               {t('add_your_first_payroll_record')}
             </button>
@@ -482,74 +481,73 @@ export default function Payroll() {
             <table className="min-w-full text-sm">
               <thead>
                 <tr className="border-b">
-                  <th className="py-2 px-3 text-left font-semibold text-gray-700">{t('employee')}</th>
-                  <th className="py-2 px-3 text-left font-semibold text-gray-700">{t('position')}</th>
-                  <th className="py-2 px-3 text-left font-semibold text-gray-700">{t('base_salary')}</th>
-                  <th className="py-2 px-3 text-left font-semibold text-gray-700">{t('overtime')}</th>
-                  <th className="py-2 px-3 text-left font-semibold text-gray-700">{t('bonuses')}</th>
-                  <th className="py-2 px-3 text-left font-semibold text-gray-700">{t('deductions')}</th>
-                  <th className="py-2 px-3 text-left font-semibold text-gray-700">{t('net_pay')}</th>
-                  <th className="py-2 px-3 text-left font-semibold text-gray-700">{t('status')}</th>
-                  <th className="py-2 px-3 text-left font-semibold text-gray-700">{t('actions')}</th>
+                  <th className="py-2 px-3 text-left font-semibold text-muted-foreground">{t('employee')}</th>
+                  <th className="py-2 px-3 text-left font-semibold text-muted-foreground">{t('position')}</th>
+                  <th className="py-2 px-3 text-left font-semibold text-muted-foreground">{t('base_salary')}</th>
+                  <th className="py-2 px-3 text-left font-semibold text-muted-foreground">{t('overtime')}</th>
+                  <th className="py-2 px-3 text-left font-semibold text-muted-foreground">{t('bonuses')}</th>
+                  <th className="py-2 px-3 text-left font-semibold text-muted-foreground">{t('deductions')}</th>
+                  <th className="py-2 px-3 text-left font-semibold text-muted-foreground">{t('net_pay')}</th>
+                  <th className="py-2 px-3 text-left font-semibold text-muted-foreground">{t('status')}</th>
+                  <th className="py-2 px-3 text-left font-semibold text-muted-foreground">{t('actions')}</th>
                 </tr>
               </thead>
               <tbody>
                 {filteredPayroll.map((pay) => {
                   const employee = employees.find(e => e.id === pay.employeeId);
                   const initials = employee?.name?.split(' ').map(n => n[0]).join('').toUpperCase() || '?';
-                  
+
                   return (
-                    <tr key={pay.id} className="border-b hover:bg-gray-50">
+                    <tr key={pay.id} className="border-b hover:bg-muted/50 transition-colors">
                       <td className="py-3 px-3 flex items-center gap-3 min-w-[200px]">
-                        <div className="h-10 w-10 rounded-full bg-gray-200 flex items-center justify-center font-bold text-gray-700">
+                        <div className="h-10 w-10 rounded-full bg-muted flex items-center justify-center font-bold text-muted-foreground border">
                           {initials}
                         </div>
                         <div>
-                          <div className="font-semibold">{employee?.name || t('unknown_employee')}</div>
-                          <div className="text-xs text-gray-500">{employee?.department || 'N/A'}</div>
+                          <div className="font-semibold text-foreground">{employee?.name || t('unknown_employee')}</div>
+                          <div className="text-xs text-muted-foreground">{employee?.department || 'N/A'}</div>
                         </div>
                       </td>
-                      <td className="py-3 px-3 font-semibold">{employee?.position || 'N/A'}</td>
-                      <td className="py-3 px-3 font-semibold">${Number(pay.amount || 0).toLocaleString()}</td>
-                      <td className="py-3 px-3 font-semibold">${Number(pay.overtime || 0).toLocaleString()}</td>
-                      <td className="py-3 px-3 font-semibold">${Number(pay.bonuses || 0).toLocaleString()}</td>
-                      <td className="py-3 px-3 font-semibold text-red-600">${Number(pay.deductions || 0).toLocaleString()}</td>
-                      <td className="py-3 px-3 font-semibold text-green-600">${Number(pay.netPay || pay.amount || 0).toLocaleString()}</td>
+                      <td className="py-3 px-3 font-semibold text-foreground">{employee?.position || 'N/A'}</td>
+                      <td className="py-3 px-3 font-semibold text-foreground">${Number(pay.amount || 0).toLocaleString()}</td>
+                      <td className="py-3 px-3 font-semibold text-foreground">${Number(pay.overtime || 0).toLocaleString()}</td>
+                      <td className="py-3 px-3 font-semibold text-foreground">${Number(pay.bonuses || 0).toLocaleString()}</td>
+                      <td className="py-3 px-3 font-semibold text-destructive">${Number(pay.deductions || 0).toLocaleString()}</td>
+                      <td className="py-3 px-3 font-semibold text-green-500">${Number(pay.netPay || pay.amount || 0).toLocaleString()}</td>
                       <td className="py-3 px-3">
-                        <span className={`rounded-full px-3 py-1 text-xs font-semibold ${
-                          pay.status === 'Paid' 
-                            ? 'bg-green-100 text-green-700' 
-                            : 'bg-yellow-100 text-yellow-700'
-                        }`}>
+                        <span className={`rounded-full px-3 py-1 text-xs font-semibold ${pay.status === 'Paid'
+                          ? 'bg-green-500/10 text-green-600 border border-green-200/20'
+                          : 'bg-yellow-500/10 text-yellow-600 border border-yellow-200/20'
+                          }`}>
                           {t(pay.status.toLowerCase())}
                         </span>
                       </td>
                       <td className="py-3 px-3 flex gap-2">
-                        <button 
-                          onClick={() => handleRowDownload(pay)} 
-                          className="text-gray-500 hover:text-blue-600" 
+                        <button
+                          onClick={() => handleRowDownload(pay)}
+                          className="text-muted-foreground hover:text-primary transition-colors"
                           title="Download"
                         >
                           <Download className="h-4 w-4" />
                         </button>
-                        <button 
-                          onClick={() => handleEdit(pay)} 
-                          className="text-gray-500 hover:text-blue-600" 
+                        <button
+                          onClick={() => handleEdit(pay)}
+                          className="text-muted-foreground hover:text-primary transition-colors"
                           title="Edit"
                         >
                           <Edit className="h-4 w-4" />
                         </button>
-                        <button 
-                          onClick={() => handleDelete(pay.id)} 
-                          className="text-gray-500 hover:text-red-600" 
+                        <button
+                          onClick={() => handleDelete(pay.id)}
+                          className="text-muted-foreground hover:text-destructive transition-colors"
                           title="Delete"
                         >
                           <span className="sr-only">Delete</span>🗑️
                         </button>
-                        <button 
-                          onClick={() => handleMarkAsPaid(pay)} 
-                          className={`text-gray-500 hover:text-green-600 ${pay.status === 'Paid' ? 'opacity-50' : ''}`}
-                          title="Mark as Paid" 
+                        <button
+                          onClick={() => handleMarkAsPaid(pay)}
+                          className={`text-muted-foreground hover:text-green-500 transition-colors ${pay.status === 'Paid' ? 'opacity-50' : ''}`}
+                          title="Mark as Paid"
                           disabled={pay.status === 'Paid'}
                         >
                           <Check className="h-4 w-4" />
@@ -574,33 +572,33 @@ export default function Payroll() {
           <div className="flex flex-col gap-4">
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-1">{t('employee')}</label>
-              <input 
-                placeholder={t('employee_name')} 
-                value={filter.employee} 
-                onChange={e => setFilter(f => ({ ...f, employee: e.target.value }))} 
-                className="w-full border rounded-lg px-3 py-2 focus:ring-2 focus:ring-blue-500 focus:outline-none" 
+              <input
+                placeholder={t('employee_name')}
+                value={filter.employee}
+                onChange={e => setFilter(f => ({ ...f, employee: e.target.value }))}
+                className="w-full border rounded-lg px-3 py-2 bg-background text-foreground focus:ring-2 focus:ring-blue-500 focus:outline-none"
               />
             </div>
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-1">{t('month')}</label>
-              <input 
+              <input
                 type="month"
-                placeholder={t('month')} 
-                value={filter.month} 
-                onChange={e => setFilter(f => ({ ...f, month: e.target.value }))} 
-                className="w-full border rounded-lg px-3 py-2 focus:ring-2 focus:ring-blue-500 focus:outline-none" 
+                placeholder={t('month')}
+                value={filter.month}
+                onChange={e => setFilter(f => ({ ...f, month: e.target.value }))}
+                className="w-full border rounded-lg px-3 py-2 bg-background text-foreground focus:ring-2 focus:ring-blue-500 focus:outline-none"
               />
             </div>
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-1">{t('status')}</label>
-              <select 
-                value={filter.status} 
-                onChange={e => setFilter(f => ({ ...f, status: e.target.value }))} 
-                className="w-full border rounded-lg px-3 py-2 focus:ring-2 focus:ring-blue-500 focus:outline-none"
+              <select
+                value={filter.status}
+                onChange={e => setFilter(f => ({ ...f, status: e.target.value }))}
+                className="w-full border rounded-lg px-3 py-2 bg-background text-foreground focus:ring-2 focus:ring-blue-500 focus:outline-none"
               >
-                <option value="">{t('all_statuses')}</option>
-                <option value="Pending">{t('pending')}</option>
-                <option value="Paid">{t('paid')}</option>
+                <option value="" className="bg-background text-foreground">{t('all_statuses')}</option>
+                <option value="Pending" className="bg-background text-foreground">{t('pending')}</option>
+                <option value="Paid" className="bg-background text-foreground">{t('paid')}</option>
               </select>
             </div>
             <div className="flex gap-2 mt-4">
@@ -622,84 +620,84 @@ export default function Payroll() {
           </DialogHeader>
           <div className="flex flex-col gap-4">
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">{t('employee')} *</label>
-              <select 
-                value={modalMode === 'add' ? newPayroll.employeeId : editPayroll.employeeId} 
-                onChange={e => modalMode === 'add' 
-                  ? setNewPayroll({ ...newPayroll, employeeId: e.target.value }) 
+              <label className="block text-sm font-medium text-muted-foreground mb-1">{t('employee')} *</label>
+              <select
+                value={modalMode === 'add' ? newPayroll.employeeId : editPayroll.employeeId}
+                onChange={e => modalMode === 'add'
+                  ? setNewPayroll({ ...newPayroll, employeeId: e.target.value })
                   : setEditPayroll({ ...editPayroll, employeeId: e.target.value })
-                } 
-                className="w-full border rounded-lg px-3 py-2 focus:ring-2 focus:ring-blue-500 focus:outline-none"
+                }
+                className="w-full border rounded-lg px-3 py-2 bg-background text-foreground focus:ring-2 focus:ring-blue-500 focus:outline-none"
               >
-                <option value="">{t('select_employee')}</option>
+                <option value="" className="bg-background text-foreground">{t('select_employee')}</option>
                 {employees.map((e) => (
-                  <option key={e.id} value={e.id}>{e.name}</option>
+                  <option key={e.id} value={e.id} className="bg-background text-foreground">{e.name}</option>
                 ))}
               </select>
             </div>
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">{t('month')} *</label>
-              <input 
+              <label className="block text-sm font-medium text-muted-foreground mb-1">{t('month')} *</label>
+              <input
                 type="month"
-                placeholder={t('month')} 
-                value={modalMode === 'add' ? newPayroll.month : editPayroll.month} 
-                onChange={e => modalMode === 'add' 
-                  ? setNewPayroll({ ...newPayroll, month: e.target.value }) 
+                placeholder={t('month')}
+                value={modalMode === 'add' ? newPayroll.month : editPayroll.month}
+                onChange={e => modalMode === 'add'
+                  ? setNewPayroll({ ...newPayroll, month: e.target.value })
                   : setEditPayroll({ ...editPayroll, month: e.target.value })
-                } 
-                className="w-full border rounded-lg px-3 py-2 focus:ring-2 focus:ring-blue-500 focus:outline-none" 
+                }
+                className="w-full border rounded-lg px-3 py-2 bg-background text-foreground focus:ring-2 focus:ring-blue-500 focus:outline-none"
               />
             </div>
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">{t('base_salary')}</label>
-              <input 
-                type="number" 
-                placeholder={t('base_salary')} 
-                value={modalMode === 'add' ? newPayroll.amount : editPayroll.amount} 
-                onChange={e => modalMode === 'add' 
-                  ? setNewPayroll({ ...newPayroll, amount: Number(e.target.value) }) 
+              <label className="block text-sm font-medium text-muted-foreground mb-1">{t('base_salary')}</label>
+              <input
+                type="number"
+                placeholder={t('base_salary')}
+                value={modalMode === 'add' ? newPayroll.amount : editPayroll.amount}
+                onChange={e => modalMode === 'add'
+                  ? setNewPayroll({ ...newPayroll, amount: Number(e.target.value) })
                   : setEditPayroll({ ...editPayroll, amount: Number(e.target.value) })
-                } 
-                className="w-full border rounded-lg px-3 py-2 focus:ring-2 focus:ring-blue-500 focus:outline-none" 
+                }
+                className="w-full border rounded-lg px-3 py-2 bg-background text-foreground focus:ring-2 focus:ring-blue-500 focus:outline-none"
               />
             </div>
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">{t('overtime')}</label>
-              <input 
-                type="number" 
-                placeholder={t('overtime_pay')} 
-                value={modalMode === 'add' ? newPayroll.overtime : editPayroll.overtime} 
-                onChange={e => modalMode === 'add' 
-                  ? setNewPayroll({ ...newPayroll, overtime: Number(e.target.value) }) 
+              <label className="block text-sm font-medium text-muted-foreground mb-1">{t('overtime')}</label>
+              <input
+                type="number"
+                placeholder={t('overtime_pay')}
+                value={modalMode === 'add' ? newPayroll.overtime : editPayroll.overtime}
+                onChange={e => modalMode === 'add'
+                  ? setNewPayroll({ ...newPayroll, overtime: Number(e.target.value) })
                   : setEditPayroll({ ...editPayroll, overtime: Number(e.target.value) })
-                } 
-                className="w-full border rounded-lg px-3 py-2 focus:ring-2 focus:ring-blue-500 focus:outline-none" 
+                }
+                className="w-full border rounded-lg px-3 py-2 bg-background text-foreground focus:ring-2 focus:ring-blue-500 focus:outline-none"
               />
             </div>
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">{t('bonuses')}</label>
-              <input 
-                type="number" 
-                placeholder={t('bonuses')} 
-                value={modalMode === 'add' ? newPayroll.bonuses : editPayroll.bonuses} 
-                onChange={e => modalMode === 'add' 
-                  ? setNewPayroll({ ...newPayroll, bonuses: Number(e.target.value) }) 
+              <label className="block text-sm font-medium text-muted-foreground mb-1">{t('bonuses')}</label>
+              <input
+                type="number"
+                placeholder={t('bonuses')}
+                value={modalMode === 'add' ? newPayroll.bonuses : editPayroll.bonuses}
+                onChange={e => modalMode === 'add'
+                  ? setNewPayroll({ ...newPayroll, bonuses: Number(e.target.value) })
                   : setEditPayroll({ ...editPayroll, bonuses: Number(e.target.value) })
-                } 
-                className="w-full border rounded-lg px-3 py-2 focus:ring-2 focus:ring-blue-500 focus:outline-none" 
+                }
+                className="w-full border rounded-lg px-3 py-2 bg-background text-foreground focus:ring-2 focus:ring-blue-500 focus:outline-none"
               />
             </div>
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">{t('deductions')}</label>
-              <input 
-                type="number" 
-                placeholder={t('deductions')} 
-                value={modalMode === 'add' ? newPayroll.deductions : editPayroll.deductions} 
-                onChange={e => modalMode === 'add' 
-                  ? setNewPayroll({ ...newPayroll, deductions: Number(e.target.value) }) 
+              <label className="block text-sm font-medium text-muted-foreground mb-1">{t('deductions')}</label>
+              <input
+                type="number"
+                placeholder={t('deductions')}
+                value={modalMode === 'add' ? newPayroll.deductions : editPayroll.deductions}
+                onChange={e => modalMode === 'add'
+                  ? setNewPayroll({ ...newPayroll, deductions: Number(e.target.value) })
                   : setEditPayroll({ ...editPayroll, deductions: Number(e.target.value) })
-                } 
-                className="w-full border rounded-lg px-3 py-2 focus:ring-2 focus:ring-blue-500 focus:outline-none" 
+                }
+                className="w-full border rounded-lg px-3 py-2 bg-background text-foreground focus:ring-2 focus:ring-blue-500 focus:outline-none"
               />
             </div>
             {/* Add any other fields here if needed */}

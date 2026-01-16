@@ -1,9 +1,9 @@
 import React from 'react';
-import { useAuth } from '@/contexts/AuthContext';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Shield, ArrowLeft, Home } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
+import { useAppSelector } from '@/store/hooks';
 
 interface RequireRoleProps {
   allowedRoles: string[];
@@ -11,7 +11,8 @@ interface RequireRoleProps {
 }
 
 export function RequireRole({ allowedRoles, children }: RequireRoleProps) {
-  const { user, loading } = useAuth();
+  const user = useAppSelector((state) => state.auth.user);
+  const loading = useAppSelector((state) => state.auth.loading);
   const navigate = useNavigate();
 
   if (loading) {
@@ -61,7 +62,7 @@ export function RequireRole({ allowedRoles, children }: RequireRoleProps) {
           </CardHeader>
           <CardContent className="text-center space-y-4">
             <p className="text-gray-600">
-              You don't have permission to view this page. 
+              You don't have permission to view this page.
               This page requires one of the following roles: <strong>{allowedRoles.join(', ')}</strong>
             </p>
             <div className="text-sm text-gray-500">

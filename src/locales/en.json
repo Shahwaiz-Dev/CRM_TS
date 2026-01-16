@@ -24,6 +24,7 @@
   "name": "Name",
   "name_email_password_required": "Name, email and password are required",
   "already_have_account": "Already have an account?",
+  "dont_have_account": "Don't have an account?",
   "login": "Login",
   "crm_dashboard": "CRM Dashboard",
   "total_leads": "Total Leads",
@@ -478,4 +479,4 @@
   "daily_attendance": "Daily Attendance",
   "calendar": "Calendar",
   "change": "Change"
-} 
+}

@@ -11,14 +11,15 @@ import Index from './pages/Index';
 import Settings from './pages/Settings';
 import { useEffect, useState } from "react";
 import { PageLoader } from "@/components/ui/PageLoader";
-import { AuthProvider } from "./contexts/AuthContext";
-import { LanguageProvider } from "./contexts/LanguageContext";
 import { GoogleMapsLoader } from "./components/GoogleMapsLoader";
+import { useAppSelector } from "./store/hooks";
+
+import { ThemeProvider } from "./components/ThemeProvider";
 
 const queryClient = new QueryClient();
 
 function PrivateRoute({ children }: { children: JSX.Element }) {
-  const isAuth = localStorage.getItem('auth') === 'true';
+  const isAuth = useAppSelector((state) => state.auth.isAuthenticated);
   return isAuth ? children : <Navigate to="/login" replace />;
 }
 
@@ -48,19 +49,17 @@ function AppRoutes() {
 
 const App = () => (
   <GoogleMapsLoader>
-    <LanguageProvider>
-      <AuthProvider>
-        <QueryClientProvider client={queryClient}>
-          <TooltipProvider>
-            <Toaster />
-            <Sonner />
-            <BrowserRouter>
-              <AppRoutes />
-            </BrowserRouter>
-          </TooltipProvider>
-        </QueryClientProvider>
-      </AuthProvider>
-    </LanguageProvider>
+    <QueryClientProvider client={queryClient}>
+      <TooltipProvider>
+        <ThemeProvider>
+          <Toaster />
+          <Sonner />
+          <BrowserRouter>
+            <AppRoutes />
+          </BrowserRouter>
+        </ThemeProvider>
+      </TooltipProvider>
+    </QueryClientProvider>
   </GoogleMapsLoader>
 );
 

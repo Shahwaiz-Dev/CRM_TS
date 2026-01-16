@@ -2,7 +2,7 @@ import { initializeApp } from "firebase/app";
 import { getFirestore } from "firebase/firestore";
 import { getAuth } from "firebase/auth";
 import { getAnalytics } from "firebase/analytics";
-import { collection, getDocs, addDoc, updateDoc, deleteDoc, doc, query, where, increment } from 'firebase/firestore';
+import { collection, getDocs, addDoc, updateDoc, deleteDoc, doc, query, where, increment, runTransaction } from 'firebase/firestore';
 
 const firebaseConfig = {
   apiKey: "AIzaSyDy6Fqr8L-3PYEFeh0OWtux-xEFpDbj9XY",
@@ -19,343 +19,397 @@ export const db = getFirestore(app);
 export const auth = getAuth(app);
 export const analytics = getAnalytics(app);
 
+import api from './api';
+
 // HR Management Backend Logic
 
 // Employee CRUD
 export async function addEmployee(employee) {
-  return await addDoc(collection(db, 'employees'), employee);
+  const response = await api.post('/employees', employee);
+  return response.data;
 }
 export async function getEmployees() {
-  const snapshot = await getDocs(collection(db, 'employees'));
-  return snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+  const response = await api.get('/employees');
+  return response.data;
 }
 export async function updateEmployee(id, data) {
-  return await updateDoc(doc(db, 'employees', id), data);
+  const response = await api.put(`/employees/${id}`, data);
+  return response.data;
 }
 export async function deleteEmployee(id) {
-  return await deleteDoc(doc(db, 'employees', id));
+  const response = await api.delete(`/employees/${id}`);
+  return response.data;
 }
 
 // Attendance CRUD
 export async function addAttendance(attendance) {
-  return await addDoc(collection(db, 'attendance'), attendance);
+  const response = await api.post('/attendance', attendance);
+  return response.data;
 }
 export async function getAttendance() {
-  const snapshot = await getDocs(collection(db, 'attendance'));
-  return snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+  const response = await api.get('/attendance');
+  return response.data;
 }
 export async function updateAttendance(id, data) {
-  return await updateDoc(doc(db, 'attendance', id), data);
+  const response = await api.put(`/attendance/${id}`, data);
+  return response.data;
 }
 export async function deleteAttendance(id) {
-  return await deleteDoc(doc(db, 'attendance', id));
+  const response = await api.delete(`/attendance/${id}`);
+  return response.data;
 }
 
 // Payroll CRUD
 export async function addPayroll(payroll) {
-  return await addDoc(collection(db, 'payroll'), payroll);
+  const response = await api.post('/payroll', payroll);
+  return response.data;
 }
 export async function getPayroll() {
-  const snapshot = await getDocs(collection(db, 'payroll'));
-  return snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+  const response = await api.get('/payroll');
+  return response.data;
 }
 export async function updatePayroll(id, data) {
-  return await updateDoc(doc(db, 'payroll', id), data);
+  const response = await api.put(`/payroll/${id}`, data);
+  return response.data;
 }
 export async function deletePayroll(id) {
-  return await deleteDoc(doc(db, 'payroll', id));
+  const response = await api.delete(`/payroll/${id}`);
+  return response.data;
 }
 
 // User CRUD
 export async function addUser(user) {
-  return await addDoc(collection(db, 'users'), user);
+  const response = await api.post('/users', user);
+  return response.data;
 }
 export async function getUsers() {
-  const snapshot = await getDocs(collection(db, 'users'));
-  return snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+  const response = await api.get('/users');
+  return response.data;
 }
 export async function updateUser(id, data) {
-  return await updateDoc(doc(db, 'users', id), data);
+  const response = await api.put(`/users/${id}`, data);
+  return response.data;
 }
 export async function deleteUser(id) {
-  return await deleteDoc(doc(db, 'users', id));
+  const response = await api.delete(`/users/${id}`);
+  return response.data;
+}
+
+export async function uploadProfilePicture(userId: string, file: File) {
+  const formData = new FormData();
+  formData.append('photo', file);
+
+  const response = await api.post(`/users/${userId}/upload-photo`, formData, {
+    headers: {
+      'Content-Type': 'multipart/form-data'
+    }
+  });
+
+  // Return the photoURL from the response
+  return response.data.photoURL;
+}
+
+export function getFileUrl(path?: string) {
+  if (!path) return "";
+  if (path.startsWith('http')) return path;
+  const baseUrl = import.meta.env.VITE_API_URL ? import.meta.env.VITE_API_URL.replace('/api', '') : 'http://localhost:5000';
+  return `${baseUrl}${path}`;
 }
 
 // Opportunities CRUD
 export async function addOpportunity(opportunity) {
-  return await addDoc(collection(db, 'opportunities'), opportunity);
+  const response = await api.post('/opportunities', opportunity);
+  return response.data;
 }
 export async function getOpportunities() {
-  const snapshot = await getDocs(collection(db, 'opportunities'));
-  return snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+  const response = await api.get('/opportunities');
+  return response.data;
 }
 export async function updateOpportunity(id, data) {
-  return await updateDoc(doc(db, 'opportunities', id), data);
+  const response = await api.put(`/opportunities/${id}`, data);
+  return response.data;
 }
 export async function deleteOpportunity(id) {
-  return await deleteDoc(doc(db, 'opportunities', id));
+  const response = await api.delete(`/opportunities/${id}`);
+  return response.data;
 }
 
 // Accounts CRUD
 export async function addAccount(account) {
-  return await addDoc(collection(db, 'accounts'), account);
+  const response = await api.post('/accounts', account);
+  return response.data;
 }
 export async function getAccounts() {
-  const snapshot = await getDocs(collection(db, 'accounts'));
-  return snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+  const response = await api.get('/accounts');
+  return response.data;
 }
 export async function updateAccount(id, data) {
-  return await updateDoc(doc(db, 'accounts', id), data);
+  const response = await api.put(`/accounts/${id}`, data);
+  return response.data;
 }
 export async function deleteAccount(id) {
-  return await deleteDoc(doc(db, 'accounts', id));
+  const response = await api.delete(`/accounts/${id}`);
+  return response.data;
 }
 
-// Add contact to Firestore
+// Contacts CRUD
 export const addContact = async (contactData) => {
-  try {
-    const docRef = await addDoc(collection(db, 'contacts'), {
-      ...contactData,
-      createdAt: new Date(),
-      updatedAt: new Date()
-    });
-    return docRef.id;
-  } catch (error) {
-    console.error('Error adding contact:', error);
-    throw error;
-  }
+  const response = await api.post('/contacts', contactData);
+  return response.data;
 };
 
-// Add case to Firestore
-export const addCase = async (caseData) => {
-  try {
-    const docRef = await addDoc(collection(db, 'cases'), {
-      ...caseData,
-      createdAt: new Date(),
-      updatedAt: new Date()
-    });
-    return docRef.id;
-  } catch (error) {
-    console.error('Error adding case:', error);
-    throw error;
-  }
-};
+// Cases (Opportunities) CRUD are already defined above as addOpportunity etc.
+// Keeping them for backward compatibility if needed, or mapping them.
+export const addCase = addOpportunity;
 
-// Get all contacts
 export const getContacts = async () => {
-  try {
-    const querySnapshot = await getDocs(collection(db, 'contacts'));
-    return querySnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
-  } catch (error) {
-    console.error('Error getting contacts:', error);
-    throw error;
-  }
+  const response = await api.get('/contacts');
+  return response.data;
 };
 
-// Update contact in Firestore
+
+
+
 export const updateContact = async (id: string, contactData: any) => {
-  try {
-    await updateDoc(doc(db, 'contacts', id), {
-      ...contactData,
-      updatedAt: new Date()
-    });
-  } catch (error) {
-    console.error('Error updating contact:', error);
-    throw error;
-  }
+  const response = await api.put(`/contacts/${id}`, contactData);
+  return response.data;
 };
 
-// Delete contact from Firestore
+
 export const deleteContact = async (id: string) => {
-  try {
-    await deleteDoc(doc(db, 'contacts', id));
-  } catch (error) {
-    console.error('Error deleting contact:', error);
-    throw error;
-  }
+  const response = await api.delete(`/contacts/${id}`);
+  return response.data;
 };
 
-// Get all cases
-export const getCases = async () => {
-  try {
-    const querySnapshot = await getDocs(collection(db, 'cases'));
-    return querySnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
-  } catch (error) {
-    console.error('Error getting cases:', error);
-    throw error;
-  }
-};
+export const getCases = getOpportunities;
 
-// Update case in Firestore
-export const updateCase = async (id: string, caseData: any) => {
-  try {
-    await updateDoc(doc(db, 'cases', id), {
-      ...caseData,
-      updatedAt: new Date()
-    });
-  } catch (error) {
-    console.error('Error updating case:', error);
-    throw error;
-  }
-};
+export const updateCase = updateOpportunity;
 
-// Delete case from Firestore
-export const deleteCase = async (id: string) => {
-  try {
-    await deleteDoc(doc(db, 'cases', id));
-  } catch (error) {
-    console.error('Error deleting case:', error);
-    throw error;
-  }
-};
+export const deleteCase = deleteOpportunity;
 
 // Notifications CRUD
+// Notifications CRUD
 export const addNotification = async (notificationData: any) => {
-  try {
-    const docRef = await addDoc(collection(db, 'notifications'), {
-      ...notificationData,
-      createdAt: new Date(),
-      read: false
-    });
-    return docRef.id;
-  } catch (error) {
-    console.error('Error adding notification:', error);
-    throw error;
-  }
+  const response = await api.post('/notifications', notificationData);
+  return response.data;
 };
 
 export const getNotifications = async () => {
-  try {
-    const querySnapshot = await getDocs(collection(db, 'notifications'));
-    return querySnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
-  } catch (error) {
-    console.error('Error getting notifications:', error);
-    throw error;
-  }
+  const response = await api.get('/notifications');
+  return response.data;
 };
 
 export const updateNotification = async (id: string, notificationData: any) => {
-  try {
-    await updateDoc(doc(db, 'notifications', id), {
-      ...notificationData,
-      updatedAt: new Date()
-    });
-  } catch (error) {
-    console.error('Error updating notification:', error);
-    throw error;
-  }
+  const response = await api.put(`/notifications/${id}`, notificationData);
+  return response.data;
 };
 
 export const deleteNotification = async (id: string) => {
-  try {
-    await deleteDoc(doc(db, 'notifications', id));
-  } catch (error) {
-    console.error('Error deleting notification:', error);
-    throw error;
-  }
+  const response = await api.delete(`/notifications/${id}`);
+  return response.data;
 };
 
 // Projects CRUD
 export async function addProject(project) {
-  return await addDoc(collection(db, 'projects'), {
-    ...project,
-    createdAt: new Date(),
-    updatedAt: new Date()
-  });
+  const response = await api.post('/projects', project);
+  return response.data;
 }
 
 export async function getProjects() {
-  const snapshot = await getDocs(collection(db, 'projects'));
-  return snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+  const response = await api.get('/projects');
+  return response.data;
 }
 
 export async function updateProject(id, data) {
-  return await updateDoc(doc(db, 'projects', id), {
-    ...data,
-    updatedAt: new Date()
-  });
+  const response = await api.put(`/projects/${id}`, data);
+  return response.data;
 }
 
 export async function deleteProject(id) {
-  return await deleteDoc(doc(db, 'projects', id));
+  const response = await api.delete(`/projects/${id}`);
+  return response.data;
 }
 
 // Sprints CRUD
 export async function addSprint(sprint) {
-  return await addDoc(collection(db, 'sprints'), {
-    ...sprint,
-    createdAt: new Date(),
-    updatedAt: new Date()
-  });
+  const response = await api.post('/sprints', sprint);
+  return response.data;
 }
 
 export async function getSprints() {
-  const snapshot = await getDocs(collection(db, 'sprints'));
-  return snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+  const response = await api.get('/sprints');
+  return response.data;
 }
 
 export async function updateSprint(id, data) {
-  return await updateDoc(doc(db, 'sprints', id), {
-    ...data,
-    updatedAt: new Date()
-  });
+  const response = await api.put(`/sprints/${id}`, data);
+  return response.data;
 }
 
 export async function deleteSprint(id) {
-  return await deleteDoc(doc(db, 'sprints', id));
+  const response = await api.delete(`/sprints/${id}`);
+  return response.data;
 }
 
 // Tickets CRUD
-export async function addTicket(ticket) {
-  return await addDoc(collection(db, 'tickets'), {
-    ...ticket,
-    createdAt: new Date(),
-    updatedAt: new Date()
-  });
+export async function addTicket(ticket: any) {
+  const response = await api.post('/tickets', ticket);
+  return response.data;
 }
 
 export async function getTickets(sprintId) {
-  const q = sprintId
-    ? query(collection(db, 'tickets'), where("sprintId", "==", sprintId))
-    : collection(db, 'tickets');
-  const snapshot = await getDocs(q);
-  return snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+  const response = await api.get('/tickets', { params: { sprintId } });
+  return response.data;
 }
 
 export async function updateTicket(id, data) {
-  return await updateDoc(doc(db, 'tickets', id), {
-    ...data,
-    updatedAt: new Date()
-  });
+  const response = await api.put(`/tickets/${id}`, data);
+  return response.data;
 }
 
 export async function deleteTicket(id) {
-  return await deleteDoc(doc(db, 'tickets', id));
+  const response = await api.delete(`/tickets/${id}`);
+  return response.data;
 }
 
 // Comments CRUD
 export async function addComment(comment) {
-  const commentRef = await addDoc(collection(db, 'comments'), {
-    ...comment,
-    createdAt: new Date(),
-    updatedAt: new Date()
-  });
-
-  // Increment comment count on ticket
-  if (comment.ticketId) {
-    await updateDoc(doc(db, 'tickets', comment.ticketId), {
-      commentCount: increment(1)
-    });
-  }
-
-  return commentRef;
+  const response = await api.post('/comments', comment);
+  return response.data;
 }
 
 export async function getComments(ticketId) {
-  const q = query(collection(db, 'comments'), where("ticketId", "==", ticketId));
-  const snapshot = await getDocs(q);
-  // Client-side sorting might be needed if index is missing
-  return snapshot.docs
-    .map(doc => ({ id: doc.id, ...doc.data() }))
-    .sort((a: any, b: any) => a.createdAt?.seconds - b.createdAt?.seconds);
+  const response = await api.get('/comments', { params: { ticketId } });
+  return response.data;
 }
+
+// Labels CRUD
+export async function addLabel(label: any) {
+  const response = await api.post('/labels', label);
+  return response.data;
+}
+
+export async function getLabels() {
+  const response = await api.get('/labels');
+  return response.data;
+}
+
+export async function updateLabel(id: string, data: any) {
+  const response = await api.put(`/labels/${id}`, data);
+  return response.data;
+}
+
+export async function deleteLabel(id: string) {
+  const response = await api.delete(`/labels/${id}`);
+  return response.data;
+}
+
+// Templates CRUD
+export async function addTemplate(template: any) {
+  const response = await api.post('/templates', template);
+  return response.data;
+}
+
+export async function getTemplates() {
+  const response = await api.get('/templates');
+  return response.data;
+}
+
+export async function updateTemplate(id: string, data: any) {
+  const response = await api.put(`/templates/${id}`, data);
+  return response.data;
+}
+
+export async function deleteTemplate(id: string) {
+  const response = await api.delete(`/templates/${id}`);
+  return response.data;
+}
+// LeaveRequests CRUD
+export async function addLeaveRequest(leaveRequest) {
+  const response = await api.post('/leave-requests', leaveRequest);
+  return response.data;
+}
+
+export async function getLeaveRequests() {
+  const response = await api.get('/leave-requests');
+  return response.data;
+}
+
+export async function updateLeaveRequest(id, data) {
+  const response = await api.put(`/leave-requests/${id}`, data);
+  return response.data;
+}
+
+export async function deleteLeaveRequest(id) {
+  const response = await api.delete(`/leave-requests/${id}`);
+  return response.data;
+}
+// Leads CRUD
+export async function addLead(lead) {
+  const response = await api.post('/leads', lead);
+  return response.data;
+}
+
+export async function getLeads() {
+  const response = await api.get('/leads');
+  return response.data;
+}
+
+export async function updateLead(id, data) {
+  const response = await api.put(`/leads/${id}`, data);
+  return response.data;
+}
+
+export async function deleteLead(id) {
+  const response = await api.delete(`/leads/${id}`);
+  return response.data;
+}
+
+// Tasks CRUD
+export async function addTask(task) {
+  const response = await api.post('/tasks', task);
+  return response.data;
+}
+
+export async function getTasks() {
+  const response = await api.get('/tasks');
+  return response.data;
+}
+
+export async function updateTask(id, data) {
+  const response = await api.put(`/tasks/${id}`, data);
+  return response.data;
+}
+
+export async function deleteTask(id) {
+  const response = await api.delete(`/tasks/${id}`);
+  return response.data;
+}
+
+// Deals alias
+export const addDeal = addOpportunity;
+export const getDeals = getOpportunities;
+export const updateDeal = updateOpportunity;
+export const deleteDeal = deleteOpportunity;
+
+// Column CRUD
+export async function getColumns() {
+  const response = await api.get('/columns');
+  return response.data;
+}
+
+export async function addColumn(data) {
+  const response = await api.post('/columns', data);
+  return response.data;
+}
+
+export async function updateColumn(id, data) {
+  const response = await api.put(`/columns/${id}`, data);
+  return response.data;
+}
+
+export async function deleteColumn(id) {
+  const response = await api.delete(`/columns/${id}`);
+  return response.data;
+}
+

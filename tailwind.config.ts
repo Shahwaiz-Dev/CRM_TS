@@ -7,6 +7,7 @@ export default {
 		"./app/**/*.{ts,tsx}",
 		"./src/**/*.{ts,tsx}",
 	],
+	darkMode: "class",
 	prefix: "",
 	theme: {
 		container: {

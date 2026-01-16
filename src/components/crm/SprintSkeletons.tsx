@@ -29,7 +29,7 @@ export function SprintColumnSkeleton() {
                     <Skeleton className="h-5 w-8 rounded-full" />
                 </div>
             </div>
-            <div className="flex flex-col gap-2 min-h-[200px] overflow-y-auto flex-1 pr-1 bg-gray-50/50 rounded-xl p-3 border border-gray-100">
+            <div className="flex flex-col gap-2 min-h-[200px] overflow-y-auto flex-1 pr-1 bg-muted/30 rounded-xl p-3 border border-border">
                 {[1, 2, 3].map(i => (
                     <TicketCardSkeleton key={i} />
                 ))}
@@ -41,7 +41,7 @@ export function SprintColumnSkeleton() {
 // Individual Ticket Card Skeleton
 export function TicketCardSkeleton() {
     return (
-        <Card className="bg-white p-3 rounded-lg shadow-sm border border-gray-200">
+        <Card className="bg-card p-3 rounded-lg shadow-sm border border-border">
             <div className="flex justify-between items-start mb-2 ml-6">
                 <Skeleton className="h-3 w-12" />
                 <Skeleton className="h-5 w-5 rounded-full" />
@@ -93,7 +93,7 @@ export function CommentsSkeleton() {
 // Ticket Detail Header Skeleton
 export function TicketDetailHeaderSkeleton() {
     return (
-        <div className="p-6 border-b bg-gray-50/50">
+        <div className="p-6 border-b bg-muted/30">
             <div className="mb-4">
                 <div className="flex justify-between items-start mb-2">
                     <Skeleton className="h-6 w-3/4" />
@@ -114,7 +114,7 @@ export function TicketDetailHeaderSkeleton() {
 // Sprint Header Skeleton
 export function SprintHeaderSkeleton() {
     return (
-        <div className="h-16 border-b bg-white flex items-center justify-between px-6 shrink-0 z-10">
+        <div className="h-16 border-b bg-card flex items-center justify-between px-6 shrink-0 z-10">
             <div>
                 <div className="flex items-center gap-2 mb-1">
                     <Skeleton className="h-6 w-48" />

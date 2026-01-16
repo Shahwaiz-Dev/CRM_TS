@@ -8,11 +8,11 @@ import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Plus, Calendar, User, AlertCircle } from 'lucide-react';
-import { collection, getDocs, addDoc, updateDoc, deleteDoc, doc } from 'firebase/firestore';
-import { db } from '../../lib/firebase';
-import { useLanguage } from '@/contexts/LanguageContext';
 import { KanbanSkeleton } from '@/components/ui/KanbanSkeleton';
 import { Skeleton } from '@/components/ui/skeleton';
+import { useAppSelector, useAppDispatch } from "@/store/hooks";
+import { useTranslation } from "@/store/slices/languageSlice";
+import { fetchTasks, createNewTask, modifyTask, removeTask } from "@/store/slices/tasksSlice";
 
 interface Task {
   id: string;
@@ -26,9 +26,11 @@ interface Task {
 }
 
 export function TasksView() {
-  const { t } = useLanguage();
-  const [tasks, setTasks] = useState<Task[]>([]);
-  const [dataLoading, setDataLoading] = useState(true);
+  const { t } = useTranslation();
+  const dispatch = useAppDispatch();
+  const tasks = useAppSelector((state) => state.tasks.tasks);
+  const dataLoading = useAppSelector((state) => state.tasks.loading);
+  const slicesError = useAppSelector((state) => state.tasks.error);
   const [searchTerm, setSearchTerm] = useState('');
   const [isDialogOpen, setIsDialogOpen] = useState(false);
   const [newTask, setNewTask] = useState({
@@ -42,33 +44,23 @@ export function TasksView() {
   const [dragOverStatus, setDragOverStatus] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
 
-  // Fetch tasks from Firestore
-  const fetchTasks = async () => {
-    setDataLoading(true);
-    try {
-      const querySnapshot = await getDocs(collection(db, 'tasks'));
-      setTasks(querySnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as Task)));
-    } catch (e: any) {
-      setError(e.message || 'Failed to fetch tasks');
-    } finally {
-      setDataLoading(false);
-    }
-  };
-
   useEffect(() => {
-    fetchTasks();
-  }, []);
+    dispatch(fetchTasks());
+  }, [dispatch]);
+
+  const fetchTasksData = async () => {
+    dispatch(fetchTasks());
+  };
 
   // Add task to Firestore
   const handleAddTask = async () => {
     if (newTask.title && newTask.assignee) {
       try {
-        await addDoc(collection(db, 'tasks'), { ...newTask, status: 'Not Started' });
+        await dispatch(createNewTask({ ...newTask, status: 'Not Started' })).unwrap();
         setNewTask({ title: '', description: '', assignee: '', priority: 'Medium', dueDate: '', account: '' });
         setIsDialogOpen(false);
-        fetchTasks();
       } catch (e: any) {
-        setError(e.message || 'Failed to add task');
+        setError(e || 'Failed to add task');
       }
     }
   };
@@ -76,10 +68,9 @@ export function TasksView() {
   // Update task status in Firestore
   const moveTask = async (taskId: string, newStatus: 'Not Started' | 'In Progress' | 'Completed') => {
     try {
-      await updateDoc(doc(db, 'tasks', taskId), { status: newStatus });
-      fetchTasks();
+      await dispatch(modifyTask({ id: taskId, data: { status: newStatus } })).unwrap();
     } catch (e: any) {
-      setError(e.message || 'Failed to update task');
+      setError(e || 'Failed to update task');
     }
   };
 
@@ -87,14 +78,13 @@ export function TasksView() {
   const handleDeleteTask = async (taskId: string) => {
     setError(null);
     try {
-      await deleteDoc(doc(db, 'tasks', taskId));
-      fetchTasks();
+      await dispatch(removeTask(taskId)).unwrap();
     } catch (e: any) {
-      setError(e.message || 'Failed to delete task');
+      setError(e || 'Failed to delete task');
     }
   };
 
-  const filteredTasks = tasks.filter(task => 
+  const filteredTasks = tasks.filter(task =>
     task.title.toLowerCase().includes(searchTerm.toLowerCase()) ||
     task.description.toLowerCase().includes(searchTerm.toLowerCase())
   );
@@ -116,10 +106,10 @@ export function TasksView() {
 
   const getStatusColor = (status: string) => {
     switch (status) {
-      case 'Not Started': return 'bg-gray-50 border-gray-200';
-      case 'In Progress': return 'bg-blue-50 border-blue-200';
-      case 'Completed': return 'bg-green-50 border-green-200';
-      default: return 'bg-gray-50 border-gray-200';
+      case 'Not Started': return 'bg-muted/50 border-border';
+      case 'In Progress': return 'bg-primary/5 border-primary/20';
+      case 'Completed': return 'bg-success/5 border-success/20';
+      default: return 'bg-muted/50 border-border';
     }
   };
 
@@ -141,7 +131,7 @@ export function TasksView() {
 
   const TaskCard = ({ task }: { task: Task }) => (
     <Card
-      className="mb-3 hover:shadow-md transition-shadow cursor-pointer bg-white"
+      className="mb-3 hover:shadow-md transition-shadow cursor-pointer bg-card"
       draggable
       onDragStart={e => handleDragStart(e, task.id)}
     >
@@ -153,27 +143,27 @@ export function TasksView() {
               {t(task.priority.toLowerCase())}
             </Badge>
           </div>
-          <p className="text-xs text-gray-600 line-clamp-2">{task.description}</p>
+          <p className="text-xs text-muted-foreground line-clamp-2">{task.description}</p>
           <div className="space-y-2">
-            <div className="flex items-center gap-2 text-xs text-gray-500">
+            <div className="flex items-center gap-2 text-xs text-muted-foreground">
               <User className="w-3 h-3" />
               <span>{task.assignee}</span>
             </div>
             {task.dueDate && (
-              <div className="flex items-center gap-2 text-xs text-gray-500">
+              <div className="flex items-center gap-2 text-xs text-muted-foreground">
                 <Calendar className="w-3 h-3" />
                 <span>{new Date(task.dueDate).toLocaleDateString()}</span>
               </div>
             )}
-            <div className="text-xs text-gray-500">
-              <span className="font-medium">{task.account}</span>
+            <div className="text-xs text-muted-foreground">
+              <span className="font-medium text-foreground">{task.account}</span>
             </div>
           </div>
           <div className="flex gap-1 pt-2">
             {task.status !== 'Not Started' && (
-              <Button 
-                size="sm" 
-                variant="outline" 
+              <Button
+                size="sm"
+                variant="outline"
                 className="text-xs h-6 px-2"
                 onClick={() => moveTask(task.id, 'Not Started')}
               >
@@ -181,9 +171,9 @@ export function TasksView() {
               </Button>
             )}
             {task.status !== 'In Progress' && (
-              <Button 
-                size="sm" 
-                variant="outline" 
+              <Button
+                size="sm"
+                variant="outline"
                 className="text-xs h-6 px-2"
                 onClick={() => moveTask(task.id, 'In Progress')}
               >
@@ -191,9 +181,9 @@ export function TasksView() {
               </Button>
             )}
             {task.status !== 'Completed' && (
-              <Button 
-                size="sm" 
-                variant="outline" 
+              <Button
+                size="sm"
+                variant="outline"
                 className="text-xs h-6 px-2"
                 onClick={() => moveTask(task.id, 'Completed')}
               >
@@ -216,7 +206,7 @@ export function TasksView() {
   };
   const StatusColumn = ({ status, tasks: columnTasks }: { status: string, tasks: Task[] }) => (
     <div
-      className={`flex-1 min-w-[300px] bg-white rounded-lg border p-4 ${dragOverStatus === status ? 'ring-2 ring-blue-400' : ''}`}
+      className={`flex-1 min-w-[300px] bg-card rounded-lg border p-4 ${dragOverStatus === status ? 'ring-2 ring-primary' : ''}`}
       onDragOver={e => handleDragOver(e, status)}
       onDrop={e => handleDrop(e, status as any)}
       onDragLeave={handleDragLeave}
@@ -242,15 +232,15 @@ export function TasksView() {
     <div className="p-4 md:p-4">
       <div className="flex justify-between items-center mb-6">
         <h1 className="text-3xl font-bold">{t('tasks')}</h1>
-          <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
-            <DialogTrigger asChild>
+        <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
+          <DialogTrigger asChild>
             <Button size="sm" className="gap-2"><Plus className="w-4 h-4" /> {t('addTask')}</Button>
-            </DialogTrigger>
+          </DialogTrigger>
           <DialogContent>
-              <DialogHeader>
+            <DialogHeader>
               <DialogTitle>{t('addNewTask')}</DialogTitle>
-              </DialogHeader>
-              <div className="space-y-4">
+            </DialogHeader>
+            <div className="space-y-4">
               <Label>{t('title')}</Label>
               <Input value={newTask.title} onChange={e => setNewTask({ ...newTask, title: e.target.value })} />
               <Label>{t('description')}</Label>
@@ -261,27 +251,27 @@ export function TasksView() {
               <Select value={newTask.priority} onValueChange={v => setNewTask({ ...newTask, priority: v as any })}>
                 <SelectTrigger className="w-full">
                   <SelectValue placeholder={t('selectPriority')} />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="High">{t('high')}</SelectItem>
-                      <SelectItem value="Medium">{t('medium')}</SelectItem>
-                      <SelectItem value="Low">{t('low')}</SelectItem>
-                    </SelectContent>
-                  </Select>
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="High">{t('high')}</SelectItem>
+                  <SelectItem value="Medium">{t('medium')}</SelectItem>
+                  <SelectItem value="Low">{t('low')}</SelectItem>
+                </SelectContent>
+              </Select>
               <Label>{t('dueDate')}</Label>
               <Input type="date" value={newTask.dueDate} onChange={e => setNewTask({ ...newTask, dueDate: e.target.value })} />
               <Label>{t('account')}</Label>
               <Input value={newTask.account} onChange={e => setNewTask({ ...newTask, account: e.target.value })} />
               <Button onClick={handleAddTask}>{t('addTask')}</Button>
-              </div>
-            </DialogContent>
-          </Dialog>
-        </div>
+            </div>
+          </DialogContent>
+        </Dialog>
+      </div>
       {error && <div className="text-red-600 mb-4 flex items-center gap-2"><AlertCircle className="w-4 h-4" /> {t('error')}: {error}</div>}
       <div className="flex gap-4 overflow-x-auto">
-          <StatusColumn status="Not Started" tasks={tasksByStatus['Not Started']} />
-          <StatusColumn status="In Progress" tasks={tasksByStatus['In Progress']} />
-          <StatusColumn status="Completed" tasks={tasksByStatus['Completed']} />
+        <StatusColumn status="Not Started" tasks={tasksByStatus['Not Started']} />
+        <StatusColumn status="In Progress" tasks={tasksByStatus['In Progress']} />
+        <StatusColumn status="Completed" tasks={tasksByStatus['Completed']} />
       </div>
     </div>
   );

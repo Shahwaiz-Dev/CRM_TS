@@ -11,17 +11,20 @@ import { Avatar, AvatarFallback } from '@/components/ui/avatar';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { User, Search, Plus, Edit, Trash2, Phone, Mail, Building, Loader2, MapPin, Check, ChevronsUpDown, FolderPlus, MessageSquare, X } from 'lucide-react';
 import { addContact, getContacts, updateContact, deleteContact, getAccounts, getProjects, addProject } from '@/lib/firebase';
+
 import { useToast } from '@/hooks/use-toast';
 import { motion } from 'framer-motion';
 import { addNotification } from '@/lib/firebase';
 import { sendSms } from '@/lib/spryng';
 import { sendEmail } from '@/lib/sendgrid';
-import { useLanguage } from '@/contexts/LanguageContext';
 import { cn } from '@/lib/utils';
 import { TableSkeleton } from '@/components/ui/TableSkeleton';
 import { Skeleton } from '@/components/ui/skeleton';
 import { AddressAutocomplete } from '@/components/AddressAutocomplete';
 import { Checkbox } from '@/components/ui/checkbox';
+import { useAppSelector } from "@/store/hooks";
+import { useTranslation } from "@/store/slices/languageSlice";
+import { Import, CloudDownload } from 'lucide-react';
 
 interface Contact {
   id: string;
@@ -92,13 +95,15 @@ export function ContactsView() {
   const [smsForm, setSmsForm] = useState({ subject: '', body: '' });
   const [sendingSms, setSendingSms] = useState(false);
 
+
+
   const [emailModalOpen, setEmailModalOpen] = useState(false);
   const [emailForm, setEmailForm] = useState({ subject: '', body: '' });
   const [emailRecipients, setEmailRecipients] = useState<Contact[]>([]);
   const [emailSearch, setEmailSearch] = useState('');
   const [sendingEmail, setSendingEmail] = useState(false);
   const { toast } = useToast();
-  const { t } = useLanguage();
+  const { t } = useTranslation();
 
   useEffect(() => {
     fetchData();
@@ -471,6 +476,7 @@ export function ContactsView() {
     setSendingSms(false);
   }
 
+
   if (dataLoading) {
     return (
       <motion.div
@@ -538,10 +544,10 @@ export function ContactsView() {
       </div>
 
       {filteredContacts.length === 0 ? (
-        <div className="text-center py-12 bg-white rounded-lg border">
-          <User className="w-12 h-12 text-gray-400 mx-auto mb-4" />
-          <h3 className="text-lg font-semibold text-gray-900 mb-2">{t('no_contacts_found')}</h3>
-          <p className="text-gray-500 mb-4">
+        <div className="text-center py-12 bg-card rounded-lg border">
+          <User className="w-12 h-12 text-muted-foreground mx-auto mb-4" />
+          <h3 className="text-lg font-semibold text-foreground mb-2">{t('no_contacts_found')}</h3>
+          <p className="text-muted-foreground mb-4">
             {search || filterAccount !== 'all'
               ? t('try_adjusting_search_or_filters')
               : t('create_first_contact_to_get_started')
@@ -553,7 +559,7 @@ export function ContactsView() {
         </div>
       ) : (
         <>
-          <div className="bg-white rounded-lg border overflow-hidden">
+          <div className="bg-card rounded-lg border overflow-hidden">
             <Table>
               <TableHeader>
                 <TableRow>
@@ -598,13 +604,13 @@ export function ContactsView() {
                       <div className="space-y-1">
                         {contact.email && (
                           <div className="flex items-center gap-1 text-sm">
-                            <Mail className="w-3 h-3 text-gray-400" />
+                            <Mail className="w-3 h-3 text-muted-foreground" />
                             <span>{contact.email}</span>
                           </div>
                         )}
                         {contact.email2 && (
-                          <div className="flex items-center gap-1 text-sm text-gray-500">
-                            <Mail className="w-3 h-3 text-gray-400" />
+                          <div className="flex items-center gap-1 text-sm text-muted-foreground">
+                            <Mail className="w-3 h-3 text-muted-foreground" />
                             <span>{contact.email2}</span>
                           </div>
                         )}
@@ -615,13 +621,13 @@ export function ContactsView() {
                       <div className="space-y-1">
                         {contact.phone && (
                           <div className="flex items-center gap-1 text-sm">
-                            <Phone className="w-3 h-3 text-gray-400" />
+                            <Phone className="w-3 h-3 text-muted-foreground" />
                             <span>{contact.phone}</span>
                           </div>
                         )}
                         {contact.phone2 && (
-                          <div className="flex items-center gap-1 text-sm text-gray-500">
-                            <Phone className="w-3 h-3 text-gray-400" />
+                          <div className="flex items-center gap-1 text-sm text-muted-foreground">
+                            <Phone className="w-3 h-3 text-muted-foreground" />
                             <span>{contact.phone2}</span>
                           </div>
                         )}
@@ -631,7 +637,7 @@ export function ContactsView() {
                     <TableCell>
                       {contact.accountName ? (
                         <div className="flex items-center gap-1">
-                          <Building className="w-3 h-3 text-gray-400" />
+                          <Building className="w-3 h-3 text-muted-foreground" />
                           <span>{contact.accountName}</span>
                         </div>
                       ) : (
@@ -641,7 +647,7 @@ export function ContactsView() {
                     <TableCell>
                       {contact.projectName ? (
                         <div className="flex items-center gap-1">
-                          <FolderPlus className="w-3 h-3 text-gray-400" />
+                          <FolderPlus className="w-3 h-3 text-muted-foreground" />
                           <span>{contact.projectName}</span>
                         </div>
                       ) : (
@@ -678,7 +684,7 @@ export function ContactsView() {
           {/* Pagination */}
           {totalPages > 1 && (
             <div className="mt-4 flex items-center justify-between">
-              <div className="text-sm text-gray-500">
+              <div className="text-sm text-muted-foreground">
                 {t('showing')} {startIndex + 1} - {Math.min(endIndex, filteredContacts.length)} {t('of')} {filteredContacts.length} {t('contacts')}
               </div>
               <div className="flex items-center gap-2">
@@ -690,7 +696,7 @@ export function ContactsView() {
                 >
                   {t('previous')}
                 </Button>
-                <span className="text-sm text-gray-500">
+                <span className="text-sm text-muted-foreground">
                   {t('page')} {currentPage} {t('of')} {totalPages}
                 </span>
                 <Button
