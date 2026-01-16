@@ -2,7 +2,7 @@
 
 This backend handles the CRM and HR management logic, replacing the previous Firebase infrastructure.
 
-## Technologies
+Technologies
 - **Express.js**: Web framework for Node.js.
 - **Mongoose**: MongoDB object modeling tool.
 - **MongoDB**: Primary database.
