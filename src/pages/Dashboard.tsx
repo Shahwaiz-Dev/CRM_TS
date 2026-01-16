@@ -39,47 +39,47 @@ const Dashboard = () => {
               >
                 <Routes location={location}>
                   <Route path="/" element={
-                    <RequireRole allowedRoles={['admin', 'sales']}>
+                    <RequireRole allowedRoles={['admin', 'sales', 'new user']}>
                       <DashboardOverview />
                     </RequireRole>
                   } />
                   <Route path="/opportunities" element={
-                    <RequireRole allowedRoles={['admin', 'sales']}>
+                    <RequireRole allowedRoles={['admin', 'sales', 'new user']}>
                       <OpportunitiesView />
                     </RequireRole>
                   } />
                   <Route path="/pipeline" element={
-                    <RequireRole allowedRoles={['admin', 'sales']}>
+                    <RequireRole allowedRoles={['admin', 'sales', 'new user']}>
                       <PipelineView />
                     </RequireRole>
                   } />
                   <Route path="/accounts" element={
-                    <RequireRole allowedRoles={['admin', 'sales']}>
+                    <RequireRole allowedRoles={['admin', 'sales', 'new user']}>
                       <AccountsView />
                     </RequireRole>
                   } />
                   <Route path="/contacts" element={
-                    <RequireRole allowedRoles={['admin', 'sales']}>
+                    <RequireRole allowedRoles={['admin', 'sales', 'new user']}>
                       <ContactsView />
                     </RequireRole>
                   } />
                   <Route path="/cases" element={
-                    <RequireRole allowedRoles={['admin', 'sales']}>
+                    <RequireRole allowedRoles={['admin', 'sales', 'new user']}>
                       <CasesView />
                     </RequireRole>
                   } />
                   <Route path="/deals" element={
-                    <RequireRole allowedRoles={['admin', 'sales']}>
+                    <RequireRole allowedRoles={['admin', 'sales', 'new user']}>
                       <DealsView />
                     </RequireRole>
                   } />
                   <Route path="/tasks" element={
-                    <RequireRole allowedRoles={['admin', 'sales']}>
+                    <RequireRole allowedRoles={['admin', 'sales', 'new user']}>
                       <TasksView />
                     </RequireRole>
                   } />
                   <Route path="/sprints" element={
-                    <RequireRole allowedRoles={['admin', 'sales', 'hr', 'employee']}>
+                    <RequireRole allowedRoles={['admin', 'sales', 'hr', 'employee', 'new user']}>
                       <SprintsView />
                     </RequireRole>
                   } />
@@ -89,17 +89,17 @@ const Dashboard = () => {
                     </RequireRole>
                   } />
                   <Route path="/hr/employees" element={
-                    <RequireRole allowedRoles={['admin', 'hr']}>
+                    <RequireRole allowedRoles={['admin', 'hr', 'new user']}>
                       <Employees />
                     </RequireRole>
                   } />
                   <Route path="/hr/payroll" element={
-                    <RequireRole allowedRoles={['admin', 'hr']}>
+                    <RequireRole allowedRoles={['admin', 'hr', 'new user']}>
                       <Payroll />
                     </RequireRole>
                   } />
                   <Route path="/hr/attendance" element={
-                    <RequireRole allowedRoles={['admin', 'hr']}>
+                    <RequireRole allowedRoles={['admin', 'hr', 'new user']}>
                       <Attendance />
                     </RequireRole>
                   } />
